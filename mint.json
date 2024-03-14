@@ -18,6 +18,11 @@
         "url": "how-to-guides"
       },
       {
+        "name": "Changelog",
+        "icon": "swap",
+        "url": "changelog"
+      },
+      {
         "name": "Blog",
         "icon": "newspaper",
         "url": "https://www.inferless.com/blog"
@@ -29,16 +34,16 @@
   "tabs": [
 
       {
-        "name": "Changelog",
-        "url": "changelog"
-      },
-      {
-      "name": "How-to Guides",
+      "name": "How to Guides",
       "url": "how-to-guides"
       },      
       {
           "name": "Cookbook",
           "url": "cookbook"
+      },
+      {
+        "name": "Changelog",
+        "url": "changelog"
       }
   ],
     "navigation": [
