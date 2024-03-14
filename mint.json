@@ -13,14 +13,9 @@
     },
     "anchors": [
       {
-        "name": "Community",
-        "icon": "people-simple",
-        "url": "https://www.inferless.com/community"
-      },
-      {
         "name": "Tutorials",
         "icon": "books",
-        "url": "https://tutorials.inferless.com/"
+        "url": "how-to-guides"
       },
       {
         "name": "Blog",
