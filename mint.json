@@ -27,10 +27,7 @@
       "name": "Documentation"
   },
   "tabs": [
-      {
-          "name": "Cookbook",
-          "url": "cookbook"
-      },
+
       {
         "name": "Changelog",
         "url": "changelog"
@@ -38,6 +35,10 @@
       {
       "name": "How-to Guides",
       "url": "how-to-guides"
+      },      
+      {
+          "name": "Cookbook",
+          "url": "cookbook"
       }
   ],
     "navigation": [
