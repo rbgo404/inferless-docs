@@ -1,0 +1,107 @@
+---
+title: "Inferless Python Client"
+---
+
+### Installation
+
+```bash
+pip install --upgrade inferless
+```
+
+### Usage
+
+This client can be used to call Inferless API from your Python code. It supports both synchronous and asynchronous calls.
+
+#### inferless.call
+
+```python
+inferless.call(url: str, workspace_api_key: str, data: dict ) -> Response [dict]
+```
+
+This method sends a synchronous request to the inferless endpoint
+
+#### Parameters
+
+* **url -** Inferless Model API URL
+
+* **workspace\_api\_key -** Inferless Workspace API Key
+
+* **data -** Model Input Data
+
+### Example
+
+```json
+import inferless
+
+URL = ""
+API_KEY = ""
+data = { "inputs" : 
+          [
+              {
+                "name": "prompt",
+                "shape": [
+                  1
+                ],
+                "datatype": "BYTES",
+                "data": [
+                  "Once upon a time"
+                ]
+              }
+          ]
+        }
+
+# This call is synced until the response is returned
+result = inferless.call(URL, API_KEY, data)
+```
+
+#### inferless.call\_async
+
+```python
+inferless.call_async(URL: str, workspace_api_key: str, data: dict, callback=None)
+```
+
+This method sends a request to the inferless endpoint in the background.
+
+#### Parameters
+
+* **url -** Inferless Model API URL
+
+* **workspace\_api\_key -** Inferless Workspace API Key
+
+* **data -** Model Input Data
+
+* **callback - The c**allback function to be called after the response is received.  
+   * callback function should have two params: `callback(error, response)`  
+   * **error -** any error resulting while calling the inferless endpoint  
+   * **response -** response from the inferless endpoint
+
+```json
+
+import inferless
+
+URL = ""
+API_KEY = ""
+data = { "inputs" : 
+          [
+              {
+                "name": "prompt",
+                "shape": [
+                  1
+                ],
+                "datatype": "BYTES",
+                "data": [
+                  "Once upon a time"
+                ]
+              }
+          ]
+        }
+
+# callback function which writes the response to a file
+def callback_func(e, response):
+    # e is the error object
+    # response is the response object
+    print(response)
+
+# This is not a blocking call and runs in the background and callback function is triggered to write the endpoint response to a file
+inferless.call_async(URL, KEY, DATA, callback_func)
+```

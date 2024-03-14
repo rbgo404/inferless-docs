@@ -1,0 +1,20 @@
+---
+title: "12th February 2024 - Enhanced Monitoring, Docker Flexibility, and One-click Model Deploy"
+---
+
+**What’s New:**
+
+We're excited to introduce a series of updates designed to streamline your workflow, enhance flexibility, and simplify model exploration. Here's what's been rolled out:
+
+1.  **Recent Runs Overview:** Gain insights into your last 20 API calls with our new Recent Runs feature. This enhancement is aimed at improving your ability to debug models in production. To activate this feature, simply apply a patch to your model via the Model Settings.
+
+2.  **Docker Import Improvements:** We've lifted the limitations on the port configurations for the inference server, allowing you to specify the port dynamically upon import. Moreover, you can now set custom endpoints for health checks and inference, providing greater adaptability in model integration.
+
+3.  **Explore Model Feature:** Discover and deploy popular models in production with just a single click through our Explore Model feature. This addition enables you to experiment with new models effortlessly, requiring zero integration effort on your part.
+
+**Minor Bug Fixes:**
+
+1.  Resolved an issue in Docker import where capital letters in the name led to import failures.
+
+2.  Improved error logging for mismatches between the Input/Output schema and the returned dictionary, ensuring clearer feedback for troubleshooting.
+

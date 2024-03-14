@@ -1,0 +1,72 @@
+---
+title: "Bring custom packages"
+description: "Custom software and dependencies in your Runtime"
+---
+
+Custom Runtime allows you to customize the container to have the software and dependency that you need to run your model. 
+
+Here is a sample YAML file that you can write to import. You can follow the required structure of the build. You can specify the System as well as the Python packages that you need to run the model. 
+
+**system\_packages** : 
+
+These are any libraries that you need for the model to run, for eg: "opencv" for image processing or like "ffmpeg" to open the audio files. 
+
+**python\_packages** :
+
+These are pip-based libraries that you need in your Python runtime for example torch is required to load PyTorch-based models 
+
+```python
+build:
+  system_packages:
+    - "libssl-dev"
+    - "opencv"
+    - "ffmpeg"
+  python_packages:
+    - "transformers==4.29.0"
+    - "torch==2.0.1"
+    - "numpy==1.23.5"
+    - "pandas==2.0.1"
+```
+
+## Method A: Create a new Runtime using Inferless Platform 
+
+1.  Select on **My Custom Runtime** Tab in the left navigation and click on **Create new Runtime**
+
+![](/images/bring-custom1.png)
+
+2.  Upload the Yaml file created with the required dependencies.
+
+![](/images/bring-custom2.png)
+
+### How to use Custom Runtime for the Model 
+
+1.  Go to the **Model Import wizard**. To use the custom container when **Step 4** of the Configure Model
+
+![](/images/bring-custom3.png)
+
+2.  Select the Runtime that you have created. Now you all access to all the required software libraries while running the model
+
+## Method B: Create a new Runtime using Inferless CLI
+
+Using the Inferless-CLI, `inferless runtime` command allows users to `list`, `select` and `upload` the runtimes. 
+
+![](/images/bring-custom5.png)
+
+### Creating the runtime file
+
+You can create the runtime file in multiple ways:
+
+1.  You can create the requirements.txt file and then run the command `inferless init`, continue the process and select the requirements.txt file. This will create the `inferless-runtime-config.yaml`, which you can update according to your software and Python libraries requirements.
+
+2.  You can create the `config.yaml`file and mention all the software packages and Python libraries required for the model inference. And update the runtime file name on the `inferless.yaml`.
+
+### Upload the Runtime
+
+Once you have created your runtime file, you can now run the command `inferless runtime upload` to start the uploading process. First, you are required to pass the file name, and then you need to set a name to your runtime. Update the same to the inferless.yaml file.
+
+Now your runtime is ready to use!
+
+![](/images/bring-custom4.png)
+
+
+

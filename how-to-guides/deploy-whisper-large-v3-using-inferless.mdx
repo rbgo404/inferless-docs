@@ -1,0 +1,116 @@
+---
+title: "Deploy Whisper Large V3 using Inferless"
+description: "OpenAI releases Whisper-large-v3, a pre-trained model for automatic speech recognition (ASR) and speech translation"
+---
+
+## Our Observations
+
+We have deployed this model using A100 GPU and observed that the model took an average cold start time of `9.13sec` and an average inference time of `1.44sec` for an average audio length of `7.4sec`.
+
+## Defining Dependencies
+
+We are using the HuggingFace [Transformers](https://github.com/huggingface/transformers) library for the deployment. 
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`
+
+```
+Whisper-large-v3/
+├── app.py
+└── config.yaml
+```
+
+You can also add other files to this directory.
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+
+```python
+class InferlessPythonModel: 
+    def initialize(self):
+        self.generator = pipeline(
+            "automatic-speech-recognition",
+            model="openai/whisper-large-v3", chunk_length_s=30, batch_size=8,
+            torch_dtype=torch.float16,
+            device_map="cuda:0",
+        )
+```
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference through the `inputs` parameter.
+
+```
+    def infer(self, inputs):
+        audio_url = inputs["audio_url"]
+        pipeline_output = self.generator(audio_url, )
+        return {"transcribed_output": pipeline_output["text"] }
+```
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+```
+    def finalize(self,*args):
+        self.generator = None
+```
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their own custom runtime through [config.yaml](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/config.yaml).
+
+```python
+build:
+  system_packages:
+    - "ffmpeg"
+  python_packages:
+    - "ffmpeg-python"
+    - "ffmpeg"
+    - "torch==2.1.0"
+    - "transformers==4.36.1"
+```
+
+## Deploying the model on Inferless
+
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-requirements). For this tutorial, we will use GitHub. 
+
+### Import the Model through GitHub
+
+Click on the`Repo(Custom code)` and then click on the `Add provider` to connect to your GitHub account. Once your account integration is completed, click on your Github account and continue.
+
+![](/images/hermes1.png)
+
+### Provide the Model details
+
+Enter the name of the model and pass the GitHub repository URL. 
+
+Now, you can define the model's input and output parameters in JSON format. For more information, go through [this page](https://docs.inferless.com/model-import/input-output-json).
+
+* [INPUT](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/input.json): Refer to the function `def infer(self, inputs)`, here we mentioned `inputs["audio_url"]`, which means `inputs` the parameter will have a key `audio_url`.
+
+* [OUTPUT](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/output.json): The same goes here, the function mentioned above will return the results as a key-value pair return `{"transcribed_output": pipeline_output["text"]}`.
+
+Input JSON must include `audio_url` a key to pass the instruction. For output JSON, it must be included `transcribed_output` to retrieve the output.
+
+![](/images/whisper1.png)
+
+### GPU Selection
+
+On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A100 GPU. Select A100 from the drop-down menu in the GPU Type.
+
+![](/images/whisper2.png)
+
+### Using the Custom Runtime
+
+In the `Advance configuration`, we have the option to select the custom runtime. First, click on the `Add runtime` to upload the [config.yaml](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/config.yaml) file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
+
+![](/images/whisper3.png)
+
+### Review and Deploy
+
+In this final stage, carefully review all modifications. Once you've examined all changes, proceed to deploy the model by clicking the `Import` button.
+
+Voilà, your model is now deployed!
+
+![](/gif/gif10.gif)

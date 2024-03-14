@@ -1,0 +1,270 @@
+---
+title: "Deploy Quantized version of SOLAR 10.7B-Instruct using Inferless"
+description: "SOLAR-10.7B, an advanced large language model (LLM) with 10.7 billion parameters, demonstrates superior performance in various natural language processing (NLP) tasks"
+---
+
+## Introduction
+
+SOLAR-10.7B, an advanced large language model (LLM) with 10.7 billion parameters, demonstrates superior performance in various natural language processing (NLP) tasks. They have presented a methodology for scaling LLMs called depth up-scaling (DUS), which encompasses architectural modifications and continued pretraining. They have integrated Mistral 7B weights into the upscaled layers, and finally, continued pre-training for the entire model.
+
+## Our Observations
+
+We utilized [AutoGPTQ](https://github.com/PanQiWei/AutoGPTQ) to quantize [SOLAR-10.7B-Instruct-v1.0 ](https://huggingface.co/upstage/SOLAR-10.7B-Instruct-v1.0)into a [4-bit quantized GPTQ ](https://huggingface.co/Inferless/SOLAR-10.7B-Instruct-v1.0-GPTQ)version. In the inference process, we deployed the quantized model on an A100 GPU (80GB) using [vLLM](https://github.com/vllm-project/vllm). We also tried deploying via Auto-GPTQ as mentioned in our observations below: 
+
+| Library            | Inference Time | Cold Start Time | Token/Sec | Latency/Token | VRAM Required |
+| ------------------ | -------------- | --------------- | --------- | ------------- | ------------- |
+| vLLM (Recommended) | 1.37 sec       | 11.69 sec       | 111.54    | 8.97 ms       | 69.33 GB      |
+| Auto-GPTQ          | 27.09 sec      | 61.31 sec       | 9.82      | 101.98 ms     | 5.67 GB       |
+
+## Getting Started with Quantization
+
+Quantization techniques reduces the model's computation cost and memory. It represent the model's weights and activations in lower precision data-types while trying not to reduce in the accuracy. 
+
+We have quantized the model using [GPTQ algorithm](https://arxiv.org/abs/2210.17323), GPTQ is a quantization algorithms for LLMs. We have used [AutoGPTQ](https://github.com/PanQiWei/AutoGPTQ) for 4-bit GPTQ quantization. 
+
+Install the [AutoGPTQ](https://github.com/PanQiWei/AutoGPTQ) library:
+
+```
+pip install auto-gptq
+```
+
+`Import` the following libraries, and initialize the model and the tokenizer. For GPTQ calibration phase we are using [VMware/open-instruct](https://huggingface.co/datasets/VMware/open-instruct) dataset.
+
+```python
+from auto_gptq import AutoGPTQForCausalLM, BaseQuantizeConfig
+from transformers import AutoTokenizer
+from datasets import load_dataset
+import random
+import numpy as np
+import torch
+
+model_id = "upstage/SOLAR-10.7B-Instruct-v1.0"
+quantized_model_dir = "SOLAR-10.7B-Instruct-v1.0"
+
+tokenizer = AutoTokenizer.from_pretrained("upstage/SOLAR-10.7B-Instruct-v1.0", use_fast=True)
+
+train_data = load_dataset('VMware/open-instruct')
+tokenized_data = tokenizer("\n\n".join(train_data['train']['response']), return_tensors='pt')
+
+def generate_data(nsamples,seed,seqlen):
+    random.seed(seed)
+    np.random.seed(0)
+    torch.random.manual_seed(0)
+
+    train_dataset = []
+
+    for _ in range(nsamples):
+        i = random.randint(0, tokenized_data.input_ids.shape[1] - seqlen - 1)
+        j = i + seqlen
+        inp = tokenized_data.input_ids[:, i:j]
+        attention_mask = torch.ones_like(inp)
+        train_dataset.append({'input_ids':inp,'attention_mask': attention_mask})
+    return train_dataset
+```
+
+Now you can start the quantization process, it will create a new directory where it will store the quantized model. The [quantized model](https://huggingface.co/Inferless/SOLAR-10.7B-Instruct-v1.0-GPTQ/tree/main) is 5.98 GB, which is approximately 27.85% of the original model 21.47 GB. Here's the [link](https://huggingface.co/Inferless/SOLAR-10.7B-Instruct-v1.0-GPTQ/tree/main) to our quanitized model.
+
+```python
+training_dataset = generate_data(1000,4040,2048)
+quantize_config = BaseQuantizeConfig(
+    bits=4,
+    group_size=128,
+    desc_act=False)
+
+model = AutoGPTQForCausalLM.from_pretrained(model_id,quantize_config)
+model.quantize(training_dataset)
+
+model.save_quantized(quantized_model_dir, use_safetensors=True)
+tokenizer.save_pretrained(quantized_model_dir)
+```
+
+## Defining Dependencies
+
+We are using the [vLLM library](https://github.com/vllm-project/vllm), which enables you to run LLM on low memory. We deploy a GPTQ 4bit quantized version of the model.
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`
+
+```python
+SOLAR-10.7B-Instruct/
+├── app.py
+└── inferless-runtime-config.yaml
+```
+
+You can also add other files to this directory.
+
+## Create the class for inference
+
+In the [app.py](https://github.com/rbgo404/SOLAR-10.7B-Instruct/blob/main/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference and pass it through `inputs(dict)` parameter.
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+
+```
+from vllm import LLM, SamplingParams
+
+class InferlessPythonModel:
+    def initialize(self):
+
+        self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95,max_tokens=256)
+        self.llm = LLM(model="Inferless/SOLAR-10.7B-Instruct-v1.0-GPTQ", quantization="gptq", dtype="float16")
+
+    def infer(self, inputs):
+        prompts = inputs["prompt"]
+        result = self.llm.generate(prompts, self.sampling_params)
+        result_output = [[[output.outputs[0].text,output.outputs[0].token_ids] for output in result]
+
+        return {'generated_result': result_output[0]}
+
+    def finalize(self):
+        pass
+```
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/rbgo404/SOLAR-10.7B-Instruct/blob/main/inferless-runtime-config.yaml).
+
+```python
+build:
+  cuda_version: "12.1.1"
+  system_packages:
+    - "libssl-dev"
+  python_packages:
+    - "torch==2.1.2"
+    - "vllm==0.2.6"
+    - "transformers==4.36.2"
+    - "accelerate==0.25.0"
+```
+
+## Method A: Deploying the model on Inferless Platform 
+
+### Selection of the framework
+
+Inferless offers comprehensive support for all the major machine learning frameworks. In the first step, it is mandatory to designate the framework for your model. For the purposes of this tutorial, we will opt for `PyTorch`.
+
+![](/images/deploy-quant1.png)
+
+### Import the Model through GitHub
+
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-requirements). For this tutorial, we will use GitHub.
+
+Click on the`Repo(Custom code)` and then click on the `Add provider` to connect to your GitHub account. Once your account integration is completed, click on your Github account and continue.
+
+![](/images/deploy-quant2.png)
+
+### Provide the Model details
+
+Enter the name of the model and pass the GitHub repository URL. 
+
+Now, you can define the model's input and output parameters in JSON format. For more information, go through [this page](https://docs.inferless.com/model-import/input-output-json).
+
+* [INPUT](https://github.com/rbgo404/SOLAR-10.7B-Instruct/blob/main/input.json): Refer to the function `def infer(self, inputs)`, here we mentioned `inputs["prompt"]`, which means `inputs` the parameter will have a key `prompt.`
+
+* [OUTPUT](https://github.com/rbgo404/SOLAR-10.7B-Instruct/blob/main/output.json): The same goes here, the function mentioned above will return the results as a key-value pair `return {"generated_result": result}`.
+
+Input JSON must include `prompt` a key to pass the instruction. For output JSON, it must be included `generated_result` to retrieve the output.
+
+![](/images/deploy-quant3.png)
+
+### Configure the machine
+
+In this 4th step, user have to configure the inference setup.On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A100 GPU. Select A100 from the drop-down menu in the GPU Type.
+
+You also have the flexibility to select from different machine types. Opting for a `dedicated` machine type will grant you access to an entire GPU, while choosing the `shared` option allocates 50% of the VRAM. In this tutorial, we will opt for the dedicated machine type.
+
+Choose the Minimum and Maximum replicas that you would need for your model:
+
+* **Min replica:** The number of inference workers to keep on at all times.
+
+* **Max replica:** The maximum number of inference workers to allow at any point of time.
+
+If you wish to enable Automatic rebuild for your model setup, toggle the switch. Note that setting up a web-hook is necessary for this feature. Click [here](https://docs.inferless.com/~/changes/vYzeDgjS7Hi2onmT0QwC/model-import/automatic-build-via-webhooks/github) for more details.
+
+In the `Advance configuration`, we have the option to select the custom runtime. First, click on the `Add runtime` to upload the [inferless-runtime-config.yaml](https://github.com/rbgo404/SOLAR-10.7B-Instruct/blob/main/inferless-runtime-config.yaml) file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
+
+![](/images/deploy-quant4.png)
+
+### Review and Deploy
+
+In this final stage, carefully review all modifications. Once you've examined all changes, proceed to deploy the model by clicking the `Submit` button.
+
+![](/images/deploy-quant5.png)
+
+Voilà, your model is now deployed!
+
+![](/gif/gif12.gif)
+
+## Method B: Deploying the model on Inferless CLI
+
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+### Initialization of the model
+
+Create the [app.py](https://github.com/rbgo404/SOLAR-10.7B-Instruct/blob/main/app.py) and [inferless-runtime-config.yaml](https://github.com/rbgo404/SOLAR-10.7B-Instruct/blob/main/inferless-runtime-config.yaml), move the files to the working directory. Run the following command to initialize your model:
+
+```
+inferless init
+```
+
+### Changes in Input and Output
+
+Adjust the input and output keys in the JSON configuration files. For example:
+
+```python
+{
+    "inputs": [
+      {
+        "data": [
+          "What is an AI?"
+        ],
+        "name": "prompt",
+        "shape": [
+          1
+        ],
+        "datatype": "BYTES"
+      }
+    ]
+}
+```
+
+```python
+{
+    "outputs": [
+      {
+        "data": [
+          "data"
+        ],
+        "name": "generated_result",
+        "shape": [
+          1
+        ],
+        "datatype": "BYTES"
+      }
+    ]
+}
+```
+
+### Upload the custom runtime
+
+Once you have created the [inferless-runtime-config.yaml](https://github.com/rbgo404/SOLAR-10.7B-Instruct/blob/main/inferless-runtime-config.yaml) file, you can run the following command:
+
+```bash
+inferless runtime upload
+```
+
+Upon entering this command, you will be prompted to provide the configuration file name. Enter the name and ensure to update it in the [inferless.yaml](https://github.com/rbgo404/SOLAR-10.7B-Instruct/blob/main/inferless.yaml) file. Now you are ready for the deployment.
+
+![](/images/deploy-quant6.png)
+
+### Deploy the Model
+
+Execute the following command to deploy your model. Once deployed, you can track the build logs on the Inferless platform:
+
+```bash
+inferless deploy
+```

@@ -1,0 +1,200 @@
+---
+title: "Deploy Stable Video Diffusion using Inferless"
+description: "Stability AI released Stable Video Diffusion, a latent diffusion model for high-resolution video generation from text and images."
+---
+
+## Our Observations
+
+We have deployed this model using A100 GPU and observed that the model took an average cold start time of `7.02 sec` and an average inference time of `34 sec` for generating a video of` 4 sec` with `6fps`
+
+## Defining Dependencies
+
+We are using the HuggingFace [Diffusers](https://github.com/huggingface/diffusers) library for the deployment. You can also use [this script](https://github.com/Stability-AI/generative-models/blob/main/scripts/sampling/simple%5Fvideo%5Fsample.py) for deployment provided by Stability AI.
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`
+
+```
+stable-video-diffusion/
+├── app.py
+└── config.yaml
+```
+
+You can also add other files to this directory.
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference. We are using `torch.compile `which improves the latency but requires a large GPU(A10/A100). If you are using Nvidia T4 then remove those lines and use model CPU offloading to reduce memory usage.
+
+```
+self.pipe.enable_model_cpu_offload()
+```
+
+
+```
+class InferlessPythonModel:
+    
+    def initialize(self):
+        self.pipe = StableVideoDiffusionPipeline.from_pretrained("stabilityai/stable-video-diffusion-img2vid-xt", torch_dtype=torch.float16, variant="fp16")
+        self.pipe.to("cuda")
+        self.pipe.unet = torch.compile(self.pipe.unet, mode="reduce-overhead", fullgraph=True)
+        self.pipe.vae = torch.compile(self.pipe.vae, mode="reduce-overhead", fullgraph=True)
+        self.seed = 42
+        self.randomize_seed = True
+        self.motion_bucket_id = 127
+        self.fps_id = 6
+        self.version = "svd_xt"
+        self.cond_aug = 0.02,
+        self.decoding_t = 3
+        self.device = "cuda"
+        self.output_folder = "outputs"
+```
+
+2.  `def resize`: This is a utility function required during inference, it will download the image and then resize it. You can also add any other functions which are required during inference.
+
+```
+    def resize_image(self,image_url, output_size=(1024, 576)):
+        # Calculate aspect ratio
+        response = requests.get(image_url)
+        image_data = BytesIO(response.content)
+
+        # Open the image using PIL
+        image = Image.open(image_data)
+        target_aspect = output_size[0] / output_size[1]  # Aspect ratio of the desired size
+        image_aspect = image.width / image.height  # Aspect ratio of the original image
+
+        # Resize then crop if the original image is larger
+        if image_aspect > target_aspect:
+            # Resize the image to match the target height, maintaining the aspect ratio
+            new_height = output_size[1]
+            new_width = int(new_height * image_aspect)
+            resized_image = image.resize((new_width, new_height), Image.LANCZOS)
+            # Calculate coordinates for cropping
+            left = (new_width - output_size[0]) / 2
+            top = 0
+            right = (new_width + output_size[0]) / 2
+            bottom = output_size[1]
+        else:
+            # Resize the image to match the target width, maintaining the aspect ratio
+            new_width = output_size[0]
+            new_height = int(new_width / image_aspect)
+            resized_image = image.resize((new_width, new_height), Image.LANCZOS)
+            # Calculate coordinates for cropping
+            left = 0
+            top = (new_height - output_size[1]) / 2
+            right = output_size[0]
+            bottom = (new_height + output_size[1]) / 2
+
+        # Crop the image
+        cropped_image = resized_image.crop((left, top, right, bottom))
+        return cropped_image
+```
+
+3.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference, for example `fps_id` is fixed in the tutorial, you can pass it through `inputs` parameter.
+
+```
+    def infer(self,inputs):
+        image_url = inputs['image_url']
+        max_64_bit_int = 2**63 - 1
+        image = self.resize_image(image_url)
+
+        if image.mode == "RGBA":
+            image = image.convert("RGB")
+
+        if(self.randomize_seed):
+            seed = random.randint(0, max_64_bit_int)
+        generator = torch.manual_seed(seed)
+
+        os.makedirs(self.output_folder, exist_ok=True)
+        base_count = len(glob(os.path.join(self.output_folder, "*.mp4")))
+        video_path = os.path.join(self.output_folder, f"{base_count:06d}.mp4")
+
+        frames = self.pipe(image, decode_chunk_size=self.decoding_t, generator=generator, motion_bucket_id=self.motion_bucket_id, noise_aug_strength=0.1).frames[0]
+        export_to_video(frames, video_path, fps=self.fps_id)
+        torch.manual_seed(seed)
+
+        #Video convert to base64
+        with open(video_path, "rb") as video_file:
+            video_binary_data = video_file.read()
+            video_bytes_io = BytesIO(video_binary_data)
+            base64_encoded_data = base64.b64encode(video_bytes_io.read())
+            base64_string = base64_encoded_data.decode("utf-8")
+
+        return {"generated_video": base64_string}
+```
+
+4.  `def finalize`: This function cleans up all the allocated memory.
+
+```
+    def finalize(self,*args):
+        self.pipe = None
+```
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their own custom runtime through [config.yaml](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/config.yaml).
+
+```
+build:
+  cuda_version: "12.1.1"
+  system_packages:
+    - "libssl-dev"
+    - "libx11-6"
+    - "libxext6"
+    - "libgl1-mesa-glx"
+  python_packages:
+    - "accelerate==0.25.0"
+    - "opencv-python==4.8.1.78"
+    - "git+https://github.com/huggingface/diffusers.git@refs/pull/6103/head"
+    - "transformers==4.35.2"
+    - "requests==2.31.0"
+```
+
+## Deploying the model on Inferless
+
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-requirements). For this tutorial, we will use GitHub. 
+
+### Import the Model through GitHub
+
+Click on the`Repo(Custom code)` and then click on the `Add provider` to connect to your GitHub account. Once your account integration is completed, click on your Github account and continue.
+
+![](/images/stable-vid-diff1.png)
+
+### Provide the Model details
+
+Enter the name of the model and pass the GitHub repository URL. 
+
+Now, you can define the model's input and output parameters in JSON format. For more information, go through [this page](https://docs.inferless.com/model-import/input-output-json).
+
+* [INPUT](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/input.json): Refer to the function `def infer(self, inputs)`, here we mentioned `inputs["image_url"]`, which means `inputs` the parameter will have a key `prompt.`
+
+* [OUTPUT](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/output.json): The same goes here, the function mentioned above will return the results as a key-value pair `return {"generated_video": result}`.
+
+Input JSON must include `prompt` a key to pass the instruction. For output JSON, it must be included`generated_result` to retrieve the output.
+
+![](/images/stable-vid-diff2.png)
+
+### GPU Selection
+
+On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A100 GPU. Select A100 from the drop-down menu in the GPU Type.
+
+![](/images/stable-vid-diff3.png)
+
+### Using the Custom Runtime
+
+In the `Advance configuration`, we have the option to select the custom runtime. First, click on the `Add runtime` to upload the [config.yaml](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/config.yaml) file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
+
+![](/images/stable-vid-diff4.png)
+
+### Review and Deploy
+
+In this final stage, carefully review all modifications. Once you've examined all changes, proceed to deploy the model by clicking the `Import` button.
+
+Voilà, your model is now deployed!
+
+![](/gif/gif4.gif)
+
+_Note: This demo GIF shows the deployment of the Stable Video Diffusion model using webhook._

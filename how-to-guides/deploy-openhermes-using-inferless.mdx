@@ -1,0 +1,114 @@
+---
+title: "Deploy OpenHermes using Inferless"
+description: "OpenHermes 2.5 Mistral 7B is a state-of-the-art Mistral Fine-tune, a continuation of the OpenHermes 2 model, which is trained on additional code datasets."
+---
+
+## Our Observations
+
+We have deployed a 4-bit AWQ [quantized version](https://huggingface.co/TheBloke/OpenHermes-2.5-Mistral-7B-AWQ) of the model using A100 GPU(80GB) and observed that the model took an average inference time of `3.52sec`, generating an average of `98.16 tokens/sec` and an average cold start time of `19.47sec`
+
+## Defining Dependencies
+
+We use the [vLLM](https://github.com/vllm-project) library, enabling you to run LLM on low memory. We deploy an AWQ 4-bit quantized version of the model model.
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`
+
+```python
+OpenHermes-7B/
+├── app.py
+└── config.yaml
+```
+
+You can also add other files to this directory.
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/inferless%5Ftutorials/blob/main/text%5Fgeneration/Starling-LM-7B/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+
+```
+class InferlessPythonModel:
+    def initialize(self):
+        self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95,max_tokens=128)
+        self.llm = LLM(model="TheBloke/OpenHermes-2.5-Mistral-7B-AWQ", quantization="awq", dtype="float16")
+
+```
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference and pass it through `inputs(dict)` parameter.
+
+```
+    def infer(self, inputs):
+        prompts = inputs["prompt"]
+        result = self.llm.generate(prompts, self.sampling_params)
+        result_output = [output.outputs[0].text for output in result]
+        print(result_output)
+        return {'generated_result': result_output[0]}
+```
+
+4.  `def finalize`: This function cleans up all the allocated memory.
+
+```python
+    def finalize(self,*args):
+        self.llm = None
+```
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their custom runtime through [config.yaml](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/config.yaml).
+
+```python
+build:
+  cuda_version: "12.1.1"
+  system_packages:
+    - "libssl-dev"
+  python_packages:
+    - "torch==2.1.2"
+    - "vllm==0.2.5"
+```
+
+## Deploying the model on Inferless
+
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-requirements). For this tutorial, we will use GitHub. 
+
+### Import the Model through GitHub
+
+Click on the`Repo(Custom code)` and then click on the `Add provider` to connect to your GitHub account. Once your account integration is completed, click on your Github account and continue.
+
+![](/images/hermes1.png)
+
+### Provide the Model details
+
+Enter the name of the model and pass the GitHub repository URL. 
+
+Now, you can define the model's input and output parameters in JSON format. For more information, go through [this page](https://docs.inferless.com/model-import/input-output-json).
+
+* [INPUT](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/input.json): Refer to the function `def infer(self, inputs)`, here we mentioned `inputs["prompt"]`, which means `inputs` the parameter will have a key `prompt.`
+
+* [OUTPUT](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/output.json): The same goes here, the function mentioned above will return the results as a key-value pair `return {"generated_result": result}`.
+
+Input JSON must include `prompt` a key to pass the instruction. For output JSON, it must be included`generated_result` to retrieve the output.
+
+![](/images/hermes2.png)
+
+### GPU Selection
+
+On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A100 GPU. Select A100 from the drop-down menu in the GPU Type.
+
+![](/images/hermes3.png)
+
+### Using the Custom Runtime
+
+In the `Advance configuration`, we have the option to select the custom runtime. First, click on the `Add runtime` to upload the [config.yaml](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/config.yaml) file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
+
+![](/images/hermes4.png)
+
+### Review and Deploy
+
+In this final stage, carefully review all modifications. Once you've examined all changes, proceed to deploy the model by clicking the `Import` button.
+
+Voilà, your model is now deployed!
+
+![](/gif/gif8.gif)

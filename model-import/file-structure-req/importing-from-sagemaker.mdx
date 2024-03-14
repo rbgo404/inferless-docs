@@ -1,0 +1,57 @@
+---
+title: "Importing from Sagemaker"
+---
+
+### Supported Frameworks
+
+Below are the supported frameworks for models that can be uploaded into Inferless.
+
+* Pytorch
+
+* Tensorflow
+
+* ONNX (This is currently not supported)
+
+Any other framework is not currently supported as of now. We will keep adding more frameworks as the support for them is added to our platform
+
+### File structure requirements
+
+In the case of model in Sagemaker being:
+
+### \- **`PyTorch`** 
+
+* The model file needs to have a `model.pt` file
+
+* By default, AWS Sagemaker creates it as `model.pth`.
+
+To make sure that the model is saved as a `model.pt`, please follow the below instructions.
+
+* The Training script used in sagemaker typically saves the model using torch.save
+
+```
+commandpath = os.path.join(model_dir, "model.pth")
+torch.save(model.cpu().state_dict(), path)
+```
+
+* But for Inferless pytorch runtime we need [model.pt](http://model.pt/) file which can be created by modifying the training script with the following instead of the above
+
+```
+code.path = os.path.join(model_dir, "model.pt")
+torch.jit.save(model, path)
+```
+
+* Once this is done the estimator.fit function trains the model and saves the trained model in [model.pt](http://model.pt/) format.
+
+* This can then be uploaded to s3 using the estimator.deploy function
+
+* You can now upload the Model by entering the ARN link to inferless using the model import option.
+
+You can view a example below on how we stored a file as per the steps above: 
+
+`<Video here>`
+
+### \- **`Tensorflow`**
+
+* There is no need for any additional steps/file modifications. The ARN link of the generated model can directly be used for import
+
+

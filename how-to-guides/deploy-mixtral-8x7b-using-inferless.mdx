@@ -1,0 +1,127 @@
+---
+title: "Deploy Mixtral-8x7B using Inferless"
+description: "Mixtral 8x7B, a sparse mixture of experts (SMoE) model with open weights, outperforms Llama 2 70B on benchmarks. It excels as the strongest open-weight model, displaying superior cost/performance."
+---
+
+## Our Observations
+
+We have deployed this model using AutoGPTQ on an A100 GPU(80GB) machine with max-token set to 512\. Below are observations:
+
+| Inference Time | Token/Sec | Cold Start Time |
+| -------------- | --------- | --------------- |
+| 33.40 sec      | 14.78     | 13.52 sec       |
+
+## Defining Dependencies
+
+We are using the AutoGPTQ library for the deployment, which we have built from the source.
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`
+
+```
+Mixtral-8x7B/
+├── app.py
+└── config.yaml
+```
+
+You can also add other files to this directory.
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/inferless%5Ftutorials/blob/main/text%5Fgeneration/Mixtral-8x7B/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference through `inputs` parameter.
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+```python
+class InferlessPythonModel:
+        def initialize(self):
+                model_name_or_path = "TheBloke/Mixtral-8x7B-v0.1-GPTQ"
+                self.model = AutoGPTQForCausalLM.from_quantized(model_name_or_path,
+                        model_basename="model",
+                        use_safetensors=True,
+                        trust_remote_code=False,
+                        device="cuda:0",
+                        use_triton=False,
+                        disable_exllama=True,
+                        disable_exllamav2=True,
+                        quantize_config=None)
+                self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=True, trust_remote_code=False)
+                
+        def infer(self, inputs):
+                prompts = inputs["prompt"]
+                input_ids = self.tokenizer(prompts, return_tensors='pt').input_ids.cuda()
+                output = self.model.generate(inputs=input_ids, temperature=0.7, do_sample=True, top_p=0.95, top_k=40, max_new_tokens=512)
+                text = self.tokenizer.decode(output[0])
+        
+                return {'generated_result': output.shape[1]}
+                
+        def finalize(self,*args):
+                self.model = None
+                self.tokenizer = None
+```
+
+## Creating the Software packages
+
+This is a mandatory step where we allow the users to add all the required software packages and Python libraries into the [config.yaml](https://github.com/inferless/inferless%5Ftutorials/blob/main/text%5Fgeneration/Mixtral-8x7B/inferless-runtime-config.yaml) file.
+
+```python
+build:
+  cuda_version: "12.1.1"
+  system_packages:
+    - "libssl-dev"
+  python_packages:
+    - "torch==2.1.0 --index-url https://download.pytorch.org/whl/cu121"
+    - "gekko==1.0.6"
+    - "pandas==2.1.4"
+    - "setuptools==69.0.2"
+    - "wheel==0.42.0"
+```
+
+## Deploying the model on Inferless
+
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-requirements). For this tutorial, we will use GitHub. 
+
+### Import the Model through GitHub
+
+Click on the`Repo(Custom code)` and then click on the `Add provider` to connect to your GitHub account. Once your account integration is completed, click on your Github account and continue.
+
+![](/images/deploy-mix-1.png)
+
+### Provide the Model details
+
+Enter the name of the model and pass the GitHub repository URL. 
+
+Now, you can define the model's input and output parameters in JSON format. For more information, go through [this page](https://docs.inferless.com/model-import/input-output-json).
+
+* [INPUT](https://github.com/inferless/inferless%5Ftutorials/blob/main/text%5Fgeneration/Mixtral-8x7B/input.json): Refer to the function `def infer(self, inputs)`, here we mentioned `inputs["prompt"]`, which means `inputs` is a parameter that will have a key `prompt.`
+
+* [OUTPUT](https://github.com/inferless/inferless%5Ftutorials/blob/main/text%5Fgeneration/Mixtral-8x7B/output.json): The same goes here, the function mentioned above will return the results as a key-value pair `return {"generated_result":output.shape[1]}`.
+
+Input JSON must include `prompt` as a key to pass the instruction. For output JSON, it must be included`generated_result` to retrieve the output.
+
+![](/images/deploy-mix-2.png)
+
+### GPU Selection
+
+On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A100 GPU. Select A100 from the drop-down menu in the GPU Type.
+
+![](/images/deploy-mix-3.png)
+
+### Using the Custom Runtime
+
+In the `Advance configuration`, we have the option to select the custom runtime. First, click on the `Add runtime` to upload the [config.yaml](https://github.com/inferless/inferless%5Ftutorials/blob/main/text%5Fgeneration/Mixtral-8x7B/inferless-runtime-config.yaml) file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
+
+![](/images/deploy-mix-4.png)
+
+### Review and Deploy
+
+In this final stage, carefully review all modifications. Once you've examined all changes, proceed to deploy the model by clicking the `Import` button.
+
+Voilà, your model is now deployed!
+
+![](/gif/gif5.gif)

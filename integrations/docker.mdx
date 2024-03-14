@@ -1,0 +1,92 @@
+---
+title: "Docker"
+description: "Bring your own docker container images. ( This might have higher coldstarts )"
+---
+
+You can provide a custom docker image to host your model on the inferless platform. Supported formats for custom docker images.
+
+* Private Image URI
+
+* Dockerfile
+
+#### For Private image URI
+
+* Docker Hub
+
+* Amazon Elastic Container Registry (ECR)
+
+#### Providers for Dockerfile
+
+* GitHub Repository
+
+* Gitlab Project
+
+
+An Inferless Platform can pull or build the image based on the format and host the model.
+
+## Integration for Private Image URI
+
+### Requirements for Docker Import
+
+* The image should be created for the platform `linux/amd64`
+
+* These are details that are needed while importing the model from DockerHub or ECR  
+   * **Health check API**:- GET API - returns status 200 for a healthy state  
+   * **Infer API** \- POST API - returns s dict  
+   * **Server Port** \- The port on which the model server is running  
+   * **Input - Sample** Json input for model inference
+
+```
+# Sample Input 
+{
+  "prompt":  "Once upon a time ", 
+  "max_length": 50
+}
+```
+
+
+## For Docker File Integration
+
+### Requirements for Docker Import
+
+* These are details that are needed while importing the model from GITHUB or GITLAB  
+   * **Health check API**:- GET API - returns status 200 for a healthy state  
+   * **Infer API** \- POST API - Returns s Dict  
+   * **Server Port** \- The Port on which the model server is hosted  
+   * **Input - Sample** Json input for model inference  
+   * **Dockerfile** \- The file for building the Docker
+
+### Example
+<Card icon = "github" href="https://github.com/inferless/inferless-docker-import-examples">
+GitHub - inferless/inferless-docker-import-examplesGitHub
+</Card>
+
+
+## UI walkthrough for Docker Import 
+
+### Step 1: Select the Framework 
+
+![](/images/docker1.png)
+
+### Step 2: Select Docker and Docker HUB as the provider
+
+![](/images/docker2.png)
+
+### Step 3: Provide the Details for Health API, Infer API, Port, and Sample Input 
+
+![](/images/docker3.png)
+
+### Step 4: Select the Machine 
+
+![](/images/docker4.png)
+
+### Step 5 : Review the Details : 
+
+![](/images/docker5.png)
+
+
+
+
+
+
+

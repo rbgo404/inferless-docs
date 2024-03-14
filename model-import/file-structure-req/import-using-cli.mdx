@@ -1,0 +1,70 @@
+---
+title: "Import using CLI"
+description: "Deploying models using CLI required files in a particular format. This guide will explain about all the required files"
+---
+
+## Introduction
+
+Inferless allows you to deploy your model using CLI, which has similar file structure requirements to the GUI platform. 
+
+## Mandatory File
+
+When you want to deploy your models through CLI, you must have the file `app.py`. When you run the command `inferless init`, you are required to have this file in your root folder.
+
+`app.py`: This file will have the `InferlessPythonModel` class, which will contain the below functions(Mandatory)
+
+1.  `def initialize(self) `
+
+2.  `def infer(self, inputs) `
+
+3.  `def finalize(self) `
+
+`input_schema.py`
+
+This file should have all the inputs that you are taken 
+
+```input_schema
+INPUT_SCHEMA = {
+    "prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["There is a fine house in the forest"]
+    }
+}
+```
+
+
+While running the command `inferless init`, all the other files required for the deployment will be created and the user can update these files according to their requirements.
+
+## Files structure
+
+This is an example of the file structure required for the deployment of the [CodeLlama-34b-python model](https://huggingface.co/codellama/CodeLlama-34b-hf) using Inferless-CLI.
+
+```python
+codellama-34b-python/
+├── app.py
+├── inferless-config.yaml
+├── inferless.yaml
+└── input_schema.py 
+# Depreciated 
+├── input.json
+└── output.json
+```
+
+User can update the following file according to their requirements.
+
+* `inferless-runtime-config.yaml`This file will have all the software packages and the Python packages required for the model inferencing.
+
+* `inferless.yaml`This file will have all the configurations required for the deployment. Users can update this file according to their requirements.
+
+* `input_schema.py `This file will have all the configurations required for the deployment. Users can update this file according to their requirements.
+
+**Deprecated - Input / Output Json** 
+
+* `input.json`This file will have the key for the input parameter. Whenever you change the name of the key in the `app.py`, update it accordingly.
+
+* `output.json`This file will have the `name` of the output key that the `def infer` the function is going to return.
+
+
+Once these files are ready, you can use the command `inferless deploy` to deploy your model.

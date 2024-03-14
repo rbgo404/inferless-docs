@@ -1,0 +1,403 @@
+---
+title: "How to Finetune, Quantize and Inference Phi-2"
+description: "Phi-2 is a Transformer with 2.7 billion parameters which showcased a nearly state-of-the-art performance among models with less than 13 billion parameters"
+---
+
+In this notebook & tutorial, we'll explore the process of fine-tuning [Phi-2](https://huggingface.co/microsoft/phi-2), a language model with 2.7 billion parameters released by Microsoft Research in December 2023\. [Phi-2](https://huggingface.co/microsoft/phi-2) surpasses the performance of Mistral and Llama-2 models at 7B and 13B parameters on various aggregated benchmarks.
+
+You can also access the tutorial directly through the provided [colab notebook](https://colab.research.google.com/drive/1-PF2e2az6E%5FVHgmgVbgNm9Q7TG1MyaRD?usp=sharing). 
+
+For this tutorial, we have used an RLHF-like technique known as [Direct Preference Optimization (DPO)](https://arxiv.org/abs/2305.18290) and done the fine-tuning on Azure Cloud Platform.
+
+We will use the [argilla/distilabel-intel-orca-dpo-pairs](https://huggingface.co/datasets/argilla/distilabel-intel-orca-dpo-pairs) dataset from Argilla, which is an improvised version of the [Intel/orca\_dpo\_pairs](https://huggingface.co/datasets/Intel/orca%5Fdpo%5Fpairs) dataset from Intel. 
+
+For model quantization, we will load the model in a 4-bit format using [bitsandbytes](https://github.com/TimDettmers/bitsandbytes). 
+
+Finally, when deploying the model on Inferless, you can anticipate the following outcomes.
+
+| Inference Time | Cold Start Time | Token/Sec | Latency/Token | VRAM Required |
+| -------------- | --------------- | --------- | ------------- | ------------- |
+| 11.96 secs     | 7.82 secs       | 21.34     | 46.85 ms      | 1.72 GB       |
+
+## Why finetuning?
+
+Fine-tuning base language models, especially with techniques like [Reinforcement Learning from Human Feedback (RLHF)](https://huggingface.co/blog/rlhf), is crucial for several reasons. RLHF allows the incorporation of human feedback to enhance the model's performance, creating custom, task-specific, and expert models. The process involves setting up a good starting point, collecting human feedback, and iteratively improving the model.
+
+For this tutorial, we will use an RLHF-like technique known as [Direct Preference Optimization (DPO)](https://arxiv.org/abs/2305.18290). This technique aligns with human preferences better than existing methods, and it offers a promising alternative to RLHF for fine-tuning language models to meet specific human preferences.
+
+## Let's get started: 
+
+## Installing the Required Libraries
+
+You need the following libraries for fine-tuning [Phi-2](https://huggingface.co/microsoft/phi-2) model using DPO.
+
+```
+!pip install -U bitsandbytes
+!pip install -U transformers
+!pip install -U accelerate
+!pip install -U peft
+!pip install -U trl
+!pip install -U datasets
+!pip install -U sentencepiece
+!pip install -U wandb
+!pip install -U pynvml
+```
+
+## Dataset for DPO
+
+The DPO trainer required a very specific type of dataset comprising instances of preferred and rejected responses in relation to a prompts.
+
+The preference dataset follows a defined format:
+
+1.  **Prompt:** It is the context prompt provided to the model during inference. It serves as the input for the text generation process.
+
+2.  **Chosen:** The "chosen" key holds the information about the preferred generated response corresponding to the given prompt.
+
+3.  **Rejected:** The "rejected" key contains information about a response that is not preferred or should be avoided when generating text in response to the provided prompt.
+
+Now, we want our model to follow a specific chat template ([ChatML](https://huggingface.co/docs/transformers/chat%5Ftemplating)), and we will format our dataset according to the requirements of [DPOTrainer](https://huggingface.co/docs/trl/main/en/dpo%5Ftrainer). 
+
+```python
+def format_data(example):
+
+    system = tokenizer.apply_chat_template([{"role": "system", "content": example['system']}], tokenize=False) if example['system'] else ""
+    prompt = tokenizer.apply_chat_template([{"role": "user", "content": example['input']}], tokenize=False, add_generation_prompt=True)
+
+    return {
+        "prompt": system + prompt,
+        "chosen": example['chosen'] + "\n",
+        "rejected": example['rejected'] + "\n",
+    }
+
+#Spliting the data in 95%(train) and 5%(eval)
+train_ds = load_dataset('argilla/distilabel-intel-orca-dpo-pairs', split='train[:95%]')
+eval_ds = load_dataset('argilla/distilabel-intel-orca-dpo-pairs', split='train[95%:]')
+
+# Save columns
+train_original_columns = train_ds.column_names
+eval_original_columns = eval_ds.column_names
+
+# Tokenizer
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+tokenizer.pad_token = tokenizer.eos_token
+tokenizer.padding_side = "left"
+
+# Format dataset
+train_ds = train_ds.map(
+    format_data,
+    remove_columns=train_original_columns
+)
+eval_ds = eval_ds.map(
+    format_data,
+    remove_columns=eval_original_columns
+)
+```
+
+## Finetuning the Phi-2 model with DPO
+
+Once you are done with the formatting of the dataset, you are now ready for the finetuning. DPO requires two models, the model that you want to finetune (Phi-2) and a reference model.
+
+Now load the tokenizer and the model then quantize and prepare the model for finetuning in 4bit using [bitsandbytes](https://github.com/TimDettmers/bitsandbytes).
+
+```python
+#Load the Tokenizer
+tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True, trust_remote_code=True)
+tokenizer.pad_token = tokenizer.unk_token
+tokenizer.pad_token_id =  tokenizer.unk_token_id
+tokenizer.padding_side = 'left'
+
+#Load the model
+model = AutoModelForCausalLM.from_pretrained(model_name,torch_dtype=getattr(torch, "float16"), load_in_4bit=True, device_map={"": 0}, trust_remote_code=True)
+model = prepare_model_for_kbit_training(model)
+
+#Configure the pad token in the model
+model.config.pad_token_id = tokenizer.pad_token_id
+model.config.use_cache = False
+
+#Load the Reference Model
+model_ref = AutoModelForCausalLM.from_pretrained(model_name,load_in_4bit=True, torch_dtype=getattr(torch, "float16"), trust_remote_code=True, device_map={"": 0})
+```
+
+Define the LoRA configuration and the Training arguments required for finetuning the model. For the training hyperparameters, I have been following the [Hugging Face settings of Zephyr 7B](https://github.com/huggingface/alignment-handbook/tree/main).
+
+Now you can define the DPOTrainer with the LoRA configuration and Training arguments, and then start the training process. We have used a single A100(80GB) GPU for the training.
+
+```python
+# LoRA configuration
+peft_config = LoraConfig(
+        lora_alpha=16,
+        lora_dropout=0.05,
+        r=16,
+        bias="none",
+        task_type="CAUSAL_LM",
+        target_modules= ["q_proj","k_proj","v_proj", "dense"]
+)
+
+# Training arguments
+training_arguments = TrainingArguments(
+        output_dir="./results",
+        evaluation_strategy="steps",
+        do_eval=True,
+        optim="paged_adamw_32bit",
+        per_device_train_batch_size=4,
+        gradient_accumulation_steps=4,
+        per_device_eval_batch_size=2,
+        log_level="debug",
+        save_steps=10,
+        logging_steps=1,
+        learning_rate=5e-5,
+        eval_steps=20,
+        #num_train_epochs=1,
+        max_steps=500,
+        warmup_steps=100,
+        bf16=True,
+        lr_scheduler_type="cosine",
+        report_to="wandb",
+)
+
+# Create DPO trainer
+trainer = DPOTrainer(
+    model,
+    model_ref,
+    args=training_arguments,
+    train_dataset=train_ds,
+    eval_dataset=eval_ds,
+    tokenizer=tokenizer,
+    peft_config=peft_config,
+    beta=0.1,
+    max_prompt_length=1024,
+    max_length=1536,
+)
+
+# START DPO fine-tuning
+trainer.train()
+```
+
+After finishing the training, combine the adapter with the original model. 
+
+```
+# Save the adapter
+trainer.model.save_pretrained("final_checkpoint")
+tokenizer.save_pretrained("final_checkpoint")
+
+#Load the tokenizer
+tokenizer = AutoTokenizer.from_pretrained("microsoft/phi-2")
+
+#Load the base model
+base_model = AutoModelForCausalLM.from_pretrained("microsoft/phi-2", torch_dtype="auto", trust_remote_code=True,device_map={"": 0})
+
+#Merge base model with the adapter
+model = PeftModel.from_pretrained(base_model, "final_checkpoint")
+model = model.merge_and_unload()
+
+#Save the model and the tokenizer
+model.save_pretrained(new_model)
+tokenizer.save_pretrained(new_model)
+```
+
+## Quantize and Inference
+
+Loading the finetuned model required 5.19 GB of VRAM. So, we will quantize and load the model to further reduce the memory requirement. Bitsandbytes enable you to load the model in 4 bits and further reduce the memory requirements to 1.72 GB. Here are our observations:
+
+| Inference Time | Cold Start Time | Token/Sec | Latency/Token | VRAM Required |
+| -------------- | --------------- | --------- | ------------- | ------------- |
+| 11.96 secs     | 7.82 secs       | 21.34     | 46.85 ms      | 1.72 GB       |
+
+
+We are using the [bitsandbytes](https://github.com/TimDettmers/bitsandbytes) library, which enables you to run LLM on low memory. Using bitsandbytes only required 1.72 GB of GPU memory.
+
+## Last step, Tutorial to deploy on Inferless
+
+### Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`
+
+```
+Phi-2/
+├── app.py
+└── inferless-runtime-config.yaml
+```
+
+You can also add other files to this directory.
+
+### Create the class for inference
+
+In the [app.py](https://github.com/inferless/Phi-2/blob/main/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference and pass it through `inputs(dict)` parameters.
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+```python
+import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, pipeline
+import time
+
+class InferlessPythonModel:
+    def initialize(self):
+        model_id = "Inferless/inferless-phi-2-DPO"
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_id)
+        model = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, quantization_config=bnb_config, device_map="cuda")
+        self.pipe = pipeline("text-generation", model=model, tokenizer=self.tokenizer)
+
+    def infer(self, inputs):
+        prompt = inputs["prompt"]
+        messages = [{"role": "system", "content":prompt}]
+
+        prompt = self.pipe.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        out = self.pipe(prompt, max_new_tokens=256, do_sample=True, top_p=0.9,temperature=0.9)
+        generated_text = out[0]["generated_text"][len(prompt):]
+        return {'generated_result': generated_text}
+
+    def finalize(self):
+        pass
+
+```
+
+### Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Phi-2/blob/main/inferless-runtime-config.yaml).
+
+```python
+build:
+  cuda_version: "12.1.1"
+  system_packages:
+    - "libssl-dev"
+  python_packages:
+    - "bitsandbytes==0.41.3"
+    - "transformers==4.36.2"
+    - "accelerate==0.25.0"
+    - "scipy==1.11.4"
+```
+
+## Method A: Deploying using GUI 
+
+### Selection of the framework
+
+Inferless offers comprehensive support for all the major machine learning frameworks. In the first step, it is mandatory to designate the framework for your model. For the purposes of this tutorial, we will opt for `PyTorch`.
+
+![](/images/finetune1.png)
+
+### Import the Model through GitHub
+
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-requirements). For this tutorial, we will use GitHub. 
+
+Click on the`Repo(Custom code)` and then click on the `Add provider` to connect to your GitHub account. Once your account integration is completed, click on your Github account and continue.
+
+![](/images/finetune2.png)
+
+### Provide the Model details
+
+Enter the name of the model and pass the GitHub repository URL.
+
+Now, you can define the model's input and output parameters in JSON format. For more information, go through [this page](https://docs.inferless.com/model-import/input-output-json).
+
+* [INPUT](https://github.com/inferless/Phi-2/blob/main/input.json): Refer to the function `def infer(self, inputs)`, here we mentioned `inputs["prompt"]`, which means `inputs` the parameter will have a key `prompt.`
+
+* [OUTPUT](https://github.com/inferless/Phi-2/blob/main/output.json): The same goes here, the function mentioned above will return the results as a key-value pair `return {"generated_result": result}`.
+
+Input JSON must include `prompt` a key to pass the instruction. For output JSON, it must be included `generated_result` to retrieve the output.
+
+![](/images/finetune3.png)
+
+### Configure the machine
+
+In this 4th step, the user has to configure the inference setup. On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A100 GPU. Select A100 from the drop-down menu in the GPU Type.
+
+You also have the flexibility to select from different machine types. Opting for a `dedicated` machine type will grant you access to an entire GPU while choosing the `shared` option allocates 50% of the VRAM. In this tutorial, we will opt for the dedicated machine type.
+
+Choose the Minimum and Maximum replicas that you would need for your model:
+
+* **Min replica:** The number of inference workers to keep on at all times.
+
+* **Max replica:** The maximum number of inference workers to allow at any point in time.
+
+If you wish to enable Automatic rebuild for your model setup, toggle the switch. Note that setting up a web-hook is necessary for this feature. Click [here](https://docs.inferless.com/~/changes/vYzeDgjS7Hi2onmT0QwC/model-import/automatic-build-via-webhooks/github) for more details.
+
+In the `Advance configuration`, we have the option to select the custom runtime. First, click on the `Add runtime` to upload the [inferless-runtime-config.yaml](https://github.com/inferless/Phi-2/blob/main/inferless-runtime-config.yaml) file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
+
+![](/images/finetune4.png)
+
+### Review and Deploy
+
+In this final stage, carefully review all modifications. Once you've examined all changes, proceed to deploy the model by clicking the `Submit` button.
+
+![](/images/finetune5.png)
+
+Voilà, your model is now deployed!
+
+![](/gif/gif15.gif)
+
+## Method B: Deploying the model via Inferless CLI
+
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+### Initialization of the model
+
+Create the [app.py](https://github.com/inferless/Phi-2/blob/main/app.py) and [inferless-runtime-config.yaml](https://github.com/inferless/Phi-2/blob/main/inferless-runtime-config.yaml), move the files to the working directory. Run the following command to initialize your model:
+
+```
+inferless init
+```
+
+### Changes in Input and Output
+
+Adjust the input and output keys in the JSON configuration files. For example:
+
+```python
+{
+    "inputs": [
+      {
+        "data": [
+          "What is an AI?"
+        ],
+        "name": "prompt",
+        "shape": [
+          1
+        ],
+        "datatype": "BYTES"
+      }
+    ]
+}
+```
+
+```python
+{
+    "outputs": [
+      {
+        "data": [
+          "data"
+        ],
+        "name": "generated_result",
+        "shape": [
+          1
+        ],
+        "datatype": "BYTES"
+      }
+    ]
+}
+```
+
+### Upload the custom runtime
+
+Once you have created the [inferless-runtime-config.yaml](https://github.com/inferless/Phi-2/blob/main/inferless-runtime-config.yaml) file, you can run the following command:
+
+```
+inferless runtime upload
+```
+
+Upon entering this command, you will be prompted to provide the configuration file name. Enter the name and ensure to update it in the [inferless.yaml](https://github.com/inferless/Phi-2/blob/main/inferless.yaml) file. Now you are ready for the deployment.
+
+![](/images/finetune6.png)
+
+### Deploy the Model
+
+Execute the following command to deploy your model. Once deployed, you can track the build logs on the Inferless platform:
+
+```
+inferless deploy
+```

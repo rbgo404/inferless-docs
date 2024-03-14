@@ -1,0 +1,68 @@
+---
+title: "Docker"
+---
+
+### Steps to enable Webhook ( During Import )
+
+Follow these steps to enable auto-build and use the webhook
+
+#### Getting the API URL
+
+1. Enabling Auto-build while importing the model  
+   1.  Go to [Inferless Console](https://console.inferless.com/home) and select your workspace  
+   2.  Click on “Add Model” and follow the steps  
+   3.  In the 4th step, “Configure model”, the webhook url is visible upon checking the “Setup automatic build” box
+
+![](/images/docker1.png)
+
+### Enabling Auto-build after deploying the model
+
+1.  Go to [Inferless Console](https://console.inferless.com/home) and select your workspace
+
+2.  Select My Models and go to your model
+
+3.  In the model page, go to the “Automatic Build” tab, webhook url is visible upon checking the “Setup automatic build” box
+
+![](/images/docker2.png)
+
+### The Secret key
+
+A Secret Key needs to be sent in the headers to authorize the webhook api call.
+
+Copy and use this secret key
+
+```SECRET_KEY
+aDE9pETsG0jXBHP5oM9qJWSxBJ07Q8CUmyRu04OxdJBJoVR1E6ixNyHwmXRH6cVi
+```
+
+### Integrate in you CI/CD
+
+This webhook url can be used in the CI/CD of your choice.
+
+Curl Request to trigger a build using webhook url
+
+```bash
+curl --location --request POST '{WEBHOOK_URL}>' \\
+--header 'X-Webhook-Secret: '
+```
+
+Python Requests Snippet to use webhook url
+
+```python
+import requests
+
+url = "{WEBHOOK_URL}"
+
+payload = {}
+headers = {
+  'X-Webhook-Secret': 'SECRET_KEY'
+}
+
+response = requests.request("POST", url, headers=headers, data=payload)
+
+print(response.text)
+```
+
+\*\* Replace WEBHOOK\_URL & SECRET\_KEY with the values mentioned earlier
+
+

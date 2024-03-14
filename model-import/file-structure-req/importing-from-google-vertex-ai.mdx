@@ -1,0 +1,58 @@
+---
+title: "Importing from Google Vertex AI"
+---
+
+### Supported Frameworks
+
+Below are the supported frameworks for models that can be uploaded into Inferless.
+
+* Pytorch
+
+* Tensorflow
+
+Any other framework is not currently supported as of now. We will keep adding more frameworks as the support for them is added to our platform
+
+### File structure requirements(Pytorch)
+
+In the case of a `PyTorch` model in Google Vertex AI,
+
+* The model file needs to have a `model.pt` file
+
+* By default, Google Vertex AI creates it as `model.pth`.
+
+To make sure that the model is saved as a `model.pt`, please follow the below instructions.
+
+* For Vertex AI, typically when using the pytorch prebuilt container for training models we create a model archive file as follows :
+
+```python
+mar_config = {
+        "MODEL_NAME": model_display_name,
+        "HANDLER": handler_path,
+        "SERIALIZED_FILE": f"{model_artifacts_dir}/",
+        "VERSION": model_version,
+        "EXTRA_FILES": ",".join(extra_files),
+        "EXPORT_PATH": f"{model_mar.path}/model-store",
+    }    # generate model archive command
+    archiver_cmd = (
+        "torch-model-archiver --force "
+        f"--model-name {mar_config['MODEL_NAME']} "
+        f"--serialized-file {mar_config['SERIALIZED_FILE']} "
+        f"--handler {mar_config['HANDLER']} "
+        f"--version {mar_config['VERSION']}"
+    )
+```
+
+* Since Inferless runtime for pytorch supports [model.pt](http://model.pt/) format, the `<pytorch-model-file>` specified above should be of .pt format.  
+   * Eg: `"SERIALIZED_FILE": f"{model_artifacts_dir}/` `model.pt` `"`
+
+* Please ensure to save your model in `.pt format `and in your `custom_handler.py` file do the necessary changes to load the model from `.pt `file.
+
+* You can now use this model file to import your file into Inferless.
+
+You can view a example below on how we stored a file as per the steps above: 
+
+`<Video here>`
+
+### `**Tensorflow**` 
+
+* There is no need for any additional steps/file modifications. The Vertex AI link of the generated model can directly be used for import.  

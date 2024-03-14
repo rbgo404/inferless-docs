@@ -1,0 +1,278 @@
+---
+title: "Deploy Mixtral-8x7B for 52 Tokens/Sec on a Single GPU"
+description: "Mixtral 8x7B, a high-quality sparse mixture of experts model (SMoE) with open weights. Licensed under Apache 2.0. Mixtral outperforms Llama 2 70B on most benchmarks with 6x faster inference"
+---
+
+## Introduction
+
+[Mixtral-8x7B](https://huggingface.co/mistralai/Mixtral-8x7B-v0.1) is a Sparse Mixture of Experts (SMoE) with 46.7B parameters and one of the best open large language models (LLM). Mixtral was trained with a context size of 32k tokens and it outperforms or matches Llama-2 70B and GPT-3.5 across all evaluated benchmarks. Mixtral and Mistral 7B share the same structure, but Mixtral's layers consist of 8 feedforward blocks or experts. In each layer, a router network chooses two experts to handle the current state of a token and merges their outputs. Although each token interacts with only two experts, the chosen ones can vary at each step. This design allows each token to access a total of 47B parameters, yet during inference, only 13B of these parameters are actively utilized.
+
+## Our Observations
+
+We experimented [Mixtral 8x7B](https://huggingface.co/mistralai/Mixtral-8x7B-v0.1) with various configurations using [PyTorch](https://github.com/pytorch-labs/gpt-fast), [vLLM](https://github.com/vllm-project/vllm), [AutoGPTQ](https://github.com/PanQiWei/AutoGPTQ), and [HQQ](https://github.com/mobiusml/hqq). For all our experiments, we have set the max-token to 256 and done all experiments on a single A100(80GB) GPU machine.
+
+For fast inference, we took advantage of PyTorch(nightly) optimizations (GitHub[ repository](https://github.com/pytorch-labs/gpt-fast)). We have deployed an 8-bit[ quantize model](https://huggingface.co/Inferless/Mixtral-8x7B-v0.1-int8-GPTQ) and got an average token generation rate of 52.03 token/sec. We also tried deploying a 4-bit quantized model via vLLM(0.2.7), Auto-GPTQ(0.6.0) and HQQ(0.1.2) as mentioned in our observations below: 
+
+| Library  | Bits  | Inference Time | Cold Start Time | Token/Sec | Latency/Token | VRAM Required |
+| -------- | ----- | -------------- | --------------- | --------- | ------------- | ------------- |
+| PyTorch  | 8 bit | 4.94 sec       | 11.48 sec       | 52.03     | 19.22 ms      | 43.78 GB      |
+| vLLM     | 4 bit | 6.59 sec       | 36.62 sec       | 36.39     | 27.47 ms      | 65.66 GB      |
+| AutoGPTQ | 4 bit | 38.44 sec      | 203.45 sec      | 7.11      | 140.76 ms     | 22.68 GB      |
+| HQQ      | 4 bit | 255.09 sec     | 16.19 sec       | 5.16      | 193.47 ms     | 24.70 GB      |
+
+## Defining Dependencies
+
+We are using [gpt-fast](https://github.com/pytorch-labs/gpt-fast)(GitHub[ repository](https://github.com/pytorch-labs/gpt-fast) from [PyTorch Labs](https://github.com/pytorch-labs)), written in native PyTorch. Install the [PyTorch nightly](https://pytorch.org/get-started/locally/), [Sentencepiece](https://pypi.org/project/sentencepiece/) and [Huggingface\_hub](https://pypi.org/project/huggingface-hub/).
+
+
+## Constructing the GitHub/GitLab Template
+
+First, to quickly construct the GitHub/GitLab template, copy all the files from [this Inferless repository](https://github.com/rbgo404/mixtral-fast). After that, you can create the [app.py](https://github.com/inferless/Mixral-8x7B/blob/main/app.py) and [inferless-runtime-config.yaml](https://github.com/inferless/Mixral-8x7B/blob/main/inferless-runtime-config.yaml).
+
+```
+Mixtral-8x7B/
+├── app.py
+├── GPTQ.py
+├── _model.py
+├── eval.py
+├── generate.py
+├── get_model.py
+├── quantize.py
+├── tp.py
+└── inferless-runtime-config.yaml
+```
+
+You can also add other files to this directory.
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/Mixral-8x7B/blob/main/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will download and initialize your model. Here we have used the `model_initialize` function from the [get\_model](https://github.com/inferless/Mixral-8x7B/blob/main/get%5Fmodel.py) script, this loads and initialize the model. You can customize the `get_model` script according to your requirements. Also in this function, you can define any variable that you want to use during inference.
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference and pass it through `inputs(dict)` parameters.
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+```python
+import contextlib
+from get_model import model_initialize,encode_tokens,generate
+from huggingface_hub import snapshot_download
+import os
+
+class InferlessPythonModel:
+    def initialize(self):
+        repo_id = "Inferless/Mixtral-8x7B-v0.1-int8-GPTQ"
+        model_store = f"/home/{repo_id}"
+        os.makedirs(f"/home/{repo_id}", exist_ok=True)
+        snapshot_download(repo_id,local_dir=model_store)
+        self.tokenizer, self.model = model_initialize(f"{model_store}/model_int8.pth")
+        self.callback = lambda x : x
+
+    def infer(self, inputs):
+        prompt= inputs['prompt']
+        encoded = encode_tokens(self.tokenizer,prompt, bos=True, device="cuda")
+        prof = contextlib.nullcontext()
+        with prof:
+            y, metrics = generate(
+                    self.model,
+                    encoded,
+                    max_new_tokens=256,
+                    draft_model=None,
+                    speculate_k=5,
+                    interactive=False,
+                    callback=self.callback,
+                    temperature=0.8,
+                    top_k=200,)
+
+        return {'generated_result': self.tokenizer.decode(y.tolist())}
+
+    def finalize(self):
+        pass
+```
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Mixral-8x7B/blob/main/inferless-runtime-config.yaml).
+
+```python
+build:
+  cuda_version: "12.1.1"
+  system_packages:
+    - "libssl-dev"
+  python_packages:
+    - "--index-url https://download.pytorch.org/whl/nightly/cu121--pre torch"
+    - "torchvision"
+    - "torchaudio"
+    - "sentencepiece==0.1.99"
+    - "huggingface-hub==0.20.2"
+    - "accelerate==0.25.0"
+```
+
+## Method A: Deploying the model via Inferless GUI 
+
+### Selection of the framework
+
+Inferless offers comprehensive support for all the major machine learning frameworks. In the first step, it is mandatory to designate the framework for your model. For this tutorial, we will opt for `PyTorch`.
+
+![](/images/mixtral52-1.png)
+
+### Import the Model through GitHub
+
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-requirements). For this tutorial, we will use GitHub.
+
+Click on the`Repo(Custom code)` and then click on the `Add provider` to connect to your GitHub account. Once your account integration is completed, click on your Github account and continue.
+
+![](/images/mixtral52-2.png)
+
+### Provide the Model details
+
+Enter the name of the model and pass the GitHub repository URL. 
+
+Now, you can define the model's input and output parameters in JSON format. For more information, go through [this page](https://docs.inferless.com/model-import/input-output-json).
+
+* [INPUT](https://github.com/inferless/Mixral-8x7B/blob/main/input.json): Refer to the function `def infer(self, inputs)`, here we mentioned `inputs["prompt"]`, which means `inputs` the parameter will have a key `prompt.`
+
+* [OUTPUT](https://github.com/inferless/Mixral-8x7B/blob/main/output.json): The same goes here, the function mentioned above will return the results as a key-value pair `return {"generated_result": result}`.
+
+Input JSON must include `prompt` a key to pass the instruction. For output JSON, it must be included `generated_result` to retrieve the output.
+
+![](/images/mixtral52-3.png)
+
+Here is the input and the output json we will use for this tutorial.
+
+INPUT:
+
+```python
+{
+    "inputs": [
+      {
+        "data": [
+          "What is an AI?"
+        ],
+        "name": "prompt",
+        "shape": [
+          1
+        ],
+        "datatype": "BYTES"
+      }
+    ]
+}
+```
+
+OUTPUT:
+
+```python
+{
+    "outputs": [
+      {
+        "data": [
+          "data"
+        ],
+        "name": "generated_result",
+        "shape": [
+          1
+        ],
+        "datatype": "BYTES"
+      }
+    ]
+}
+```
+
+### Configure the machine
+
+In this 4th step, the user has to configure the inference setup. On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A100 GPU. Select A100 from the drop-down menu in the GPU Type.
+
+You also have the flexibility to select from different machine types. Opting for a `dedicated` machine type will grant you access to an entire GPU while choosing the `shared` option allocates 50% of the VRAM. In this tutorial, we will opt for the dedicated machine type.
+
+Choose the Minimum and Maximum replicas that you would need for your model:
+
+* **Min replica:** The number of inference workers to keep on at all times.
+
+* **Max replica:** The maximum number of inference workers to allow at any point in time.
+
+If you wish to enable Automatic rebuild for your model setup, toggle the switch. Note that setting up a web-hook is necessary for this feature. Click [here](https://docs.inferless.com/~/changes/vYzeDgjS7Hi2onmT0QwC/model-import/automatic-build-via-webhooks/github) for more details.
+
+In the `Advance configuration`, we have the option to select the custom runtime. First, click on the `Add runtime` to upload the [inferless-runtime-config.yaml](https://github.com/inferless/Mixral-8x7B/blob/main/inferless-runtime-config.yaml) file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
+
+![](/images/mixtral52-4.png)
+
+### Review and Deploy
+
+In this final stage, carefully review all modifications. Once you've examined all changes, proceed to deploy the model by clicking the `Submit` button.
+
+![](/images/mixtral52-5.png)
+
+Voilà, your model is now deployed!
+
+![](/images/gif13.gif)
+
+## Method B: Deploying the model on Inferless CLI
+
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+### Initialization of the model
+
+Create the [app.py](https://github.com/inferless/Mixral-8x7B/blob/main/app.py) and [inferless-runtime-config.yaml](https://github.com/inferless/Mixral-8x7B/blob/main/inferless-runtime-config.yaml), and copy all the files from [this GitHub repository](https://github.com/rbgo404/mixtral-fast) to the working directory. Run the following command to initialize your model:
+
+```
+inferless init
+```
+
+### Changes in Input and Output
+
+Adjust the input and output keys in the JSON configuration files. For example:
+
+```python
+{
+    "inputs": [
+      {
+        "data": [
+          "What is an AI?"
+        ],
+        "name": "prompt",
+        "shape": [
+          1
+        ],
+        "datatype": "BYTES"
+      }
+    ]
+}
+```
+
+```python
+{
+    "outputs": [
+      {
+        "data": [
+          "data"
+        ],
+        "name": "generated_result",
+        "shape": [
+          1
+        ],
+        "datatype": "BYTES"
+      }
+    ]
+}
+```
+
+### Upload the custom runtime
+
+Once you have created the [inferless-runtime-config.yaml](https://github.com/inferless/Mixral-8x7B/blob/main/inferless-runtime-config.yaml) file, you can run the following command:
+
+```
+inferless runtime upload
+```
+
+Upon entering this command, you will be prompted to provide the configuration file name. Enter the name and ensure to update it in the [inferless.yaml](https://github.com/inferless/Mixral-8x7B/blob/main/inferless.yaml) file. Now you are ready for the deployment.
+
+![](/images/mixtral52-6.png)
+
+### Deploy the Model
+
+Execute the following command to deploy your model. Once deployed, you can track the build logs on the Inferless platform:
+
+```
+inferless deploy
+```

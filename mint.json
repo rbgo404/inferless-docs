@@ -1,91 +1,245 @@
 {
-  "$schema": "https://mintlify.com/schema.json",
-  "name": "Starter Kit",
-  "logo": {
-    "dark": "/logo/dark.svg",
-    "light": "/logo/light.svg"
-  },
-  "favicon": "/favicon.svg",
-  "colors": {
-    "primary": "#0D9373",
-    "light": "#07C983",
-    "dark": "#0D9373",
-    "anchors": {
-      "from": "#0D9373",
-      "to": "#07C983"
-    }
-  },
-  "topbarLinks": [
-    {
-      "name": "Support",
-      "url": "mailto:hi@mintlify.com"
-    }
-  ],
-  "topbarCtaButton": {
-    "name": "Dashboard",
-    "url": "https://dashboard.mintlify.com"
+    "name": "Inferless",
+    "logo": "/logo.svg",
+    "favicon": "/favicon.svg",
+    "colors": {
+      "primary": "#94CF09",
+      "light": "#9FDD0C",
+      "dark": "#94CF09"
+    },
+    "topbarCtaButton": {
+      "name": "Join Private Beta",
+      "url": "https://0ooatrmbp25.typeform.com/to/nzuhQtba"
+    },
+    "anchors": [
+      {
+        "name": "Community",
+        "icon": "people-simple",
+        "url": "https://www.inferless.com/community"
+      },
+      {
+        "name": "Tutorials",
+        "icon": "books",
+        "url": "https://tutorials.inferless.com/"
+      },
+      {
+        "name": "Blog",
+        "icon": "newspaper",
+        "url": "https://www.inferless.com/blog"
+      }
+    ],
+    "primaryTab": {
+      "name": "Documentation"
   },
   "tabs": [
-    {
-      "name": "API Reference",
-      "url": "api-reference"
-    }
+      {
+          "name": "Cookbook",
+          "url": "cookbook"
+      },
+      {
+        "name": "Changelog",
+        "url": "changelog"
+      },
+      {
+      "name": "How-to Guides",
+      "url": "how-to-guides"
+      }
   ],
-  "anchors": [
-    {
-      "name": "Documentation",
-      "icon": "book-open-cover",
-      "url": "https://mintlify.com/docs"
-    },
-    {
-      "name": "Community",
-      "icon": "slack",
-      "url": "https://mintlify.com/community"
-    },
-    {
-      "name": "Blog",
-      "icon": "newspaper",
-      "url": "https://mintlify.com/blog"
-    }
-  ],
-  "navigation": [
-    {
-      "group": "Get Started",
-      "pages": [
-        "introduction",
-        "quickstart",
-        "development"
-      ]
-    },
-    {
-      "group": "Essentials",
-      "pages": [
-        "essentials/markdown",
-        "essentials/code",
-        "essentials/images",
-        "essentials/settings",
-        "essentials/navigation",
-        "essentials/reusable-snippets"
-      ]
-    },
-    {
-      "group": "API Documentation",
-      "pages": [
-        "api-reference/introduction"
-      ]
-    },
-    {
-      "group": "Endpoint Examples",
-      "pages": [
-        "api-reference/endpoint/get",
-        "api-reference/endpoint/create",
-        "api-reference/endpoint/delete"
-      ]
-    }
-  ],
-  "footerSocials": {
-    "twitter": "https://twitter.com/mintlify",
-    "github": "https://github.com/mintlify",
-    "linkedin": "https://www.linkedin.com/company/mintsearch"
+    "navigation": [
+      {
+        "group": "",
+        "pages": ["introduction"]
+      },
+      {
+        "group": "Getting Started",
+        "pages": [
+            "getting-started/deploy-ml",
+            "getting-started/deploy-containers",
+            "getting-started/deploy-serverless"            
+        ]
+      },
+      {
+        "group": "Model Import",
+        "pages": [
+            "model-import/cli-import",
+            {
+              "group": "File Structure Requirements",
+            "pages": [
+                "model-import/file-structure-req/file-structure-requirements", 
+                "model-import/file-structure-req/importing-from-github",
+                "model-import/file-structure-req/import-using-cli",
+                "model-import/file-structure-req/importing-from-cloud-buckets",
+                "model-import/file-structure-req/import-using-docker",
+                "model-import/file-structure-req/importing-your-file-from-your-system",
+                "model-import/file-structure-req/importing-from-sagemaker",
+                "model-import/file-structure-req/importing-from-google-vertex-ai"
+            ]
+              },
+              "model-import/input-output-schema",
+              "model-import/bring-custom-packages",
+              {
+                "group": "Automatic Build via webhooks",
+              "pages": [
+                  "model-import/automatic-build/automatic-build-via-webhooks", 
+                  "model-import/automatic-build/github",
+                  "model-import/automatic-build/docker",
+                  "model-import/automatic-build/hugging-face",
+                  "model-import/automatic-build/aws-sagemaker",
+                  "model-import/automatic-build/google-vertex-ai"
+              ]
+                },
+                "model-import/configuring-the-inference-service",
+                "model-import/my-volumes",
+                "model-import/my-secrets"
+        ]
+      },
+      {
+        "group": "Integrations",
+        "pages": [
+          "integrations/hugging-face", 
+          {
+            "group": "Git (Custom Code)",
+          "pages": [
+              "integrations/git-custom-code/git--custom-code", 
+              "integrations/git-custom-code/github---demo",
+              "integrations/git-custom-code/gitlab---demo"
+          ]
+            },
+          "integrations/docker",
+          {
+            "group": "Cloud Buckets - S3/ GCS",
+          "pages": [
+              "integrations/cloud-buckets/cloud-buckets---s3--gcs", 
+              "integrations/cloud-buckets/demo-s3",
+              "integrations/cloud-buckets/demo-gcs"
+          ]
+            },
+            {
+              "group": "File Import from System",
+            "pages": [
+                "integrations/file-import-system/file-import-from-system", 
+                "integrations/file-import-system/import-from-system"
+            ]
+              },
+              {
+                "group": "AWS Sagemaker",
+              "pages": [
+                  "integrations/aws-sagemaker/aws-sagemaker", 
+                  "integrations/aws-sagemaker/demo"
+              ]
+                },
+                {
+                  "group": "Google Vertex AI",
+                "pages": [
+                    "integrations/google-vertex-ai/google-vertex-ai", 
+                    "integrations/google-vertex-ai/demo"
+                ]
+                  }        
+        ]
+      },
+      {
+        "group": "API Reference",
+        "pages": [
+          "api-reference/dynamic-batching",
+          {
+            "group": "Model Endpoint",
+          "pages": [
+            "api-reference/model-endpoint/model-endpoint", 
+            "api-reference/model-endpoint/test-your-model-endpoint",
+            "api-reference/model-endpoint/configuring-the-model-settings",
+            "api-reference/model-endpoint/setting-up-webhooks",
+            "api-reference/model-endpoint/inferless-python-client"
+          ]
+            },
+            {
+              "group": "Debugging your Model with Logs",
+            "pages": [
+              "api-reference/debugging-model/debugging-your-model-with-logs", 
+              "api-reference/debugging-model/call-logs",
+              "api-reference/debugging-model/build-logs"
+            ]
+              },
+              "api-reference/version-management"           
+        ]
+      },
+      {
+        "group": "Cookbook",
+        "pages": [
+            "cookbook/coming-soon"           
+        ]
+      },
+      {
+        "group": "Changelog",
+        "pages": [
+            "changelog/overview",
+            {
+              "group": "October 2023",
+            "pages": [
+                "changelog/october-2023/20th-october"
+            ]
+              },  
+              {
+                "group": "November 2023",
+              "pages": [
+                  "changelog/november-2023/3rd-november", 
+                  "changelog/november-2023/10th-november",
+                  "changelog/november-2023/17th-november",
+                  "changelog/november-2023/27th-november"
+              ]
+                },  
+                {
+                  "group": "December 2023",
+                "pages": [
+                    "changelog/december-2023/4th-december", 
+                    "changelog/december-2023/18th-december",
+                    "changelog/december-2023/22nd-december"
+                ]
+                  },  
+                  {
+                    "group": "January 2024",
+                  "pages": [
+                      "changelog/january-2024/5th-january", 
+                      "changelog/january-2024/12th-january",
+                      "changelog/january-2024/29th-january"
+                  ]
+                    },  
+                    {
+                      "group": "February 2024",
+                    "pages": [
+                        "changelog/february-2024/12th-february", 
+                        "changelog/february-2024/26th-february"
+                    ]
+                      }      
+        ]
+      },
+      {
+        "group": "How-to Guides",
+        "pages": [
+            "how-to-guides/deploy-a-codellama-python-34b-model-using-inferless",
+            "how-to-guides/deploy-stable-video-diffusion-using-inferless",
+            "how-to-guides/deploy-mixtral-8x7b-using-inferless",
+            "how-to-guides/deploy-starling-7b-using-inferless",
+            "how-to-guides/deploy-meditron-using-inferless",
+            "how-to-guides/deploy-openhermes-using-inferless",
+            "how-to-guides/deploy-stable-diffusion-xl-turbo-using-inferless",
+            "how-to-guides/deploy-whisper-large-v3-using-inferless",
+            "how-to-guides/deploy-deci-7b-using-inferless",
+            "how-to-guides/deploy-quantized-version-of-solar-10-7b-instruct-using-inferless",
+            "how-to-guides/deploy-mixtral-8x7b-for-52-tokens-sec-on-a-single-gpu",
+            "how-to-guides/deploy-tenyxchat-7b-using-inferless",
+            "how-to-guides/deploy-tenyxchat-8x7b-v1-using-inferless",
+            "how-to-guides/how-to-finetune--quantize-and-inference-phi-2",
+            "how-to-guides/deploy-codellama-70b-using-inferless",
+            "how-to-guides/deploy-openllm-leaderboard-topper-smaug-72b-using-inferless",
+            "how-to-guides/deploy-gemma-7b-using-vllm-on-inferless"
+
+        ]
+      }
+
+    ],
+    "footerSocials":
+      {
+          "twitter": "https://twitter.com/Inferless_",
+          "linkedin": "https://www.linkedin.com/company/inferless/"
+      }
   }
-}

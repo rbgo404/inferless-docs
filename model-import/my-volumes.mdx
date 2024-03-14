@@ -1,0 +1,84 @@
+---
+title: "My Volumes"
+---
+
+Inferless provides NFS-like writable volumes that support simultaneous connections to various replicas. Similar to networked file-sharing systems that enable collective access to files across a network, these volumes in Inferless address multiple needs:
+
+* Storing model parameters
+
+* Archiving datasets similar to centralized storage
+
+* Setting up a communal cache for collaborative tasks, akin to a shared cache over a network.
+
+## Method A: Create a Volume using Inferless Platform
+
+Here is how you can create a volume Go to the My Volumes section in your console 
+
+![](/images/my-volume1.png)
+
+My Volumes 
+
+#### Step 1
+
+Click on the Create Volume button 
+
+![](/images/my-volume2.png)
+
+#### Step 2
+
+After this Volume is created and ready copy the Mount Path 
+
+![](/images/my-volume3.png)
+
+#### Step 3
+
+Use the mount path on your app.py code as shown below :
+
+![](/images/my-volume4.png)
+
+#### Step 4
+
+In the model import step select the Mount Volume to attach 
+
+![](/images/my-volume5.png)
+
+### View Volumes
+
+You can also browse the files in your volume by clicking on the Volume Card 
+
+
+![](/images/my-volume6.png)
+
+### Delete Volumes 
+
+To delete volumes make sure it's not attached to any Deployment, You can delete it form the My Volumes page 
+
+![](/images/my-volume7.png)
+
+## Method B: Create a volume using Inferless CLI
+
+Use this command `inferless volume` to see all the functions available for volume.
+
+![](/images/my-volume8.png)
+
+### `inferless volume create`
+
+This command is used to create a volume. Run this command and enter the name of your volume. Once the volume is created you can follow the process and update your volume directly to the inference configuration file(`inferenece.yaml`)
+
+![](/images/my-volume12.png)
+
+### `inferless volume list`
+
+This command allows you to list all the volumes present in your workspace. It will help you to get the `ID` of the volume, which is required when you run the `inferless volume select` command.
+
+![](/images/my-volume9.png)
+
+### `inferless volume select --id`
+
+This command allows you to use any volume that you have created using volume's `id`. Run the following command and update the `volume` directly on the inference configuration file(`inference.yaml`).
+
+```
+inferless volume select --id 4e39f657-d115-4cb7-b713-012984213750
+```
+
+![](/images/myvolume-11.png)

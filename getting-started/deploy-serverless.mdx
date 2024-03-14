@@ -1,0 +1,65 @@
+---
+title: "Deploy Serverless"
+---
+
+## **What is the difference between our Serverless and Serverless Containers?** 
+
+**Serverless** allows for swift cold starts when deploying ML models. At present, our Serverless function supports only model/python backends. Should you have specialized software packages, it's advisable to utilize a serverless container, enabling you to integrate those packages.
+
+## Key Advantages of Choosing Serverless:
+
+* Simplified Workflow: No infrastructure management lets you concentrate on code and data.
+
+* Rapid Cold Starts: Experience faster initialization of your services, reducing client wait times to up to 3 seconds
+
+* Adaptive Autoscaling: Adjusts according to demand, ensuring optimal resource allocation.
+
+* Efficient Deployment: Streamline your ML rollouts without the operational bottlenecks.
+
+* Maintenance-Free Environment: Stay updated without the manual intervention of software patches. Ready Integration: Deploy with Nvidia Triton Inference Server effortlessly.
+
+## Serverless Limitations to Consider:
+
+* Absence of custom runtime containers support.
+
+* Limited options between full and fractional GPUs.
+
+* Batching configurations might not cover advanced setups.
+
+## How does it work?
+
+1.  **Select your model import type -** Select the model you want to deploy. You can deploy a custom model available on the HuggingFace/AWS/ GCP for NLP, computer vision, or other task types
+
+2.  **Define the model configuration -** Enter the details for the model/model weights. You can do Git repo / HF repo / S3 here to specify the model details based on the previous step
+
+3.  **Choose your infra configuration -** Upon completion of the call, based on your configuration, we would autoscale down your container, thus saving you in inference costs. You would be charged only for the inference used.
+
+4.  **Create and manage your endpoint -** You can load your model into a machine of your choice. As of now, we offer 2 kinds of machines:  
+   1.  NVIDIA A10: The NVIDIA A10 is a high-performance graphics processing unit (GPU) designed for a variety of demanding workloads including machine learning inference. It used Ampere architecture to provide a substantial performance boost over the T4, which is based on the older Turing architecture.
+
+5.  **Call your APIs in Production -** You can get the endpoint details and the Model Workspace API keys. Simply call the model in production and enjoy the services.
+
+
+## How does Billing for Serverless work? 
+
+Your invoice will comprise: 
+
+* **Setup Time:** The duration required to load the model weights. Remarkably, Serverless trims this to one-third of container times.
+
+* **Inference Time:** The actual processing time for an inference.
+
+* **Eviction Timeout:** A custom setting dictating the 'warm' status duration for models. Adjustable between 5 seconds and 60 minutes.
+
+**Real-world Billing Example:** Visualize a deployment scenario on A10G dedicated, incurring 9 seconds for a cold start and 5 seconds for inference. For 1000 daily requests, where 10% hit a cold start:
+
+Billed Duration: (10% of 1000 requests \* 9 seconds) + (1000 requests \* 5 seconds) = 5900 seconds.
+
+**Your Bill:** 5900 seconds \* $0.00034 = $2.006.
+
+
+## 
+
+
+
+
+

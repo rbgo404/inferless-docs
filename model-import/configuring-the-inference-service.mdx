@@ -1,0 +1,48 @@
+---
+title: "Configuring the Inference Service"
+description: "This guide will help you to understand how you can configure the Inference Service using CLI and Platform"
+---
+
+## Method A: Configure using Inferless Platform
+
+After successful model validation in `step 3`, you will move to the next step where you will be asked to choose your desired runtime and machine configurations.
+
+* We suggest using ONNX for the most optimal results. If we are unable to convert to ONNX, we will use your native framework and load the model. If you would like to keep the same framework as your input model, you can select it from the dropdown.
+
+* Choose the Minimum and Maximum replicas that you would need for your model  
+   * **Min replica** \-  
+   ```  
+   The number of inference workers to keep on at all times.  
+   ```  
+   * **Max replica -**  
+   ```  
+   The maximum number of inference workers to allow at any point of time  
+   ```
+
+* In case you would like to set up `Automatic rebuild` for your model, enable it  
+   * You would need to set up a web hookwebhook for this method. Click [here](https://inferless.gitbook.io/inferless-dos/~/changes/vYzeDgjS7Hi2onmT0QwC/) for more details.
+
+
+![](/images/configure-inf1.png)
+
+## Method B: Configure using Inferless CLI
+
+To start with the inference configuration process, first you have to run this command `inferless init`. Follow the following steps for configuration:
+
+1.  Enter the inference configuration file name: You are required to give the name to the inference file.
+
+2.  Select how you want to upload your model: You have two options, either you can upload your model from the local or you can upload via GitHub.
+
+3.  Enter your model name: You can give any name to your model.
+
+4.  Enter the github repo link: You have to pass the github repo link which will have the [required files](https://docs.inferless.com/~/changes/IudQU4unyY1kgLdDgGbJ/model-import/file-structure-requirements/importing-from-github).
+
+5.  Select the type of GPU: We provide two type of GPU, A100 and T4.
+
+6.  Select the type of the server: Users can select a DEDICATED server, or can opt for a SHARED server which provide 50% of the GPU machine.
+
+7.  Select if you want to use your custom runtime: You can pass your requirements.txt file and it will create the inferless-runtime-config.yaml file. If you required any software packages then you can update the runtime file.
+
+Once you are done will all these steps, update your [input.json](https://docs.inferless.com/~/changes/IudQU4unyY1kgLdDgGbJ/model-import/input-output-json) and [output.json](https://docs.inferless.com/~/changes/IudQU4unyY1kgLdDgGbJ/model-import/input-output-json) as per your `app.py`. Now you are ready to deploy your model.
+
+![](/images/configure-inf2.png)

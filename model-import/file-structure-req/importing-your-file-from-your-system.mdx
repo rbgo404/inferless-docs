@@ -1,0 +1,79 @@
+---
+title: "Importing your file from your System"
+---
+
+Below are the frameworks that are supported to directly load the model file into Inferless
+
+* TensorFlow
+
+* PyTorch
+
+* ONNX
+
+We currently do not support any other framework yet. 
+
+If you are not using any of the above frameworks, we would recommend converting to ONNX for low latency, click [here](https://onnx.ai/supported-tools.html) to find more.
+
+### 
+
+### File structure requirements
+
+The below format should be kept in mind while loading your code to Inferless from cloud providers.
+
+**The model file has to be loaded as a .ZIP file.** 
+
+**In case of using an** **open cloud link** **\- Make sure the link is** **open/public** **to allow downloads.**
+
+The structure of the model file that is to be loaded is described below based on the framework used.
+
+The model **naming convention and folder structure** has to be in the format given in below.
+
+### In the case of the model framework being:
+
+### **`PyTorch`**
+
+
+```python PyTorch - File structure
+
+/
+├── config.pbtxt/
+├── 1
+│   ├── model.pt
+
+#*Any other file can be added along with the above structure and files for any dependencies in the model*
+
+```
+
+### **`Tensorflow`**
+
+TensorFlow - Structure
+
+```python ONNX - File Structure
+/
+├── 1
+│   ├── model.savedmodel
+│   │   ├── saved_model.pb
+
+#*Any other file can be added along with the above structure and files for any dependencies in the model*
+
+```
+
+### **`ONNX`**
+
+
+```python ONNX - File Structure
+/
+├── 1                      -> 
+│   ├── model.onnx
+
+#*Any other file can be added along with the above files/structure in case any dependencies in the model*
+
+```
+
+Kindly make sure the files are in the format as given above, files not in the above structure will be rejected during model import.
+
+In case of dependencies or any other requirements, other files can also be uploaded in the ZIP file as long as the structure and file naming convention is maintained as given above.
+
+Once you have made sure of the above conditions, click [here](/integrations/file-import-from-system) to know more about how to import this model to Inferless based on your requirements.
+
+

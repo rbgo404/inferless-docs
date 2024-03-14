@@ -1,0 +1,38 @@
+---
+title: "Cloud Buckets - S3/ GCS"
+---
+
+### Import from S3
+
+Once you have made sure the model file structure is in the right format, you can upload the model to Inferless using the` "Import Model" `option. 
+
+* Choose the source as `"File"` and choose` "Cloud repository"`
+
+* Choose AWS, authenticate, and connect your AWS Account.
+
+* Enter `Model Name` and paste the `S3 Url` link from AWS Sagemaker  
+   * Sample S3 link - **s3://infer-global-models/sample-module/gpt2-medium-1.5gb.zip**
+
+* Make sure you follow the folder structure as described [here](/model-import/file-structure-requirements) while creating the Zip.
+
+* Make sure to enter the input and output parameters as JSON required for the model.
+
+* Proceed with the configuration and load the model into Inferless.
+
+
+### Import From Google Cloud buckets
+
+Once you have made sure the model file structure is in the right format, you can upload the model to Inferless using the` "Import Model" `option. 
+
+* Choose the source as `"File"` and Choose` "Cloud repository"`
+
+* Choose GCP, authenticate and connect your GCP Account.
+
+* Enter `Model Name` and paste the `Artifact Link `link from GCP Cloud Bucket.  
+   * A Sample of an artifact link is - **gs://pp-samplebucket/gpt2-medium-1.5gb.zip**
+
+* Make sure you follow the folder structure as described [here](/model-import/file-structure-requirements) while creating the Zip.
+
+* Make sure to enter the input and output parameters as JSON required for the model (View here for more Infor).
+
+* Proceed and load the model into Inferless.

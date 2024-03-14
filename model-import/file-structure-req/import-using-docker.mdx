@@ -1,0 +1,193 @@
+---
+title: "Import using Docker"
+description: "Bring your own image"
+---
+
+There are 2 ways to integrate the:-
+
+* Docker Image
+
+* Docker File
+
+### Docker Image URI ( Private/ Public )
+
+We Currently support DockerHub Private / AWS Elastic Container registry, Once you have pushed your image, you need to make sure to follow the specifications for APIs
+
+#### API Contract Requirements
+
+The image is expected to run a web server when started using the command `docker run`
+
+* It is mandatory to host the web server on `port **8080** `
+
+Following API Contract needs to be strictly followed to host a custom docker image on inferless there are 3 API specifications that you need to meet 
+
+#### Server Metadata API
+
+* path = `/v2`, http\_method = `GET`
+
+* path = `/v2/models/{$MODEL_NAME}`, http\_method = `GET`
+
+A successful response on request to this API is marked by 200 HTTP status code. And the response is as follows
+
+```
+{
+	"name": $MODEL_NAME
+}
+```
+
+$MODEL\_NAME is used in the successive API paths
+
+#### Health APIs
+
+* path = `/v2/health/live` , http\_method = `GET`
+
+* path = `/v2/health/ready`, http\_method = `GET`
+
+* path = `/v2/models/{$MODEL_NAME}/ready`, http\_method = `GET`
+
+These APIs need to respond with a 200 HTTP status code to mark the server as healthy
+
+#### Inference API
+
+* path = `/v2/models/{$MODEL_NAME}/infer`
+
+* http\_method = `POST`,
+
+* content\_type = `application/json`
+
+The body of the API can be as per your implementation 
+
+### 
+
+## For Docker File Integration
+
+You can use GitHub/ GitLab for the docker file integration.
+
+### Example
+
+This is a sample fastApi application for a test generation use case 
+
+`main.py`
+
+```python
+from fast API import FastAPI, HTTPException
+from pedantic import BaseModel
+from model import MockModel
+
+app = FastAPI()
+model = MockModel()
+model. load(
+class InferRequest(BaseModel):
+    text: str
+
+Model_Name = stable-diffusion
+@app.get("/v2")
+@app.get(f"/v2/models/{Model_Name}")
+def version():
+    return {"name": f"{Model_Name}"}
+
+@app.get("/v2/health/live")
+@app.get("/v2/health/ready")
+@app.get(f"/v2/models/{Model_Name}/ready")
+def health():
+    return {"status": "running"}
+
+@app.post(f"/v2/models/{Model_Name}/infer")
+def generate_image(request: InferRequest):
+    if not model.loaded:
+        raise HTTPException(status_code=400, detail="Model is not loaded")
+
+    text = request.text
+    result = model.infer(text)
+    return {"result": result}
+```
+
+`model.py`
+
+```python
+from transformers import Pipeline
+
+# Mocking the model here
+class MockModel:
+    def __init__(self):
+        self.loaded = False
+        self.pipe = None
+
+    def load(self):
+        self.loaded = True
+        self.pipe = Pipeline("text-classification")
+
+    def infer(self, text):
+        result = self.pipe(text)
+        return result
+```
+
+`Dockerfile`
+
+```
+# Use an official Python runtime as a parent image
+FROM python:3.10.13
+
+# Set the working directory in the container
+WORKDIR /app
+
+COPY ./requirements.txt requirements.txt
+
+COPY . /app
+
+RUN pip3 install -r requirements.txt
+
+# Make port 8000 available to the world outside this container
+EXPOSE 8080
+
+# Define an environment variable
+# This variable will be used by Uvicorn as the binding address
+ENV HOST 0.0.0.0
+
+# Run the FastAPI application using Uvicorn when the container launches
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+```
+
+`requirements.txt`
+
+```
+annotated-types==0.5.0
+anyio==3.7.1
+certifi==2023.7.22
+charset-normalizer==3.2.0
+click==8.1.6
+diffusers==0.19.3
+exceptiongroup==1.1.2
+fastapi==0.101.0
+filelock==3.12.2
+fsspec==2023.6.0
+h11==0.14.0
+huggingface-hub==0.16.4
+idna==3.4
+importlib-metadata==6.8.0
+Jinja2==3.1.2
+MarkupSafe==2.1.3
+mpmath==1.3.0
+networkx==3.1
+numpy==1.24.4
+packaging==23.1
+Pillow==10.0.0
+pydantic==2.1.1
+pydantic_core==2.4.0
+PyYAML==6.0.1
+regex==2023.6.3
+requests==2.31.0
+safetensors==0.3.1
+sniffio==1.3.0
+starlette==0.27.0
+sympy==1.12
+tokenizers==0.13.3
+torch==2.0.1
+tqdm==4.65.0
+transformers==4.31.0
+typing_extensions==4.7.1
+urllib3==2.0.4
+uvicorn==0.23.2
+zipp==3.16.2
+
+```

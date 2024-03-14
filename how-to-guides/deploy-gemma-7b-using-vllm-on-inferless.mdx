@@ -1,0 +1,191 @@
+---
+title: "Deploy Gemma-7B using vLLM on Inferless"
+description: "Gemma is a family of lightweight, state-of-the-art open models from Google, built from the same research and technology used to create the Gemini models."
+---
+
+## Introduction
+
+Google's [Gemma](https://blog.google/technology/developers/gemma-open-models/) release introduces a family of [four new LLMs](https://huggingface.co/collections/google/gemma-release-65d5efbccdbb8c4202ec078b), offered in two sizes (2B and 7B), with options for both base and instruction-tuned variants. Gemma 2B and 7B are trained on 6T tokens for 7B Gemma and 2T tokens for 2B Gemma respectively. 
+
+Gemma models exhibit robust performance across academic benchmarks for language understanding, reasoning, and safety. Additionally, they surpass similarly sized open models on 11 out of 18 text-based tasks.
+
+## Our Observations
+
+We have deployed the [gemma-7b](https://huggingface.co/google/gemma-7b) base version of the model using vLLM on an A100 GPU(80GB). Here are our observations:
+
+| Inference Time | Cold Start Time | Token/Sec | Latency/Token | VRAM Required |
+| -------------- | --------------- | --------- | ------------- | ------------- |
+| 3.99 sec       | 16.62 sec       | 62.51     | 16.01 ms      | 67.83 GB      |
+
+## Defining Dependencies
+
+We are using the [vLLM library](https://github.com/vllm-project/vllm), which boost the inference speed of you LLM. for deploying the [gemma-7b](https://huggingface.co/google/gemma-7b) base version of the model. 
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`.
+
+```
+Gemma-7B/
+├── app.py
+├── input_schema.py
+└── inferless-runtime-config.yaml
+
+```
+
+You can also add other files to this directory.
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/Gemma-7B/blob/main/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and the required `variables`. You can adjust the `gpu_memory_utilization` parameter to reduce GPU usage.
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference and pass it through `inputs(dict)` parameter.
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+```python
+from vllm import LLM, SamplingParams
+from huggingface_hub import snapshot_download
+import os
+
+class InferlessPythonModel:
+    def initialize(self):
+        repo_id = "google/gemma-7b"
+        # Use Inferless volumes to store your model
+        # Replace the volume_name with your volume
+        model_store = f"/var/nfs-mount/common_llm/{repo_id}"
+        os.makedirs(f"/var/nfs-mount/common_llm/{repo_id}", exist_ok=True)
+        
+        snapshot_download(
+                    repo_id,
+                    local_dir=model_store,
+                    # Hugging face token is required for gated model
+                    token="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",
+                    ignore_patterns=["*.gguf"])
+        self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95,max_tokens=256)
+        self.llm = LLM(model=model_store,gpu_memory_utilization=0.9)
+
+    def infer(self, inputs):
+        prompts = inputs["prompt"]
+        result = self.llm.generate(prompts, self.sampling_params)
+        result_output = [output.outputs[0].text for output in result]
+
+        return {'gresult': result_output[0]}
+
+    def finalize(self):
+        pass
+```
+
+## Create the Input Schema
+
+We have to create a [input\_schema.py](https://github.com/inferless/Gemma-7B/blob/main/input%5Fschema.py) in your GitHub/Gitlab repository this will help us create the Input parameters. You can checkout our documentation on [Input / Output Schema](https://docs.inferless.com/model-import/input-output-schema).
+
+For this tutorial, we have defined a parameter `prompt` which is required during the API call. Now lets create the `input_schema.py`.
+
+```python
+INPUT_SCHEMA = {
+    "prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["What is quantization?"]
+    }
+}
+```
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Gemma-7B/blob/main/inferless-runtime-config.yaml).
+
+```python
+build:
+  cuda_version: "12.1.1"
+  system_packages:
+    - "libssl-dev"
+  python_packages:
+    - "vllm==0.3.2"
+```
+
+## Method A: Deploying the model on Inferless Platform
+
+### Selection of the framework
+
+Inferless offers comprehensive support for all the major machine learning frameworks. In the first step, it is mandatory to designate the framework for your model. For the purposes of this tutorial, we will opt for `PyTorch`.
+
+![](/images/gemma1.png)
+
+### Import the Model through GitHub
+
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-requirements). For this tutorial, we will use GitHub.
+
+Click on the`Repo(Custom code)` and then click on the `Add provider` to connect to your GitHub account. Once your account integration is completed, click on your Github account and continue.
+
+![](/images/gemma2.png)
+
+### Provide the Model details
+
+Enter the name of the model and pass the GitHub repository URL.
+
+![](/images/gemma3.png)
+
+## Configure the machine
+
+In this 4th step, the user has to configure the inference setup. On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A100 GPU. Select A100 from the drop-down menu in the GPU Type.
+
+You also have the flexibility to select from different machine types. Opting for a `dedicated` machine type will grant you access to an entire GPU while choosing the `shared` option allocates 50% of the VRAM. In this tutorial, we will opt for the dedicated machine type.
+
+Choose the Minimum and Maximum replicas that you would need for your model:
+
+* **Min replica:** The number of inference workers to keep on at all times.
+
+* **Max replica:** The maximum number of inference workers to allow at any point in time.
+
+If you wish to enable Automatic rebuild for your model setup, toggle the switch. Note that setting up a web-hook is necessary for this feature. Click [here](https://docs.inferless.com/~/changes/vYzeDgjS7Hi2onmT0QwC/model-import/automatic-build-via-webhooks/github) for more details.
+
+In the `Advance configuration`, we have the option to select the custom runtime. First, click on the `Add runtime` to upload the [inferless-runtime-config.yaml](https://github.com/inferless/Gemma-7B/blob/main/inferless-runtime-config.yaml) file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
+
+![](/images/gemma4.png)
+
+### Review and Deploy
+
+In this final stage, carefully review all modifications. Once you've examined all changes, proceed to deploy the model by clicking the `Submit` button.
+
+![](/images/gemma5.png)
+
+Voilà, your model is now deployed!
+
+![](/gif/gif18.gif)
+
+## Method B: Deploying the model on Inferless CLI
+
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+### Initialization of the model
+
+Create the [app.py](https://github.com/inferless/Gemma-7B/blob/main/app.py) and [inferless-runtime-config.yaml](https://github.com/inferless/Gemma-7B/blob/main/inferless-runtime-config.yaml), move the files to the working directory. Run the following command to initialize your model:
+
+```
+inferless init
+```
+
+### Upload the custom runtime
+
+Once you have created the [inferless-runtime-config.yaml](https://github.com/inferless/Gemma-7B/blob/main/inferless-runtime-config.yaml) file, you can run the following command:
+
+```
+inferless runtime upload
+```
+
+Upon entering this command, you will be prompted to provide the configuration file name. Enter the name and ensure to update it in the [inferless.yaml](https://github.com/inferless/Gemma-7B/blob/main/inferless.yaml) file. Now you are ready for the deployment.
+
+![](/images/gemma6.png)
+
+### Deploy the Model
+
+Execute the following command to deploy your model. Once deployed, you can track the build logs on the Inferless platform:
+
+```
+inferless deploy
+```

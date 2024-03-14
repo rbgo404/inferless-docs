@@ -1,0 +1,67 @@
+---
+title: "Importing from Cloud Buckets"
+---
+
+Below are the providers that are supported to directly load the model file into Inferless
+
+* AWS S3
+
+* Google Cloud Buckets
+
+* Azure File Storage
+
+Before you upload your custom model, make sure you go through and follow the prerequisites conditions mentioned below.
+
+### File structure requirements
+
+The below format should be kept in mind while loading your code to Inferless from cloud providers.
+
+**The model file has to be loaded as a ZIP file.**
+
+The structure of the model file that is to be loaded is described below based on the framework used.
+
+The model names has to be in the format as given in the example below.
+
+* ###  **`PyTorch`**
+
+
+```python PyTorch - File structure
+/
+├── config.pbtxt
+├── 1
+│   ├── model.pt
+
+#*Any other file can be added along with the above structure and files for any dependencies in the model*
+
+```
+
+* ###  **`TensorFlow`**
+
+
+```json TensorFlow - Structure
+/
+├── 1
+│   ├── model.savedmodel
+│   │   ├── saved_model.pb
+
+#*Any other file can be added along with the above structure and files for any dependencies in the model*
+
+```
+
+* ###  **`ONNX`**
+
+
+```json ONNX - File Structure
+/
+├── config.pbtxt
+├── 1
+│   ├── model.onnx
+
+#*Any other file can be added along with the above structure and files for any dependencies in the model*
+
+```
+
+Once you have made sure the model file structure is in the right format, you can upload the model from your cloud storage to Inferless using the "Import Model" option
+
+* Click [here](/integrations/cloud-buckets-s3-gcs) for steps to upload
+
