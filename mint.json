@@ -5,7 +5,8 @@
     "colors": {
       "primary": "#94CF09",
       "light": "#9FDD0C",
-      "dark": "#94CF09"
+      "dark": "#94CF09",
+      "background" : "#FFFFFF"
     },
     "topbarCtaButton": {
       "name": "Join Private Beta",
