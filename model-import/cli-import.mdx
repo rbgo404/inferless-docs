@@ -246,3 +246,22 @@ inferless volume list
 ```
 inferless volume select --id 
 ```
+
+
+### Copy data Local to the Volume
+
+```
+inferless volume cp -s /path/to/local/file -d infer://region-1/<volume-name>/<folder> 
+```
+
+### List the data in the Volume
+
+```
+inferless volume ls -i <volume-id>
+```
+### Copy data Volume to local
+
+```
+inferless volume cp -s infer://region-1/<volume-name>/<folder> -d /path/to/local/file 
+```
+
