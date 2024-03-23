@@ -1,0 +1,191 @@
+---
+title: "Create a Serverless Logo Generator Application"
+description: "In this hands-on tutorial, you'll learn to build a serverless [Logo Generator application](https://github.com/inferless/Logo-Generator/tree/main) capable of creating unique logos based on text descriptions. Leveraging the power of diffusion models using the diffuser library, this application will allow you to input text prompts and receive corresponding logos in just a few steps."
+---
+## The Logo Generator's primary steps
+For this application, we will use a [logo finetuned LoRA](https://huggingface.co/artificialguybr/LogoRedmond-LogoLoraForSDXL-V2) with the [Stable Diffusion XL model](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0), which will indeed yield impressive results. Here are the primary steps for logo generation using this approach:
+1. Text Input: The user provides a text description(prompt) of the desired logo, such as "a logo for a coffee shop, coffee", along with a negative prompt and colors.
+2. Model Processing: This text prompt is fed into the Stable Diffusion XL model, which processes the inputs and generates a corresponding logo representation.
+3. Logo Output: Finally, the model outputs a unique logo based on the given text description, capturing the desired visual elements and style.
+
+## Crafting Your Application:
+To build the [logo generator application](https://github.com/inferless/Logo-Generator/tree/main), we'll be using these tools:
+- [Diffusers](https://pypi.org/project/diffusers/): A library specifically designed for diffusion models, offering utilities for loading, processing, and generating images.
+- [Inferless](https://www.inferless.com/): A serverless platform that simplifies the deployment and scaling of machine learning models, allowing us to serve our logo generator application easily.
+![](/images/logo-generator-architecture.jpg)
+
+## Core Development Steps
+### Text-to-Logo Generation
+- Objective: Accept user text input, generate a logo image using the Stable Diffusion XL model with LoRA, and return the generated logo.
+- Action: Implement a Python class ([InferlessPythonModel](https://github.com/inferless/Logo-Generator/blob/main/app.py)) that handles the entire text-to-logo generation process, including input handling, model integration, and logo generation.
+```python
+import json
+import torch
+from diffusers import DiffusionPipeline, DPMSolverMultistepScheduler
+import base64
+from io import BytesIO
+
+
+class InferlessPythonModel:
+    """
+    Class for text-to-image generation using Stable Diffusion with LoRA
+    """
+
+    def initialize(self):
+        """
+        Initializes the model, scheduler, and loads model weights.
+        """
+        model_id = "stabilityai/stable-diffusion-xl-base-1.0"
+        lora_id = "artificialguybr/LogoRedmond-LogoLoraForSDXL-V2"
+
+        # Load the diffusion model with FP16 precision for efficiency
+        self.pipe = DiffusionPipeline.from_pretrained(model_id, variant="fp16")
+
+        # Use the high-performance DPMSolver++ scheduler for faster inference
+        scheduler = DPMSolverMultistepScheduler(use_karras_sigmas=True, algorithm_type="sde-dpmsolver++")
+        self.pipe.scheduler = scheduler.from_config(self.pipe.scheduler.config)
+
+        # Load LoRA weights for text-based guidance
+        self.pipe.load_lora_weights(lora_id)
+
+        # Move model to GPU for faster processing
+        self.pipe.to(device="cuda", dtype=torch.float16)
+
+    def infer(self, inputs):
+        """
+        Generates an image based on the provided prompt.
+        """
+        prompt = inputs["prompt"]
+        negative = inputs["negative_prompt"]
+        color = inputs["color"]
+        complete_prompt = f'logo, {prompt} colors ({color})'
+  
+        pipeline_output_image = self.pipe(
+            prompt=complete_prompt,
+            negative_prompt = negative,
+            num_inference_steps=30,
+            guidance_scale=7,
+        ).images[0]
+
+        # Encode the generated image as a base64 string for convenient transfer
+        buff = BytesIO()
+        pipeline_output_image.save(buff, format="PNG")
+        img_str = base64.b64encode(buff.getvalue())
+        return {"generated_image_base64": img_str.decode("utf-8")}
+
+    def finalize(self, args):
+        """
+        Cleans up model resources to prevent memory leaks.
+        """
+        self.pipe = None
+```
+### Setting up the Environment
+Dependencies:
+- Objective: Ensure all necessary libraries are installed.
+- Action: Run the command below to install dependencies:
+```bash
+pip install accelerate==0.28.0 diffusers==0.27.0 transformers==4.38.2 peft==0.9.0
+```
+This command ensures your environment has all the tools required for the application.
+### Deploying Your Model with Inferless CLI
+1. Run the following command to initialize your model:
+```bash
+inferless init
+```
+2. Upload [Custom Runtime](https://github.com/inferless/Logo-Generator/blob/main/inferless-runtime-config.yaml): Use the following command to upload your custom runtime.
+```bash
+inferless runtime upload
+```
+Here's the custom runtime for the application:
+```yaml
+build:
+  cuda_version: "12.1.1"
+  system_packages:
+    - "libssl-dev"
+    - "libx11-6"
+    - "libxext6"
+    - "libgl1-mesa-glx"
+    - "ffmpeg"
+  python_packages:
+    - "accelerate==0.28.0"
+    - "diffusers==0.27.0"
+    - "transformers==4.38.2"
+    - "peft==0.9.0"
+```
+3. Deploy Model: Execute inferless deploy to deploy and monitor the build logs on Inferless.
+```bash
+inferless deploy
+```
+### Demo of the Logo Generator
+Here are a few examples of logos from our application:
+![](/images/logo-generator-sample-logos.png)
+
+### Alternative Deployment Method
+Inferless also supports a user-friendly UI for model deployment, catering to users at all skill levels. Refer to Inferless's documentation for guidance on UI-based deployment.
+## Choosing Inferless for Deployment
+Deploying your Logo Generator app with Inferless offers compelling advantages, making your development journey smoother and more cost-effective. Here's why Inferless is the go-to choice:
+1. Ease of Use: Forget the complexities of infrastructure management. With Inferless, you simply bring your model, and within minutes, you have a working endpoint. Deployment is hassle-free, without the need for in-depth knowledge of scaling or infrastructure maintenance.
+2. Cold-start Times: Inferless's unique load balancing ensures faster cold-starts. Expect around 5.32 seconds to process each logo, significantly faster than many traditional platforms.
+3. Cost Efficiency: Inferless optimizes resource utilization, translating to lower operational costs. Here's a simplified cost comparison:
+
+### Scenario 1
+You are looking to deploy a Logo Generator application for processing 100 logos per day.<br />
+
+__Parameters:__
+- __Total number of Logo:__ 100 daily.<br />
+- __Inference Time:__ All models are hypothetically deployed on A100 80GB, taking 5.32 seconds of processing time and a cold start overhead of 11.72 seconds.<br />
+- __Scale Down Timeout:__ Uniformly 60 seconds across all platforms, except Hugging Face, which requires a minimum of 15 minutes. This is assumed to happen 100 times a day.<br />
+
+__Key Computations:__
+1. __Inference Duration:__ <br/>
+Processing 100 logos and each takes 5.32 seconds<br/>
+Total: 100 x 5.32 = 532 seconds (or approximately 0.15 hours)
+2. __Idle Timeout Duration:__<br/>
+Post-processing idle time before scaling down: (60 seconds - 5.32 seconds) x 100 = 5468 seconds (or 1.52 hours approximately)<br/>
+3. __Cold Start Overhead:__<br/>
+Total: 100 x 11.72 = 1172 seconds (or 0.33 hours approximately)<br/>
+
+__Total Billable Hours with Inferless:__ 0.15 (inference duration) + 1.52 (idle time) + 0.33 (cold start overhead)  = 2 hours<br/>
+__Total Billable Hours with Inferless:__ 2 hours<br/>
+
+### Scenario 2
+You are looking to deploy a Logo Generator application for processing 1000 logos per day.<br />
+
+__Key Computations:__<br />
+1. __Inference Duration:__<br />
+Processing 1000 logos and each takes 5.32 seconds
+Total: 1000 x 5.32 = 5320 seconds (or approximately 1.48 hours)‍
+2. __Idle Timeout Duration:__<br />
+Post-processing idle time before scaling down: (60 seconds - 5.32 seconds) x 100 = 5468 seconds (or 1.52 hours approximately)
+3. __Cold Start Overhead:__<br />
+Total: 100 x 11.72 = 1172 seconds (or 0.33 hours approximately)
+
+__Total Billable Hours with Inferless:__ 1.48 (inference duration) + 1.52 (idle time) + 0.33 (cold start overhead)  = 3.33 hours<br />
+__Total Billable Hours with Inferless:__ 3.33 hours
+
+### Scenario 3
+You are looking to deploy a Logo Generator application for processing 10000 logos per day.
+__Key Computations:__<br />
+1. __Inference Duration:__<br />
+Processing 10000 logos and each takes 5.32 seconds
+Total: 10,000 x 5.32 = 53,200 seconds (or approximately 14.78 hours)‍
+2. __Idle Timeout Duration:__<br />
+Post-processing idle time before scaling down: (60 seconds - 5.32 seconds) x 100 = 5468 seconds (or 1.52 hours approximately)
+3. __Cold Start Overhead:__<br />
+Total: 100 x 11.72 = 1172 seconds (or 0.33 hours approximately)<br />
+
+__Total Billable Hours with Inferless:__ 14.78 (inference duration) + 1.52 (idle time) + 0.33 (cold start overhead)  = 16.63 hours<br />
+__Total Billable Hours with Inferless:__ 16.63 hours
+
+### Pricing Comparison for all the Scenario
+
+| Scenarios | AWS SageMaker Cost | Inferless Cost |
+| :--- | :---- | :---- |
+|  100 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$2.44 (2 hours billed at $1.22/hour) |
+|  1000 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$4.06 (3.33 hours billed at $1.22/hour) |
+|  10000 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$20.29 (16.63 hours billed at $1.22/hour) |
+
+By opting for Inferless, **_you can achieve up to 91.52% cost savings._**<br/>
+Please note the above analysis is based on a smaller-scale scenario for demonstration purposes. Should the scale increase tenfold, traditional cloud services might require maintaining 2-4 GPUs constantly active to manage peak loads efficiently. In contrast, Inferless, with its dynamic scaling capabilities, adeptly adjusts to fluctuating demand without the need for continuously running hardware.<br/>
+## Conclusion
+By following this guide, you're now equipped to build and deploy a sophisticated logo generator application. This tutorial showcases the seamless integration of advanced technologies, emphasizing the practical application of logo generation for creating cost-effective solutions.
