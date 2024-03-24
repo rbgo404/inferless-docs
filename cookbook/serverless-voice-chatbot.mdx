@@ -151,14 +151,14 @@ __Parameters:__
 __Key Computations:__
 1. __Inference Duration:__ <br/>
 Processing 100 queries and each takes 28.60 seconds<br/>
-Total: 100 x 28.60 = 2872 seconds (or approximately 0.80 hours)
+Total: 100 x 28.60 = 2860 seconds (or approximately 0.79 hours)
 2. __Idle Timeout Duration:__<br/>
 Post-processing idle time before scaling down: (60 seconds - 28.60 seconds) x 100 = 3140 seconds (or 0.87 hours approximately)<br/>
 3. __Cold Start Overhead:__<br/>
 Total: 100 x 20.72 = 2072 seconds (or 0.58 hours approximately)<br/>
 
-__Total Billable Hours with Inferless:__ 0.80 (inference duration) + 0.87 (idle time) + 0.58 (cold start overhead)  = 2.25 hours<br/>
-__Total Billable Hours with Inferless:__ 2.25 hours<br/>
+__Total Billable Hours with Inferless:__ 0.79 (inference duration) + 0.87 (idle time) + 0.58 (cold start overhead)  = 2.25 hours<br/>
+__Total Billable Hours with Inferless:__ 2.24 hours<br/>
 
 ### Scenario 2
 You are looking to deploy a Voice Conversational Chatbot application for processing 1000 queries per day.<br />
@@ -179,10 +179,10 @@ __Total Billable Hours with Inferless:__ 9.39 hours
 
 | Scenarios | AWS SageMaker Cost | Inferless Cost |
 | :--- | :---- | :---- |
-|  100 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$2.74 (2.25 hours billed at $1.22/hour) |
+|  100 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$2.73 (2.24 hours billed at $1.22/hour) |
 |  1000 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$11.46 (9.39 hours billed at $1.22/hour) |
 
-By opting for Inferless, **_you can achieve up to 90.04% cost savings._**<br/>
+By opting for Inferless, **_you can achieve up to 90.05% cost savings._**<br/>
 Please note the above analysis is based on a smaller-scale scenario for demonstration purposes. Should the scale increase tenfold, traditional cloud services might require maintaining 2-4 GPUs constantly active to manage peak loads efficiently. In contrast, Inferless, with its dynamic scaling capabilities, adeptly adjusts to fluctuating demand without the need for continuously running hardware.<br/>
 ## Conclusion
 By following this guide, you're now equipped to build and deploy a sophisticated voice conversational chatbot application. This tutorial showcases the seamless integration of advanced technologies, emphasizing the practical application of creating cost-effective solutions.
