@@ -1,0 +1,256 @@
+---
+title: "Build a Serverless PDF Q&A Application in 10 Minutes"
+description: "Welcome to a hands-on tutorial designed to walk you through the creation of a PDF Q&A application, leveraging cutting-edge serverless technologies. In just 10 minutes, you'll have a working app capable of delivering precise answers from PDF documents, enriched with contextual understanding."
+---
+## Understanding Retrieval-Augmented Generation (RAG)
+Before diving in, let's briefly understand the technology behind our app. Retrieval-Augmented Generation (RAG) combines the power of large language models with external data sources to enhance response accuracy and context. It involves:
+1. __Retrieval:__ Fetching relevant data in response to queries.
+2. __Augmentation:__ Enhancing the language model's knowledge with this data.
+3. __Generation:__ Producing accurate, context-aware responses.<br/>
+
+With this foundation, let's start building.
+
+## Crafting Your Application
+This tutorial is structured to ease you into creating a PDF Q&A application using technologies like [LangChain](https://www.langchain.com/), [Pinecone](https://www.pinecone.io/), and [Inferless](https://www.inferless.com/).
+![](/images/qna-pdf-architecture.png)
+
+## Obtaining your Pinecone API Key
+To seamlessly integrate Pinecone, a fully managed vector database, into our application, securing an API Key is essential. Here’s a simplified guide to getting started:
+1. __Registration:__ Begin by [signing up](https://login.pinecone.io/login?state=hKFo2SBQMWdFRlVramFCRDRmdFpielRjMXZaTF93YlRKUXE3eqFupWxvZ2luo3RpZNkgSWhBSmlEekN1cjNkeWtDa1ZlRG1VcHpVbnN5ekxnQ02jY2lk2SBUOEkyaEc2Q2FaazUwT05McWhmN3h6a1I0WmhMcVM0Qw&client=T8I2hG6CaZk50ONLqhf7xzkR4ZhLqS4C&protocol=oauth2&audience=https%3A%2F%2Fus-central1-production-console.cloudfunctions.net%2Fapi%2Fv1&scope=openid%20profile%20email%20read%3Acurrent_user&redirect_uri=https%3A%2F%2Fapp.pinecone.io&sessionType=signup&response_type=code&response_mode=query&nonce=MEhmRWRHSm03c3NDeHVPQzNib2FGNEVieDhBR0pnQkFjRG1fSVk0NjFwSA%3D%3D&code_challenge=bvpqWvirAS3x7knCsigtQAP_VSX29a3n1ypFrnRWcaA&code_challenge_method=S256&auth0Client=eyJuYW1lIjoiYXV0aDAtcmVhY3QiLCJ2ZXJzaW9uIjoiMS41LjAifQ%3D%3D) on the Pinecone platform using your email address. Pinecone serves as the backbone for managing and querying vector data efficiently.
+2. __Index Creation:__ Once registered, proceed to create an index on Pinecone. Remember to note its name; this will be crucial for configuring your application.
+3. __API Key Access:__ With your index ready, navigate to the API Keys section, easily found in the Pinecone dashboard's left sidebar.
+4. __API Key Retrieval:__ Copy the API Key presented here. This key will authenticate your application's requests to Pinecone, enabling secure and efficient data operations.<br/>
+
+By following these steps, you will have taken a crucial step in setting up your PDF Q&A application, leveraging Pinecone's powerful vector database capabilities.<br/>
+
+The next phase involves preparing your deployment environment. While this guide focuses on Inferless for its simplicity and efficiency in serverless deployments, you're encouraged to select the platform that best fits your project needs.
+
+## Core Development Steps
+### PDF Upload Functionality:
+- __Objective:__ Establish a process for uploading and managing PDFs, utilizing LangChain for document loading and Pinecone for efficient data indexing.
+- __Action:__ Implement a Python class for PDF management. Refer to our [GitHub example](https://github.com/inferless/Document-RAG-Upload/blob/main/app.py) for detailed code.
+```python
+import os
+from langchain.document_loaders import OnlinePDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_pinecone import Pinecone
+
+class InferlessPythonModel:
+    def initialize(self):
+        #define the index name of Pinecone, embedding model name and pinecone API KEY
+        index_name = "documents"
+        embed_model_id = "sentence-transformers/all-MiniLM-L6-v2"
+        os.environ["PINECONE_API_KEY"] = "YOUR_PINECONE_API_KEY"
+
+        #Initialize the embedding model, text_splitter & pinecone
+        embeddings=HuggingFaceEmbeddings(model_name=embed_model_id)
+        self.text_splitter=RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=0)
+        self.pinecone = Pinecone(index_name=index_name, embedding=embeddings)
+
+    def infer(self, inputs):
+        pdf_link = inputs["pdf_url"]
+        loader = OnlinePDFLoader(pdf_link)
+        data = loader.load()
+        documents = self.text_splitter.split_documents(data)
+        response = self.pinecone.add_documents(documents)
+        
+        return {"result":response}
+
+    def finalize(self):
+        pass
+```
+
+### Integrating Q&A Functionality:
+- __Objective:__ Enable the application to process user queries and extract answers from PDFs, employing the RAG technique.
+- __Action:__ Develop a Python class to merge embeddings with LangChain's retrieval capabilities and the Llama-2 7B model for answer generation. Our [GitHub repository](https://github.com/inferless/Document-RAG-QnA/blob/main/app.py) provides a comprehensive example.
+```python
+import os
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain_pinecone import Pinecone
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
+from langchain_community.llms.huggingface_pipeline import HuggingFacePipeline
+from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+
+class InferlessPythonModel:
+    def initialize(self):
+        #define the index name of Pinecone, embedding model name, LLM model name, and pinecone API KEY
+        index_name = "documents"
+        embed_model_id = "sentence-transformers/all-MiniLM-L6-v2"
+        llm_model_id = "NousResearch/Nous-Hermes-llama-2-7b"
+        os.environ["PINECONE_API_KEY"] = "YOUR_PINECONE_API_KEY"
+
+        # Initialize the model for embeddings
+        embeddings=HuggingFaceEmbeddings(model_name=embed_model_id)
+        vectorstore = Pinecone.from_existing_index(index_name=index_name, embedding=embeddings)
+        retriever = vectorstore.as_retriever()
+
+        # Initialize the LLM
+        tokenizer = AutoTokenizer.from_pretrained(llm_model_id)
+        model = AutoModelForCausalLM.from_pretrained(llm_model_id,trust_remote_code=True,device_map="cuda")
+        pipe = pipeline("text-generation", model=model, tokenizer=tokenizer, max_new_tokens=100)
+        llm = HuggingFacePipeline(pipeline=pipe)
+
+        # Define the chat template, and chain for retrival
+        template = """Answer the question based only on the following context:
+                      {context}
+                      Question: {question}
+                      """
+        prompt = ChatPromptTemplate.from_template(template)
+        self.chain = (
+          RunnableParallel({"context": retriever, "question": RunnablePassthrough()})
+          | prompt
+          | llm
+          | StrOutputParser())
+      
+    def infer(self, inputs):
+        question = inputs["question"]
+        result = self.chain.invoke(question)
+        return {"generated_result":result}
+
+    def finalize(self):
+        pass
+```
+### Setting up the Environment
+__Dependencies:__
+- __Objective:__ Ensure all necessary libraries are installed.
+- __Action:__ Run the command below to install dependencies:
+```bash
+pip install langchain==0.1.7 langchain-pinecone==0.0.2 pypdf==4.0.1 unstructured==0.12.4 sentence-transformers==2.3.1 pinecone-client==3.0.3 huggingface-hub==0.20.3 pdf2image==1.17.0 pdfminer==20191125 pdfminer.six==20221105 pillow_heif==0.15.0 unstructured-inference==0.7.24 pikepdf==8.12.0 transformers==4.37.2 accelerate==0.27.2
+```
+This command ensures that your environment is equipped with all the tools required for the PDF Q&A application.
+#### Organizing Your Application:
+- __Structure:__ Divide your application into two main parts for better modularity and maintenance:
+  1. __PDF Upload Component:__ Handles the uploading and initial processing of PDF documents. See [GitHub Repository](https://github.com/inferless/Document-RAG-Upload).
+  2. __Q&A Component:__ Manages the extraction of information and answering of user queries from PDFs. See [GitHub Repository](https://github.com/inferless/Document-RAG-QnA).
+
+### Deploying Your Model with Inferless CLI
+#### PDF Upload Deployment:
+1. __Run the following command to initialize your model:__
+```bash
+inferless init
+```
+2. __Upload Custom Runtime:__ Use the following command to upload your [custom runtime](https://github.com/inferless/Document-RAG-Upload/blob/main/inferless-runtime-config.yaml).
+```bash
+inferless runtime upload
+```
+Here's the custom runtime for the application:
+```yaml
+
+build:
+  cuda_version: "12.1.1"
+  system_packages:
+    - "libssl-dev"
+    - "libsm6"
+    - "libxext6"
+    - "libxrender-dev"
+  python_packages:
+    - "langchain==0.1.7"
+    - "langchain-pinecone==0.0.2"
+    - "pypdf==4.0.1"
+    - "unstructured==0.12.4"
+    - "sentence-transformers==2.3.1"
+    - "pinecone-client==3.0.3"
+    - "huggingface-hub==0.20.3"
+    - "pdf2image==1.17.0"
+    - "pdfminer==20191125"
+    - "pdfminer.six==20221105"
+    - "pillow_heif==0.15.0"
+    - "unstructured-inference==0.7.24"
+    - "pikepdf==8.12.0"
+    - "transformers==4.37.2"
+    - "accelerate==0.27.2"
+```
+3. __Deploy Model:__ Execute the following command to deploy and monitor the build logs on Inferless.
+```bash
+inferless deploy
+```
+#### PDF Q&A Deployment:
+1. __Run the following command to initialize your model:__
+```bash
+inferless init
+```
+2. __Upload Custom Runtime:__ Use the following command to upload your [custom runtime](https://github.com/inferless/Document-RAG-QnA/blob/main/inferless-runtime-config.yaml).
+```bash
+inferless runtime upload
+```
+Here's the custom runtime for the application:
+```yaml
+build:
+  cuda_version: "12.1.1"
+  system_packages:
+    - "libssl-dev"
+    - "libsm6"
+    - "libxext6"
+    - "libxrender-dev"
+  python_packages:
+    - "langchain==0.1.7"
+    - "langchain-pinecone==0.0.2"
+    - "pypdf==4.0.1"
+    - "unstructured==0.12.4"
+    - "sentence-transformers==2.3.1"
+    - "pinecone-client==3.0.3"
+    - "huggingface-hub==0.20.3"
+    - "pdf2image==1.17.0"
+    - "pdfminer==20191125"
+    - "pdfminer.six==20221105"
+    - "pillow_heif==0.15.0"
+    - "unstructured-inference==0.7.24"
+    - "pikepdf==8.12.0"
+    - "transformers==4.37.2"
+    - "accelerate==0.27.2"
+```
+3. __Deploy Model:__ Execute `inferless deploy` to deploy and monitor the build logs on Inferless.
+```bash
+inferless deploy
+```
+### Alternative Deployment Method
+Inferless also supports a user-friendly UI for model deployment, catering to users at all skill levels. Refer to Inferless's documentation for guidance on UI-based deployment.
+## Choosing Inferless for Deployment
+Deploying your PDF Q&A app with Inferless offers compelling advantages, making your development journey smoother and more cost-effective. Here's why Inferless is the go-to choice:
+1. __Ease of Use:__ Forget the complexities of infrastructure management. With Inferless, you simply bring your model, and within minutes, you have a working endpoint. Deployment is hassle-free, without the need for in-depth knowledge of scaling or infrastructure maintenance.
+2. __Cold-start Times:__ Inferless's unique load balancing ensures faster cold-starts. Expect around [6.20 seconds for PDF uploads and 11.7 seconds for Q&A functionalities, significantly faster than many traditional platforms](https://drive.google.com/drive/folders/14eG966yNtaE7FXF_EKAT8qBiynF33xxH).
+3. __Cost Efficiency:__ Inferless optimizes resource utilization, translating to lower operational costs. Here's a simplified cost comparison:
+### PDF Upload:
+__Assumptions:__
+- 100 documents uploaded daily
+- Each document takes 20 seconds of processing time (inference)
+- Additional time considerations include a 6.20-second cold start for each upload
+
+__Inferless Cost:__<br/>
+
+__Total Active Processing Time:__ 100 documents * 20 seconds each = 2000 seconds (or approximately 0.55 hours)<br/>
+__Cold Start Overhead:__ 100 uploads * 6.20 seconds each = 620 seconds (or 0.17 hours)<br/>
+__Idle Time Between Uploads:__ ((60 seconds - 20 seconds) * 100) / 3600 = approximately 1.1 hours<br/>
+__Total Billable Hours with Inferless:__ 1.82 hours<br/>
+
+### Q&A for PDFs
+__Assumptions:__
+- 30 queries per document daily, with a 11.71-second cold start
+- Each query takes 5 seconds of processing time
+
+__Inferless Cost:__<br/>
+
+__Total Active Processing Time:__ (5 seconds * 3000 queries) / 3600 = approximately 4.1 hours<br/>
+__Cold Start Overhead:__ 11.71 seconds * 100 = 1171 seconds (or 0.32 hours)<br/>
+__Idle Time Between Queries:__ ((60 seconds - 5 seconds) * 3000) / 3600 = approximately 1.52 hours<br/>
+__Total Billable Hours with Inferless:__ 5.94 hours<br/>
+### Comparative Cost Analysis
+
+| Operation Type | AWS SageMaker Cost | Inferless Cost |
+|:-------------|:---------------:|--------------:|
+| PDF Upload | \$28.8 (24 hours billed at $1.22/hour)          | \$2.22 (1.82 hours billed at $1.22/hour)         |
+| Q&A for PDFs| \$28.8 (24 hours billed at $1.22/hour)          | \$7.25 (5.94 hours billed at $1.22/hour)       |
+| Total Cost | \$57.6          | \$9.47         |
+
+By opting for Inferless, ___you can achieve up to 84% cost savings___, lowering your operational expenses from \$57.6 to just \$9.47.
+
+Please note, the above analysis is based on a smaller-scale scenario for demonstration purposes. Should the scale increase tenfold, traditional cloud services might require maintaining 2-4 GPUs constantly active to manage peak loads efficiently. In contrast, Inferless, with its dynamic scaling capabilities, adeptly adjusts to fluctuating demand without the need for continuously running hardware. 
+
+## Discover the difference with real-world examples
+![](/images/qna-pdf-twitter.jpg)
+
+## Conclusion
+By following this guide, you're now equipped to build and deploy a sophisticated PDF Q&A application. This tutorial showcases the seamless integration of advanced technologies, emphasizing the practical application of RAG for creating cost-effective solutions.
