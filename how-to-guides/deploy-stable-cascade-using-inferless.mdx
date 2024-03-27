@@ -5,11 +5,11 @@ description: "Stable Cascade distinguishes itself by operating within a signific
 
 ## Introduction
 
-Stable Cascade is based on the [Würstchen](https://openreview.net/forum?id=gU58d5QeGv) architecture, differs from others like Stable Diffusion by operating in a smaller latent space. A smaller latent space means faster inference and cheaper training. For instance, Stable Cascade achieves a compression factor of 42, allowing encoding of a 1024x1024 image to 24x24 while retaining clear reconstructions. The text-conditional model is trained in this highly compressed latent space.
+[Stable Cascade](https://huggingface.co/stabilityai/stable-cascade) is based on the [Würstchen](https://openreview.net/forum?id=gU58d5QeGv) architecture, differs from others like Stable Diffusion by operating in a smaller latent space. A smaller latent space means faster inference and cheaper training. For instance, Stable Cascade achieves a compression factor of 42, allowing encoding of a 1024x1024 image to 24x24 while retaining clear reconstructions. The text-conditional model is trained in this highly compressed latent space.
 
 ## Our Observations
 
-We have deployed this model using A100 GPU and observed that the model took an average cold start time of `9.64sec` and an average inference time of `3.015sec` for image generation.
+We have deployed this model using A100 GPU and observed that the model took an average cold start time of `9.64 sec` and an average inference time of `3.02 sec` for image generation.
 
 ## Defining Dependencies
 
