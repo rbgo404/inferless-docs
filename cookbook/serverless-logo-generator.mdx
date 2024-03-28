@@ -105,7 +105,6 @@ build:
     - "libx11-6"
     - "libxext6"
     - "libgl1-mesa-glx"
-    - "ffmpeg"
   python_packages:
     - "accelerate==0.28.0"
     - "diffusers==0.27.0"
@@ -188,6 +187,8 @@ __Total Billable Hours with Inferless:__ 16.63 hours
 
 By opting for Inferless, **_you can achieve up to 91.52% cost savings._**<br/>
 
-Please note the above analysis is based on a smaller-scale scenario for demonstration purposes. Should the scale increase tenfold, traditional cloud services might require maintaining 2-4 GPUs constantly active to manage peak loads efficiently. In contrast, Inferless, with its dynamic scaling capabilities, adeptly adjusts to fluctuating demand without the need for continuously running hardware.<br/>
+Please note that we have utilized the A100 machine for model benchmarking purposes, while for pricing comparison, we referenced the A10G price from both platforms. This is due to the unavailability of the A100 GPU in SageMaker.
+
+Also, the above analysis is based on a smaller-scale scenario for demonstration purposes. Should the scale increase tenfold, traditional cloud services might require maintaining 2-4 GPUs constantly active to manage peak loads efficiently. In contrast, Inferless, with its dynamic scaling capabilities, adeptly adjusts to fluctuating demand without the need for continuously running hardware.<br/>
 ## Conclusion
 By following this guide, you're now equipped to build and deploy a sophisticated logo generator application. This tutorial showcases the seamless integration of advanced technologies, emphasizing the practical application of logo generation for creating cost-effective solutions.
