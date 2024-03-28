@@ -1,0 +1,200 @@
+---
+title: "Deploy Stable Cascade using Inferless"
+description: "Stable Cascade distinguishes itself by operating within a significantly smaller latent space, offering faster inference and cost-effective training."
+---
+
+## Introduction
+
+[Stable Cascade](https://huggingface.co/stabilityai/stable-cascade) is based on the [Würstchen](https://openreview.net/forum?id=gU58d5QeGv) architecture, differs from others like Stable Diffusion by operating in a smaller latent space. A smaller latent space means faster inference and cheaper training. For instance, Stable Cascade achieves a compression factor of 42, allowing encoding of a 1024x1024 image to 24x24 while retaining clear reconstructions. The text-conditional model is trained in this highly compressed latent space.
+
+## Our Observations
+
+We have deployed this model using A100 GPU and observed that the model took an average cold start time of `9.64 sec` and an average inference time of `3.02 sec` for image generation.
+
+## Defining Dependencies
+
+We are using the HuggingFace [Diffusers](https://github.com/huggingface/diffusers) library for the deployment.
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`
+
+```
+Stable-cascade/
+├── app.py
+├── inferless-runtime-config.yaml
+├── inferless.yaml
+└── input_schema.py
+```
+
+You can also add other files to this directory.
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/Stable-cascade/blob/main/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference through the `inputs` parameter.
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+```python
+import torch
+from diffusers import StableCascadeDecoderPipeline, StableCascadePriorPipeline
+from io import BytesIO
+import base64
+import os
+
+class InferlessPythonModel:
+    def initialize(self):
+      self.prior = StableCascadePriorPipeline.from_pretrained("stabilityai/stable-cascade-prior", variant="bf16", torch_dtype=torch.bfloat16).to("cuda")
+      self.decoder = StableCascadeDecoderPipeline.from_pretrained("stabilityai/stable-cascade", variant="bf16", torch_dtype=torch.float16).to("cuda")
+
+    def infer(self, inputs):
+      prompt = inputs["prompt"]
+      negative_prompt = inputs["negative_prompt"]
+      prior_output = self.prior(
+          prompt=prompt,
+          height=1024,
+          width=1024,
+          negative_prompt=negative_prompt,
+          guidance_scale=4.0,
+          num_images_per_prompt=1,
+          num_inference_steps=20)
+
+      decoder_output = self.decoder(
+          image_embeddings=prior_output.image_embeddings.to(torch.float16),
+          prompt=prompt,
+          negative_prompt=negative_prompt,
+          guidance_scale=0.0,
+          output_type="pil",
+          num_inference_steps=10
+      ).images[0]
+      buff = BytesIO()
+      decoder_output.save(buff, format="JPEG")
+      img_str = base64.b64encode(buff.getvalue()).decode()
+      return { "generated_image_base64" : img_str }
+
+    def finalize(self):
+        self.pipe = None
+```
+
+## Create the Input Schema
+
+We have to create a [`input_schema.py`](https://github.com/inferless/Stable-cascade/blob/main/input_schema.py) in your GitHub/Gitlab repository this will help us create the Input parameters. You can checkout our documentation on [Input / Output Schema](https://docs.inferless.com/model-import/input-output-schema).
+
+For this tutorial, we have defined two parameters `prompt` and `negative_prompt` which is required during the API call. Now lets create the `input_schema.py`.
+
+```JSON
+INPUT_SCHEMA = {
+    "prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["Penguins having dinner"]
+    },
+    "negative_prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["low quality"]
+    }
+}
+```
+
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their own custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Stable-cascade/blob/main/inferless-runtime-config.yaml).
+
+```
+build:
+  cuda_version: "12.1.1"
+  system_packages:
+    - "libssl-dev"
+    - "libx11-6"
+    - "libxext6"
+    - "libgl1-mesa-glx"
+  python_packages:
+    - "torch==2.2.1"
+    - "diffusers==0.27.0"
+    - "transformers==4.38.1"
+    - "accelerate==0.27.2"
+```
+
+## Deploying the model on Inferless
+
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub. 
+
+### Import the Model through GitHub
+
+Click on the`Repo(Custom code)` and then click on the `Add provider` to connect to your GitHub account. Once your account integration is completed, click on your Github account and continue.
+
+![](/images/stable-cascade-model-import.png)
+
+### Provide the Model details
+
+Enter the name of the model and pass the GitHub repository URL. 
+
+![](/images/stable-cascade-model-details.png)
+
+## Configure the machine
+
+In this 4th step, the user has to configure the inference setup. On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A100 GPU. Select A100 from the drop-down menu in the GPU Type.
+
+You also have the flexibility to select from different machine types. Opting for a `dedicated` machine type will grant you access to an entire GPU while choosing the `shared` option allocates 50% of the VRAM. In this tutorial, we will opt for the dedicated machine type.
+
+Choose the Minimum and Maximum replicas that you would need for your model:
+
+* **Min replica:** The number of inference workers to keep on at all times.
+
+* **Max replica:** The maximum number of inference workers to allow at any point in time.
+
+If you wish to enable Automatic rebuild for your model setup, toggle the switch. Note that setting up a web-hook is necessary for this feature. Click [here](https://docs.inferless.com/model-import/automatic-build/automatic-build-via-webhooks) for more details.
+
+In the `Advance configuration`, we have the option to select the custom runtime. First, click on the `Add runtime` to upload the [inferless-runtime-config.yaml](https://github.com/inferless/Stable-cascade/blob/main/inferless-runtime-config.yaml) file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
+
+![](/images/stable-cascade-model-config.png)
+
+### Review and Deploy
+
+In this final stage, carefully review all modifications. Once you've examined all changes, proceed to deploy the model by clicking the `Submit` button.
+
+![](/images/stable-cascade-model-deploy.png)
+
+Voilà, your model is now deployed!
+
+![](/gif/stable-cascade.gif)
+
+## Method B: Deploying the model on Inferless CLI
+
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+### Initialization of the model
+
+Create the [app.py](https://github.com/inferless/Stable-cascade/blob/main/app.py) and [inferless-runtime-config.yaml](https://github.com/inferless/Stable-cascade/blob/main/inferless-runtime-config.yaml), move the files to the working directory. Run the following command to initialize your model:
+
+```
+inferless init
+```
+
+### Upload the custom runtime
+
+Once you have created the [inferless-runtime-config.yaml](https://github.com/inferless/Stable-cascade/blob/main/inferless-runtime-config.yaml) file, you can run the following command:
+
+```
+inferless runtime upload
+```
+
+Upon entering this command, you will be prompted to provide the configuration file name. Enter the name and ensure to update it in the [inferless.yaml](https://github.com/inferless/Stable-cascade/blob/main/inferless.yaml) file. Now you are ready for the deployment.
+
+![](/images/llama70b-6.png)
+
+### Deploy the Model
+
+Execute the following command to deploy your model. Once deployed, you can track the build logs on the Inferless platform:
+
+```
+inferless deploy
+```
