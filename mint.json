@@ -166,6 +166,7 @@
       {
         "group": "Cookbook",
         "pages": [
+            "cookbook/serverless-logo-generator",         
             "cookbook/qna-serverless-pdf-application"           
         ]
       },
