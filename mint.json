@@ -211,7 +211,13 @@
                         "changelog/february-2024/12th-february", 
                         "changelog/february-2024/26th-february"
                     ]
-                      }      
+                      },  
+                    {
+                      "group": "March 2024",
+                    "pages": [
+                        "changelog/march-2024/11th-march"
+                    ]
+                      }     
         ]
       },
       {
@@ -233,7 +239,8 @@
             "how-to-guides/how-to-finetune--quantize-and-inference-phi-2",
             "how-to-guides/deploy-codellama-70b-using-inferless",
             "how-to-guides/deploy-openllm-leaderboard-topper-smaug-72b-using-inferless",
-            "how-to-guides/deploy-gemma-7b-using-vllm-on-inferless"
+            "how-to-guides/deploy-gemma-7b-using-vllm-on-inferless",
+            "how-to-guides/deploy-stable-cascade-using-inferless"
 
         ]
       }
