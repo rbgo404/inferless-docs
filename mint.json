@@ -166,8 +166,9 @@
       {
         "group": "Cookbook",
         "pages": [
+            "cookbook/serverless-logo-generator",         
             "cookbook/qna-serverless-pdf-application",         
-            "cookbook/serverless-voice-chatbot"           
+            "cookbook/serverless-voice-chatbot"         
         ]
       },
       {
