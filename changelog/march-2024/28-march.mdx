@@ -1,0 +1,22 @@
+---
+title: "28th March 2024: Reducing model import time, better error handling"
+---
+
+**Latest Enhancements & Features:**
+
+We are excited to announce our newest updates aimed at enhancing user experience through more efficient processes and clearer error reporting. Here are the details:
+
+1. **Introducing Inferless Run**: Inferless run helps you test the container locally before pushing it to us that can resolve the build and runtime errors faster. Just three steps to get started:
+- pip install inferless-cli
+- inferless init
+- inferless run
+Here is a [tutorial and documentation] (https://docs.inferless.com/model-import/cli-import#run-a-model-locally)
+
+2. **Improved Model Import Cancellation**: Users can now cancel model imports more efficiently, with enhanced worker termination speed.
+ 
+3. **Optimized S3 Uploads** : We've made improvements boosting the speed of uploads via CLI. This improvement facilitates faster data transfers, enhancing productivity.
+
+4. **Enhanced Validator for Input Schema**: A fix has been applied to address the issue with shapes with better error reporting. This update provides users with clearer, more precise feedback on errors related to the input schema, improving troubleshooting.
+
+
+5. **Explore model Exception Handling Improvements**: Enhanced error reporting now addresses scenarios during the Explore model's one-click deploy process.
