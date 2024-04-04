@@ -1,0 +1,44 @@
+## inferless runtime
+
+Is can be used to list runtimes and create new runtimes.
+
+**Usage**:
+
+```console
+$ inferless runtime COMMAND [OPTIONS]  [ARGS]...
+```
+
+**Commands**:
+
+* `list`: list all runtimes.
+* `select [options]`: use an existing runtime with the current model
+* `upload [options]`: create a new runtime on inferless with yaml.
+
+
+## Example
+
+**Usage**:
+
+list all the runtime in the workspace.
+
+```console
+$ inferless runtime list 
+```
+
+select a existing runtime for the model in the current directory.
+
+```console
+$ inferless runtime select -i runtime_id
+```
+
+select a a different runtime.yaml for the model in the current directory.
+
+```console
+$ inferless runtime select -p path/to/file
+```
+
+create a new runtime in the workspace
+
+```console
+$ inferless runtime upload -p path/to/file -n name
+```

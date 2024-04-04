@@ -1,0 +1,63 @@
+## inferless model
+
+You can use this to manage your models.
+
+### Commands
+
+- `list`: List all models in the current workspace
+- `delete`: delete a model from the system.
+- `rebuild`: rebuild a model.
+- `info`: Get model details  (min replicas, max replicas, current replicas, status).
+- `activate`: activate a model this will restore the min and max replicas to the original values.
+- `deactivate`: deactivate a model this will scale the min and max replicas to 0. 
+
+### Example
+
+Below command displays all the models in the workspace with their details.
+
+```bash
+inferless model list 
+```
+
+Below command rebuilds a model.
+
+```bash
+inferless model rebuild --model-id <model_id> 
+```
+
+Below command deletes a model.
+
+```bash
+inferless model delete --model-id <model_id> 
+```
+
+Below command displays the details of a specific model.
+
+```bash
+inferless model info 
+```
+
+
+Select the model you want to get details for: 'type the name'
+
+Output: you will get the 'Name', 'ID' and 'URL'
+
+**Options**:
+
+* `--model-id <id>`: Model ID
+* `--help`: Show this message and exit.
+
+
+Below command activates a model.
+
+```bash
+inferless model activate --model-id <model_id> 
+```
+
+Below command deactivates a model.
+
+```bash
+inferless model deactivate --model-id <model_id> 
+```
+
+
