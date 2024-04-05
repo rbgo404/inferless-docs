@@ -1,0 +1,84 @@
+## Input / Outputs
+
+This doc helps you configure the input / outputs of the 'infer' function in the 
+You have to define the **input\_schema.py** in your GitHub/Gitlab repository this will help us create the Input parameters : 
+
+For each input, there are 3 fields required and 1 optional field:s
+
+* **datatype**: "STRING", "BOOL", "INT8", "INT16", "INT32", "FP16" "FP32", "UINT8", "UINT16", "UINT32", "UINT64", "INT64" , "FP64" , "BYTES", "BF16"
+
+* **shape**: The length of the array, If the shape is \[1\] you will get the variable, if the array > 1 you will get an array, If the length is variable you can put -1
+
+* **required**: If the parameter is required in all API calls
+
+* **example**( optional ): Sample value for calling the API
+
+In code
+```API 
+def infer(self, inputs):
+    prompt = inputs["prompt"] # "There is a fine house in the forest"
+    shape = inputs["shape"] # [ 512,1 ]
+```
+
+
+In input\_schema.py 
+```input_schema Example
+INPUT_SCHEMA = {
+    "prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["There is a fine house in the forest"]
+    },
+    'shape': {
+        'datatype': 'INT8',
+        'required': False,
+        'example': [ 512, 1 ],
+        'shape': [2]
+    },
+}
+```
+
+### Variable Length Inputs
+
+For inputs that can take a variable number of values, you can set the `shape` field to `[-1]`. This indicates that the length of the array is not fixed and can vary.
+
+Here's an example:
+
+```python
+INPUT_SCHEMA = {
+    "variable_input": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [-1],
+        'example': ["value1", "value2", "value3"]
+    },
+}# Variable Length Inputs
+
+
+### Output Schema 
+
+You can return any dictionary in the return statement of app.py. You don't need to provide any configuration.
+
+### Returning Dicts
+
+```
+# Example Return Statement 
+
+return { "label_1" : 0.398 , "label_2" : 0.563, "label_3" : 0.434 }
+```
+
+### Returning Variable Length Array 
+
+```
+# Example Return Statement 
+return { "generated_images_base64" : [ img_str1 , img_str2 , img_str3 ] }
+```
+
+### Returning Dictionary with Variable keys 
+
+```
+# Example Return Statement 
+dict = {"label_x": 0.4554 , "label_y", 0.3232 }
+return { "result": json.dumps(dict) }
+```
