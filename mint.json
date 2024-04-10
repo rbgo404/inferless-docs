@@ -219,7 +219,11 @@
                         "changelog/march-2024/11th-march",
                         "changelog/march-2024/28-march"
                     ]
-                      }     
+                      },  
+                    {
+                      "group": "April 2024",
+                    "pages": [
+                        "changelog/april-2024/8th-april"     
         ]
       },
       {
