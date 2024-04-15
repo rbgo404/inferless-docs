@@ -15,6 +15,10 @@ These are any libraries that you need for the model to run, for eg: "opencv" for
 
 These are pip-based libraries that you need in your Python runtime for example torch is required to load PyTorch-based models 
 
+**run** :
+
+These are shell commands executed while building the runtime for example symlink is created here 
+
 ```python
 build:
   system_packages:
@@ -26,6 +30,8 @@ build:
     - "torch==2.0.1"
     - "numpy==1.23.5"
     - "pandas==2.0.1"
+  run:
+    - "ln -s /usr/local/lib/python3.10/site-packages/torch/lib/lib{nv,cu}* /usr/lib"
 ```
 
 ## Method A: Create a new Runtime using Inferless Platform 
