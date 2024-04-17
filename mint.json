@@ -223,7 +223,7 @@
                     {
                       "group": "April 2024",
                     "pages": [
-                        "changelog/april-2024/8th-april,
+                        "changelog/april-2024/8th-april",
                         "changelog/april-2024/15th-april"    
                     ]
                     }
@@ -249,7 +249,8 @@
             "how-to-guides/deploy-codellama-70b-using-inferless",
             "how-to-guides/deploy-openllm-leaderboard-topper-smaug-72b-using-inferless",
             "how-to-guides/deploy-gemma-7b-using-vllm-on-inferless",
-            "how-to-guides/deploy-stable-cascade-using-inferless"
+            "how-to-guides/deploy-stable-cascade-using-inferless",
+            "how-to-guides/deploy-musicgen-melody-large"
 
         ]
       }
