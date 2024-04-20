@@ -1,0 +1,58 @@
+### InferlessPythonModel
+
+The class called 'InferlessPythonModel' is the entrypoint for you ML code. This class has three methods: 'initialize', 'infer', and 'finalize'. Let's go through each method and explain their purpose, signature, and return types.
+
+**'initialize'** method:
+
+* Purpose: This method is responsible for initializing the model and setting up the necessary components.
+* Signature: The method takes in one parameter, self, which refers to the instance of the class. It doesn't have any other parameters.
+* Return type: This method doesn't return anything (None).
+
+
+**'infer'** method:
+
+
+* Purpose: This method performs the inference process using the initialized model. It takes in an input dictionary containing a "prompt" key, and it generates an image based on the provided prompt.
+* Signature: The method takes in two parameters: self (referring to the instance of the class) and inputs (a dictionary containing the input data).
+* Return type: The method returns a dictionary with a single key-value pairs.
+
+
+**'finalize'** method:
+
+
+* Purpose: This method is responsible for cleaning up and finalizing the model. It sets the pipe attribute to None.
+* Signature: The method takes in one parameter, self, which refers to the instance of the class. It doesn't have any other parameters.
+* Return type: This method doesn't return anything (None).
+
+### Example
+
+```python
+from diffusers import StableDiffusionPipeline
+import torch
+from io import BytesIO
+import base64
+
+class InferlessPythonModel:
+    def initialize(self):
+        self.pipe = StableDiffusionPipeline.from_pretrained(
+            "stabilityai/stable-diffusion-2-1",
+            use_safetensors=True,
+            torch_dtype=torch.float16,
+            device_map='auto'
+        )
+
+    def infer(self, inputs):
+        prompt = inputs["prompt"]
+        image = self.pipe(prompt).images[0]
+        buff = BytesIO()
+        image.save(buff, format="JPEG")
+        img_str = base64.b64encode(buff.getvalue()).decode()
+        return { "generated_image_base64" : img_str }
+        
+    def finalize(self):
+        self.pipe = None
+
+```
+
+
+

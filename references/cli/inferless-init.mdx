@@ -1,0 +1,104 @@
+## inferless init
+
+
+Use this command to initialize a new model import.
+
+### Usage
+
+```bash
+inferless init
+```
+
+You will be basked for the follwing information:
+
+### Prompts 
+
+Enter the model configuration file name (default: inferless.yaml): 
+
+How do you want to import the model? (default: Local) [Local, Git]:
+
+Enter the model name:
+
+GPU Type ( A100 / A10 / T4 )  : 
+
+Do you want to use Dedicated/Shared GPU? (default: Dedicated) [Dedicated, Shared]:
+
+Do you have a custom runtime ? : (default: No) [Yes, No]:
+
+Generate the runtime with requirements.txt? (default: No) [Yes, No]:
+
+
+### Output
+
+
+Once init is complete you will see the below files created
+
+
+```bash
+./
+├── app.py
+├── input_schema.py 
+├── inferless-runtime-config.yaml
+└── inferless.yaml
+
+
+```
+
+* `input_schema.py `This file will have all the configurations required for the deployment. Users can update this file according to their requirements.
+
+* `inferless-runtime-config.yaml`This file will have all the software packages and the Python packages required for the model inferencing.
+
+* `inferless.yaml`This file will have all the configurations required for the deployment. Users can update this file according to their requirements.
+
+
+
+### Example usage
+
+You can create the below files and then run the command
+
+app.py 
+
+``` python
+
+from diffusers import StableDiffusionPipeline
+import torch
+from io import BytesIO
+import base64
+
+class InferlessPythonModel:
+    def initialize(self):
+        self.pipe = StableDiffusionPipeline.from_pretrained(
+            "stabilityai/stable-diffusion-2-1",
+            use_safetensors=True,
+            torch_dtype=torch.float16,
+            device_map='auto'
+        )
+
+    def infer(self, inputs):
+        prompt = inputs["prompt"]
+        image = self.pipe(prompt).images[0]
+        buff = BytesIO()
+        image.save(buff, format="JPEG")
+        img_str = base64.b64encode(buff.getvalue()).decode()
+        return { "generated_image_base64" : img_str }
+        
+    def finalize(self):
+        self.pipe = None
+```
+
+
+
+
+### Example input_schema.py
+
+```python
+# input_schema.py
+INPUT_SCHEMA = {
+    "prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["There is a fine house in the forest"]
+    }
+}
+```
