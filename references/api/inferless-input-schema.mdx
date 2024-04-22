@@ -1,9 +1,10 @@
 ## Input / Outputs
 
-This doc helps you configure the input / outputs of the 'infer' function in the 
-You have to define the **input\_schema.py** in your GitHub/Gitlab repository this will help us create the Input parameters : 
+This doc helps you configure the input / outputs of the 'infer' function in the InferlessPythonModule class. This is the interface for inputs between the model and the Inferless platform.
 
-For each input, there are 3 fields required and 1 optional field:s
+You have to define the **input\_schema.py** in your GitHub/GitLab repository this will help us create the Input parameters : 
+
+For each input, there are 3 fields required and 1 optional field
 
 * **datatype**: "STRING", "BOOL", "INT8", "INT16", "INT32", "FP16" "FP32", "UINT8", "UINT16", "UINT32", "UINT64", "INT64" , "FP64" , "BYTES", "BF16"
 
@@ -41,7 +42,7 @@ INPUT_SCHEMA = {
 
 ### Variable Length Inputs
 
-For inputs that can take a variable number of values, you can set the `shape` field to `[-1]`. This indicates that the length of the array is not fixed and can vary.
+For inputs that can take a variable number of values, you can set the `shape` fields to `[-1]`. This indicates that the length of the array is not fixed and can vary.
 
 Here's an example:
 
