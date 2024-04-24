@@ -252,7 +252,8 @@
             "how-to-guides/deploy-openllm-leaderboard-topper-smaug-72b-using-inferless",
             "how-to-guides/deploy-gemma-7b-using-vllm-on-inferless",
             "how-to-guides/deploy-stable-cascade-using-inferless",
-            "how-to-guides/deploy-musicgen-melody-large"
+            "how-to-guides/deploy-musicgen-melody-large",
+            "how-to-guides/deploy-llama-3-using-inferless"
 
         ]
       }
