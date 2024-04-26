@@ -18,7 +18,7 @@ This client can be used to call Inferless API from your Python code. It supports
 inferless.call(url: str, workspace_api_key: str, data: dict ) -> Response [dict]
 ```
 
-This method sends a synchronous request to the inferless endpoint
+This method sends a synchronous request to the Inferless API endpoint
 
 #### Parameters
 
@@ -26,29 +26,18 @@ This method sends a synchronous request to the inferless endpoint
 
 * **workspace\_api\_key -** Inferless Workspace API Key
 
-* **data -** Model Input Data
+* **data -** Model Input Data in Dict Format 
+
+* **inputs (Optional) -** Model Input Data in Inference Protocol format, data should not be given is this is given 
 
 ### Example
 
 ```json
 import inferless
 
-URL = ""
-API_KEY = ""
-data = { "inputs" : 
-          [
-              {
-                "name": "prompt",
-                "shape": [
-                  1
-                ],
-                "datatype": "BYTES",
-                "data": [
-                  "Once upon a time"
-                ]
-              }
-          ]
-        }
+URL = "https://<model>.default.model-v2.inferless.com/v2/models/<model>/versions/1/infer"
+API_KEY = "76e51......39b57"
+data = {"prompt" : "a horse near a beach"}
 
 # This call is synced until the response is returned
 result = inferless.call(URL, API_KEY, data)
@@ -68,9 +57,11 @@ This method sends a request to the inferless endpoint in the background.
 
 * **workspace\_api\_key -** Inferless Workspace API Key
 
-* **data -** Model Input Data
+* **data -** Model Input Data in Dict Format
 
-* **callback - The c**allback function to be called after the response is received.  
+* **inputs (Optional) -** Model Input Data in Inference Protocol format, data should not be given is this is given 
+
+* **callback - The callback function will be called after receiving the response.  
    * callback function should have two params: `callback(error, response)`  
    * **error -** any error resulting while calling the inferless endpoint  
    * **response -** response from the inferless endpoint
@@ -79,22 +70,9 @@ This method sends a request to the inferless endpoint in the background.
 
 import inferless
 
-URL = ""
-API_KEY = ""
-data = { "inputs" : 
-          [
-              {
-                "name": "prompt",
-                "shape": [
-                  1
-                ],
-                "datatype": "BYTES",
-                "data": [
-                  "Once upon a time"
-                ]
-              }
-          ]
-        }
+URL = "https://<model>.default.model-v2.inferless.com/v2/models/<model>/versions/1/infer"
+API_KEY = "76e51......39b57"
+data = {"prompt" : "a horse near a beach"}
 
 # callback function which writes the response to a file
 def callback_func(e, response):
@@ -105,3 +83,31 @@ def callback_func(e, response):
 # This is not a blocking call and runs in the background and callback function is triggered to write the endpoint response to a file
 inferless.call_async(URL, KEY, DATA, callback_func)
 ```
+
+
+### Using the Inference Protocol format
+
+```json
+import inferless
+
+URL = "https://<model>.default.model-v2.inferless.com/v2/models/<model>/versions/1/infer"
+API_KEY = "76e51......39b57"
+inputs = {
+  "inputs": [
+    {
+      "name": "prompt",
+      "shape": [
+        1
+      ],
+      "data": [
+        "a horse near a beach"
+      ],
+      "datatype": "BYTES"
+    }
+  ]
+}
+
+# This call is synced until the response is returned
+result = inferless.call(URL, API_KEY, inputs=inputs)
+```
+
