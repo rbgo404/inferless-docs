@@ -28,7 +28,7 @@ This method sends a synchronous request to the Inferless API endpoint
 
 * **data -** Model Input Data in Dict Format 
 
-* **inputs -** Model Input Data in Inference Protocol format 
+* **inputs (Optional) -** Model Input Data in Inference Protocol format, data should not be given is this is given 
 
 ### Example
 
@@ -59,9 +59,9 @@ This method sends a request to the inferless endpoint in the background.
 
 * **data -** Model Input Data in Dict Format
 
-* **inputs -** Model Input Data in Inference Protocol format 
+* **inputs (Optional) -** Model Input Data in Inference Protocol format, data should not be given is this is given 
 
-* **callback - The c**allback function to be called after the response is received.  
+* **callback - The callback function will be called after receiving the response.  
    * callback function should have two params: `callback(error, response)`  
    * **error -** any error resulting while calling the inferless endpoint  
    * **response -** response from the inferless endpoint
@@ -85,4 +85,29 @@ inferless.call_async(URL, KEY, DATA, callback_func)
 ```
 
 
+### Using the Inference Protocol format
+
+```json
+import inferless
+
+URL = ""
+API_KEY = ""
+inputs = {
+  "inputs": [
+    {
+      "name": "prompt",
+      "shape": [
+        1
+      ],
+      "data": [
+        "a horse near a beach"
+      ],
+      "datatype": "BYTES"
+    }
+  ]
+}
+
+# This call is synced until the response is returned
+result = inferless.call(URL, API_KEY, inputs=data)
+```
 
