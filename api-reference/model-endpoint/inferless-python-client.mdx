@@ -35,8 +35,8 @@ This method sends a synchronous request to the Inferless API endpoint
 ```json
 import inferless
 
-URL = ""
-API_KEY = ""
+URL = "https://<model>.default.model-v2.inferless.com/v2/models/<model>/versions/1/infer"
+API_KEY = "76e51......39b57"
 data = {"prompt" : "a horse near a beach"}
 
 # This call is synced until the response is returned
@@ -70,9 +70,9 @@ This method sends a request to the inferless endpoint in the background.
 
 import inferless
 
-URL = ""
-API_KEY = ""
-data =  {"prompt" : "a horse near a beach"}
+URL = "https://<model>.default.model-v2.inferless.com/v2/models/<model>/versions/1/infer"
+API_KEY = "76e51......39b57"
+data = {"prompt" : "a horse near a beach"}
 
 # callback function which writes the response to a file
 def callback_func(e, response):
@@ -90,8 +90,8 @@ inferless.call_async(URL, KEY, DATA, callback_func)
 ```json
 import inferless
 
-URL = ""
-API_KEY = ""
+URL = "https://<model>.default.model-v2.inferless.com/v2/models/<model>/versions/1/infer"
+API_KEY = "76e51......39b57"
 inputs = {
   "inputs": [
     {
