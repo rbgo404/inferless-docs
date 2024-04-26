@@ -1,6 +1,6 @@
 ---
 title: "How to Finetune and Inference Llama-3"
-description: "Llama 3 is an auto-regressive language model, leveraging a refined transformer architecture.The Llama 3 models were trained on 8x more data on over 15 trillion tokens. It has a context length of 8K tokens and increases the vocabulary size of the tokenizer to 128,256 (from 32K tokens in the previous version)."
+description: "Llama 3 is an auto-regressive language model, leveraging a refined transformer architecture. The Llama 3 models were trained on 8x more data on over 15 trillion tokens. It has a context length of 8K tokens and increases the vocabulary size of the tokenizer to 128,256 (from 32K tokens in the previous version)."
 ---
 
 In this notebook & tutorial, we'll explore the process of fine-tuning [Llama-3-8B](https://huggingface.co/meta-llama/Meta-Llama-3-8B).
@@ -65,7 +65,7 @@ dataset = processed_dataset.train_test_split(test_size=0.01)
 Now load the tokenizer and the model then quantize and prepare the model for finetuning in 4bit using [bitsandbytes](https://github.com/TimDettmers/bitsandbytes).
 Load and initialize the tokenizer with Hugging Face Transformers `AutoTokenizer`.
 
-For `ChatML` support, we will use the `setup_chat_format()` function in `trl` . It will set up the `chat_template` of the tokenizer, add special tokens to the `tokenizer` and resize the model’s embedding layer to accommodate the new tokens.
+For `ChatML` support, we will use the `setup_chat_format()` function in `trl`. It will set up the `chat_template` of the tokenizer, add special tokens to the `tokenizer` and resize the model’s embedding layer to accommodate the new tokens.
 
 Prepare the model for QLoRA training using the `prepare_model_for_kbit_training()`.
 
