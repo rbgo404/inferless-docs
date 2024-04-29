@@ -30,13 +30,15 @@ $ inferless volume create [OPTIONS]
 **Options**:
 
 * `-n, --name TEXT`: Assign a name to the new volume.
-* `-r, --region TEXT`: specify the region where you want to create the runtime.
 
 
 **Examples**:
 ```console
-$ inferless volume create -n my-volume -r region-1
+$ inferless volume create -n my-volume 
 ```
+
+Prompt : <Region>
+
 
 List all the volumes 
 
@@ -72,13 +74,13 @@ $ inferless volume cp [OPTIONS]
 To copy from local to remote volume
 
 ```console
-$ inferless volume cp -s /path/to/local/file -d infer://region/volume/path/file
+$ inferless volume cp -s /path/to/local/file -d infer://volume/region/<volume_name>/path/file
 ```
 
 To copy from remote to local volume
 
 ```console
-$ inferless volume cp -s infer://region/volume/path/file -d /path/to/local/file
+$ inferless volume cp -s infer://volume/region/<volume_name>/path/file -d /path/to/local/file
 ```
 
 
@@ -116,7 +118,7 @@ $ inferless volume rm [OPTIONS]
 **Examples**:
 
 ```console
-$ inferless volume rm -p infer://region/volume/path/file
+$ inferless volume rm -p infer://volume/region/<volume_name>/path/file
 ```
 
 Upate the inferless.yaml configuration file with the volume
