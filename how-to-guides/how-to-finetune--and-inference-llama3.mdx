@@ -137,23 +137,23 @@ trainer = SFTTrainer(
 trainer.train()
 ```
 
-After finishing the training, combine the adapter with the original model. 
+After finishing the training, combine the adapter with the original model and upload it into the huggingface hub. 
 
 ```
 # Save the adapter
 trainer.model.save_pretrained("final_checkpoint")
 tokenizer.save_pretrained("final_checkpoint")
 
-#Load the base model
-base_model = AutoModelForCausalLM.from_pretrained("meta-llama/Meta-Llama-3-8B", torch_dtype="auto", trust_remote_code=True,device_map={"": 0})
+# Load the base model
+model = AutoPeftModelForCausalLM.from_pretrained("final_checkpoint",token=hf_token)
+tokenizer = AutoTokenizer.from_pretrained("final_checkpoint",token=hf_token)
 
-#Merge the base model with the adapter
-model = PeftModel.from_pretrained(base_model, "final_checkpoint")
+# Merge the model with the adapter
 model = model.merge_and_unload()
 
-#Save the model and the tokenizer
-model.save_pretrained(new_model)
-tokenizer.save_pretrained(new_model)
+# Upload the model to huggingface hub
+model.push_to_hub("inferless-llama-3-8B", token=hf_token)
+tokenizer.push_to_hub("inferless-llama-3-8B",token=hf_token)
 ```
 
 ## Let's deploy the finetuned model on Inferless
@@ -188,19 +188,22 @@ In the [app.py](https://github.com/inferless/Llama-3/blob/main/app.py) we will d
 
 ```python
 from vllm import LLM, SamplingParams
-from pathlib import Path
+from transformers import AutoTokenizer
 
 class InferlessPythonModel:
     def initialize(self):
-        model_id = "Undi95/Meta-Llama-3-8B-hf"  # Specify the model repository ID
+        model_id = "rbgo/inferless-llama-3-8B"  # Specify the model repository ID of our finetuned model
         # Define sampling parameters for model generation
         self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95, max_tokens=128)
         # Initialize the LLM object
         self.llm = LLM(model=model_id)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_id)
         
     def infer(self,inputs):
         prompts = inputs["prompt"]  # Extract the prompt from the input
-        result = self.llm.generate(prompts, self.sampling_params)
+        chat_format = [{"role": "user", "content": prompts}]
+        text = self.tokenizer.apply_chat_template(chat_format,tokenize=False,add_generation_prompt=True)
+        result = self.llm.generate(text, self.sampling_params)
         # Extract the generated text from the result
         result_output = [output.outputs[0].text for output in result]
 
@@ -240,6 +243,7 @@ build:
   python_packages:
     - "torch==2.2.1"
     - "vllm==0.4.1"
+    - "transformers==4.40.1"
 ```
 
 ## Deploying the model on Inferless
