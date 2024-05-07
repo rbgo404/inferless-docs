@@ -266,8 +266,29 @@
         "group": "References",
         "pages": [
             "references/overview",
-            "references/cli/inferless-deploy",
-            "references/cli/inferless-login"
+            {
+              "group": "CLI",
+            "pages": [
+                "references/cli/inferless-login",
+                "references/cli/inferless-token",
+                "references/cli/inferless-init",
+                "references/cli/inferless-run",
+                "references/cli/inferless-deploy",
+                "references/cli/inferless-model",
+                "references/cli/inferless-volume",
+                "references/cli/inferless-runtime",
+                "references/cli/inferless-secrets",
+                "references/cli/inferless-workspace"
+                ]
+            },
+            {
+              "group": "API",
+            "pages": [
+                "references/api/inferless-input-schema",
+                "references/api/inferless-python",
+                ]
+            },
+            
         ]
       }
 
