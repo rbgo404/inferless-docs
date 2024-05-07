@@ -261,6 +261,13 @@
             "how-to-guides/deploy-llama-3-using-inferless",
             "how-to-guides/deploy-tenyx-llama-3-using-inferless"
         ]
+      },
+      {
+        "group": "References",
+        "pages": [
+            "references/cli/inferless-deploy",
+            "references/cli/inferless-login"
+        ]
       }
 
     ],
