@@ -285,7 +285,7 @@
               "group": "API",
             "pages": [
                 "references/api/inferless-input-schema",
-                "references/api/inferless-python",
+                "references/api/inferless-python"
                 ]
             }
         ]
