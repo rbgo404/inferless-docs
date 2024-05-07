@@ -44,6 +44,10 @@
       {
         "name": "Changelog",
         "url": "changelog"
+      },
+      {
+        "name": "References",
+        "url": "references/intro"
       }
   ],
     "navigation": [
