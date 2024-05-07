@@ -47,7 +47,7 @@
       },
       {
         "name": "References",
-        "url": "references"
+        "url": "/references/overview"
       }
   ],
     "navigation": [
@@ -265,7 +265,7 @@
       {
         "group": "References",
         "pages": [
-            "references/intro"
+            "references/overview"
             "references/cli/inferless-deploy",
             "references/cli/inferless-login"
         ]
