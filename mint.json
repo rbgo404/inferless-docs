@@ -277,6 +277,7 @@
                 "references/cli/inferless-model",
                 "references/cli/inferless-volume",
                 "references/cli/inferless-runtime",
+                "references/cli/inferless-export",
                 "references/cli/inferless-secrets",
                 "references/cli/inferless-workspace"
                 ]
