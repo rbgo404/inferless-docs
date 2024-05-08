@@ -1,0 +1,26 @@
+---
+title: "inferless export"
+---
+
+You can use this command to generate the inferlress-runtime.yaml(Custom Rutime) form other platfrom like (Replicate)
+
+### Usage
+
+```python
+inferless export [OPTIONS] 
+```
+
+You will need to have 'cog.yaml' 
+
+Options:
+
+  - `-f` : Input File type example ( replicate )
+  - `--runtime -r` : the input yaml file to be converted 
+
+**Example:**
+
+``` shell
+inferless export -r cog.yaml -f replicate
+```
+
+This will geneate the output in file inferless-runtime-config.yaml
