@@ -261,7 +261,8 @@
             "how-to-guides/deploy-musicgen-melody-large",
             "how-to-guides/how-to-finetune--and-inference-llama3",
             "how-to-guides/deploy-llama-3-using-inferless",
-            "how-to-guides/deploy-tenyx-llama-3-using-inferless"
+            "how-to-guides/deploy-tenyx-llama-3-using-inferless",
+            "deploy-timesfm-using-inferless"
         ]
       },
       {
