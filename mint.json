@@ -263,6 +263,7 @@
             "how-to-guides/deploy-llama-3-using-inferless",
             "how-to-guides/deploy-tenyx-llama-3-using-inferless",
             "how-to-guides/deploy-google-paligemma-3b-using-inferless"
+            "how-to-guides/deploy-timesfm-using-inferless"
         ]
       },
       {
