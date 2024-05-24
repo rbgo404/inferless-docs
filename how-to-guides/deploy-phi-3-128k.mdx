@@ -1,0 +1,202 @@
+---
+title: "Deploy Phi-3-mini-128k-instruct using Inferless"
+description: "Phi-3-mini-128k-instruct is a 3.8 billion-parameter lightweight state-of-the-art model fine-tuned for instruction-following tasks, leveraging advanced techniques and comprehensive datasets to deliver high performance in natural language understanding and generation."
+---
+
+## Introduction
+
+## Introduction
+
+Microsoft has introduced [Phi-3-mini-128k-instruct](https://huggingface.co/microsoft/Phi-3-mini-128k-instruct), a compact yet powerful model designed for instruction-following tasks.
+This model is a part of the Phi-3 family, known for its efficiency and high performance. The Phi-3 Mini-128K-Instruct exhibited robust, state-of-the-art performance among models with fewer than 13 billion parameters.
+
+## Our Observations
+
+We have deployed the model on an A100 GPU(80GB). Here are our observations:
+
+| Library      | Inference Time  | Cold Start Time |Tokens/Sec    | Output Tokens Length    |
+| ------------ | --------------- | --------------- | ------------ | ----------------------- |
+| Transformers | 18.42 sec       | 7.82 sec        | 24.71        | 500                     |
+
+## Defining Dependencies
+
+We are using the [Transformers](https://github.com/huggingface/transformers) to serve the model on a single A100 (80GB).
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`.
+
+```
+Phi-3-128k/
+├── app.py
+├── inferless-runtime-config.yaml
+├── inferless.yaml
+└── input_schema.py
+```
+
+You can also add other files to this directory.
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/Phi-3-128k/blob/main/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference and pass it through `inputs(dict)` parameter.
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+```python
+from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
+
+class InferlessPythonModel:
+    def initialize(self):
+        self.model = AutoModelForCausalLM.from_pretrained(
+            "microsoft/Phi-3-mini-128k-instruct",
+            device_map="cuda",
+            torch_dtype="auto",
+            trust_remote_code=True,
+        )
+        self.tokenizer = AutoTokenizer.from_pretrained("microsoft/Phi-3-mini-128k-instruct")
+        self.pipe = pipeline(
+            "text-generation",
+            model=self.model,
+            tokenizer=self.tokenizer,
+        )
+
+    def infer(self, input_data):
+        chunks = input_data['chunks']
+        roles = input_data['roles']
+
+        generation_args = {
+            "max_new_tokens": 500,
+            "return_full_text": False,
+            "temperature": 0.0,
+            "do_sample": False,
+        }
+
+        messages = []
+        messages.append({ "role": roles , "content" : chunks })
+        output = self.pipe(messages, **generation_args)
+        return {"result": output[0]['generated_text'] }
+
+
+    def finalize(self):
+        self.generator = None
+        print("Pipeline finalized.", flush=True)
+```
+
+## Create the Input Schema
+
+We have to create a [input_schema.py](https://github.com/inferless/Phi-3-128k/blob/main/input_schema.py) in your GitHub/Gitlab repository this will help us create the Input parameters. You can checkout our documentation on [Input / Output Schema](https://docs.inferless.com/model-import/input-output-schema).
+
+For this tutorial, we have defined a parameter `prompt` which is required during the API call. Now lets create the `input_schema.py`.
+
+```JSON
+INPUT_SCHEMA = {
+    "roles": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["user"]
+    },
+    "chunks": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': [
+            "Inferless is a machine learning model deployment platform.",
+        ]
+    }
+}
+
+```
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Phi-3-128k/blob/main/inferless-runtime-config.yaml).
+
+```python
+build:
+  cuda_version: 12.1.1
+  python_packages:
+  - torch==2.3.0
+  - accelerate==0.30.1
+  - transformers==4.41.1
+```
+
+## Deploying the model on Inferless
+
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub. 
+
+### Import the Model through GitHub
+
+Click on the`Repo(Custom code)` and then click on the `Add provider` to connect to your GitHub account. Once your account integration is completed, click on your Github account and continue.
+
+![](/images/stable-cascade-model-import.png)
+
+### Provide the Model details
+
+Enter the name of the model and pass the GitHub repository URL. 
+
+![](/images/Phi-3-details.png)
+
+## Configure the machine
+
+In this 4th step, the user has to configure the inference setup. On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A100 GPU. Select A100 from the drop-down menu in the GPU Type.
+
+You also have the flexibility to select from different machine types. Opting for a `dedicated` machine type will grant you access to an entire GPU while choosing the `shared` option allocates 50% of the VRAM. In this tutorial, we will opt for the dedicated machine type.
+
+Choose the Minimum and Maximum replicas that you would need for your model:
+
+* **Min replica:** The number of inference workers to keep on at all times.
+
+* **Max replica:** The maximum number of inference workers to allow at any point in time.
+
+If you wish to enable Automatic rebuild for your model setup, toggle the switch. Note that setting up a web-hook is necessary for this feature. Click [here](https://docs.inferless.com/model-import/automatic-build/automatic-build-via-webhooks) for more details.
+
+In the `Advance configuration`, we have the option to select the custom runtime. First, click on the `Add runtime` to upload the [inferless-runtime-config.yaml](https://github.com/inferless/Phi-3-128k/blob/main/inferless-runtime-config.yaml) file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
+
+![](/images/musicgen-model-config.png)
+
+### Review and Deploy
+
+In this final stage, carefully review all modifications. Once you've examined all changes, proceed to deploy the model by clicking the `Submit` button.
+
+![](/images/Phi-3-review.png)
+
+Voilà, your model is now deployed!
+
+![](/gif/Phi-3-Demo.gif)
+
+## Method B: Deploying the model on Inferless CLI
+
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+### Initialization of the model
+
+Create the [app.py](https://github.com/inferless/Phi-3-128k/blob/main/app.py) and [inferless-runtime-config.yaml](https://github.com/inferless/Phi-3-128k/blob/main/inferless-runtime-config.yaml), move the files to the working directory. Run the following command to initialize your model:
+
+```
+inferless init
+```
+
+### Upload the custom runtime
+
+Once you have created the [inferless-runtime-config.yaml](https://github.com/inferless/Phi-3-128k/blob/main/inferless-runtime-config.yaml) file, you can run the following command:
+
+```
+inferless runtime upload
+```
+
+Upon entering this command, you will be prompted to provide the configuration file name. Enter the name and ensure to update it in the [inferless.yaml](https://github.com/inferless/Phi-3-128k/blob/main/inferless.yaml) file. Now you are ready for the deployment.
+
+![](/images/llama70b-6.png)
+
+### Deploy the Model
+
+Execute the following command to deploy your model. Once deployed, you can track the build logs on the Inferless platform:
+
+```
+inferless deploy
+```
