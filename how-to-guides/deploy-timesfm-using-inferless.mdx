@@ -1,0 +1,194 @@
+---
+title: "Deploy Google TimesFM using Inferless"
+description: TimesFM is a cutting-edge time series forecasting model developed by Google. It is designed to understand and generate detailed forecasts based on temporal data, making it a powerful tool for tasks such as demand forecasting, anomaly detection, and trend analysis.
+---
+
+## Introduction
+
+Google introduces TimesFM, a state-of-the-art time series forecasting model designed to push the boundaries of temporal data analysis. The TimesFM models leverage advanced deep learning techniques to provide accurate and robust forecasts. The models come pretrained and fine-tuned on diverse datasets, ensuring robust performance out of the box while also allowing for further customization and optimization.
+
+In this tutorial, we will explore how to deploy and utilize TimesFM using Inferless.
+
+## Our Observations
+
+We have used [Timesfm](https://github.com/google-research/timesfm) to deploy the model on a A100(80GB) system. Here are our observations:
+
+|  Inference Time | Cold Start Time |
+| --------------- | --------------- |
+| 0.12 sec        | 35.84 sec       |
+
+
+## Defining Dependencies
+
+We have deployed the model using the [Timesfm](https://github.com/google-research/timesfm) offical package.
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`.
+
+```
+Timesfm/
+├── app.py
+├── inferless-runtime-config.yaml
+├── inferless.yaml
+└── input_schema.py
+```
+
+You can also add other files to this directory.
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/Timesfm/blob/main/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference and pass it through `inputs(dict)` parameter.
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+```python
+import timesfm
+
+class InferlessPythonModel:
+    def initialize(self):
+        self.tfm = timesfm.TimesFm(
+            context_len=128,
+            horizon_len=96,
+            input_patch_len=32,
+            output_patch_len=128,
+            num_layers=20,
+            model_dims=1280,
+            backend="cpu",
+        )
+        self.tfm.load_from_checkpoint(repo_id="google/timesfm-1.0-200m")
+
+    def infer(self,inputs):
+        forecast_input = inputs["forecast_input"]
+        frequency_input = inputs["frequency_input"]
+        point_forecast, experimental_quantile_forecast = self.tfm.forecast(
+            [forecast_input],
+            freq=[frequency_input],
+        )
+        return {
+            "point_forecast":point_forecast,
+            "experimental_quantile_forecast":experimental_quantile_forecast
+        }
+
+    def finalize(self):
+        pass
+```
+
+## Create the Input Schema
+
+We have to create a [`input_schema.py`](https://github.com/inferless/Timesfm/blob/main/input_schema.py) in your GitHub/Gitlab repository this will help us create the Input parameters. You can checkout our documentation on [Input / Output Schema](https://docs.inferless.com/model-import/input-output-schema).
+
+For this tutorial, we have defined a parameter `prompt` which is required during the API call. Now lets create the `input_schema.py`.
+
+```JSON
+INPUT_SCHEMA = {
+    "forecast_input": {
+        'datatype': 'FP32',
+        'required': True,
+        'shape': [100],
+        'example': [0.0, 0.20064886, 0.39313661, 0.56963411, 0.72296256, 0.84688556, 0.93636273, 0.98775469, 0.99897117, 0.96955595, 0.90070545, 0.79522006, 0.65739025, 0.49282204, 0.30820902, 0.11106004, -0.09060615, -0.28858706, -0.47483011, -0.64176014, -0.7825875, -0.89158426, -0.96431712, -0.99782778, -0.99075324, -0.94338126, -0.85763861, -0.73701276, -0.58640998, -0.41195583, -0.22074597, -0.0205576, 0.18046693, 0.37415123, 0.55261747, 0.7086068, 0.83577457, 0.92894843, 0.98433866, 0.99969234, 0.97438499, 0.90944594, 0.8075165, 0.6727425, 0.51060568, 0.32770071, 0.13146699, -0.07011396, -0.26884313, -0.45663749, -0.62585878, -0.76962418, -0.88208623, -0.95867071, -0.99626264, -0.99333304, -0.95000106, -0.86802917, -0.75075145, -0.60293801, -0.43060093, -0.24074979, -0.0411065, 0.16020873, 0.35500771, 0.53536727, 0.69395153, 0.82431033, 0.9211415, 0.98050658, 0.99999098, 0.9788022, 0.91780205, 0.81947165, 0.68781042, 0.5281735, 0.34705389, 0.15181837, -0.04959214, -0.24898556, -0.43825186, -0.6096929, -0.75633557, -0.87221538, -0.95261911, -0.99427643, -0.995493, -0.95621934, -0.87805285, -0.76417283, -0.61921119, -0.44906404, -0.26065185, -0.06163804, 0.13988282, 0.33571414, 0.51789078, 0.67900297, 0.81249769, 0.91294525
+        ]
+    },
+    "frequency_input": {
+        'datatype': 'INT8',
+        'required': True,
+        'shape': [1],
+        'example': [0]
+    }
+}
+```
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Timesfm/blob/main/inferless-runtime-config.yaml).
+
+```python
+build:
+  run:
+    - "git clone https://github.com/google-research/timesfm.git"
+    - "cd timesfm"
+    - "pip install -e ."
+    - "pip install huggingface_hub[cli]==0.23.0 utilsforecast==0.1.10 praxis==1.4.0 paxml==1.4.0 einshape==1.0"
+    - "pip install jax[cuda] -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html jax==0.4.28"
+    - "huggingface-cli login --token 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 --add-to-git-credential"
+```
+
+## Deploying the model on Inferless
+
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub. 
+
+### Import the Model through GitHub
+
+Click on the`Repo(Custom code)` and then click on the `Add provider` to connect to your GitHub account. Once your account integration is completed, click on your Github account and continue.
+
+![](/images/stable-cascade-model-import.png)
+
+### Provide the Model details
+
+Enter the name of the model and pass the GitHub repository URL. 
+
+![](/images/TimeFM-model-details.png)
+
+## Configure the machine
+
+In this 4th step, the user has to configure the inference setup. On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A100 GPU. Select A100 from the drop-down menu in the GPU Type.
+
+You also have the flexibility to select from different machine types. Opting for a `dedicated` machine type will grant you access to an entire GPU while choosing the `shared` option allocates 50% of the VRAM. In this tutorial, we will opt for the dedicated machine type.
+
+Choose the Minimum and Maximum replicas that you would need for your model:
+
+* **Min replica:** The number of inference workers to keep on at all times.
+
+* **Max replica:** The maximum number of inference workers to allow at any point in time.
+
+If you wish to enable Automatic rebuild for your model setup, toggle the switch. Note that setting up a web-hook is necessary for this feature. Click [here](https://docs.inferless.com/model-import/automatic-build/automatic-build-via-webhooks) for more details.
+
+In the `Advance configuration`, we have the option to select the custom runtime. First, click on the `Add runtime` to upload the [inferless-runtime-config.yaml](https://github.com/inferless/Timesfm/blob/main/inferless-runtime-config.yaml) file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
+
+![](/images/musicgen-model-config.png)
+
+### Review and Deploy
+
+In this final stage, carefully review all modifications. Once you've examined all changes, proceed to deploy the model by clicking the `Submit` button.
+
+![](/images/TimesFM-Review.png)
+
+Voilà, your model is now deployed!
+
+![](/gif/TimeFM-demo.gif)
+
+## Method B: Deploying the model on Inferless CLI
+
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+### Initialization of the model
+
+Create the [app.py](https://github.com/inferless/Timesfm/blob/main/app.py) and [inferless-runtime-config.yaml](https://github.com/inferless/Timesfm/blob/main/inferless-runtime-config.yaml), move the files to the working directory. Run the following command to initialize your model:
+
+```
+inferless init
+```
+
+### Upload the custom runtime
+
+Once you have created the [inferless-runtime-config.yaml](https://github.com/inferless/Timesfm/blob/main/inferless-runtime-config.yaml) file, you can run the following command:
+
+```
+inferless runtime upload
+```
+
+Upon entering this command, you will be prompted to provide the configuration file name. Enter the name and ensure to update it in the [inferless.yaml](https://github.com/inferless/Timesfm/blob/main/inferless.yaml) file. Now you are ready for the deployment.
+
+![](/images/llama70b-6.png)
+
+### Deploy the Model
+
+Execute the following command to deploy your model. Once deployed, you can track the build logs on the Inferless platform:
+
+```
+inferless deploy
+```
