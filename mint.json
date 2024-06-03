@@ -9,7 +9,7 @@
     },
     "topbarCtaButton": {
       "name": "Join Private Beta",
-      "url": "https://0ooatrmbp25.typeform.com/to/nzuhQtba"
+      "url": "https://c5oxnv6v8ga.typeform.com/inferless"
     },
     "anchors": [
       {
@@ -172,7 +172,9 @@
         "pages": [
             "cookbook/serverless-logo-generator",         
             "cookbook/qna-serverless-pdf-application",         
-            "cookbook/serverless-voice-chatbot"         
+            "cookbook/serverless-voice-chatbot",
+            "cookbook/serverless-llama3-youtube-summarizer",
+            "cookbook/serverless-customer-service-bot"
         ]
       },
       {
@@ -232,7 +234,15 @@
                         "changelog/april-2024/16th-april"   
 
                     ]
-                    }
+                    },
+                   { 
+                      "group": "May 2024",
+                    "pages": [
+                        "changelog/may-2024/6th-may",
+                        "changelog/may-2024/27th-may"
+                     
+                    ]
+                      }
         ]
       },
       {
@@ -259,7 +269,9 @@
             "how-to-guides/deploy-musicgen-melody-large",
             "how-to-guides/how-to-finetune--and-inference-llama3",
             "how-to-guides/deploy-llama-3-using-inferless",
-            "how-to-guides/deploy-tenyx-llama-3-using-inferless"
+            "how-to-guides/deploy-tenyx-llama-3-using-inferless",
+            "how-to-guides/deploy-google-paligemma-3b-using-inferless",
+            "how-to-guides/deploy-timesfm-using-inferless"
         ]
       },
       {

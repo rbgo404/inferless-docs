@@ -1,0 +1,296 @@
+---
+title: "Build a Serverless Customer Service Voicebot"
+description: "Welcome to an engaging tutorial designed to walk you through creating a customer support voicebot where users can voice their queries and receive solutions. You'll learn to integrate speech recognition, large language, and text-to-speech models to develop a responsive and efficient voice-based customer support application."
+---
+## Key Components of the Application
+In building this application, we'll utilize these components:
+
+1. __Dataset:__ We will use the dataset [Twitter customer support exchanges](https://www.kaggle.com/datasets/thoughtvector/customer-support-on-twitter?resource=download) to help the voicebot develop natural and effective conversational abilities, improving its response accuracy.
+2. __Vector Database:__ We will use [Pinecone](https://www.pinecone.io/) will store embeddings of the dataset, aiding in the retrieval of relevant information to provide context to the language model.
+3. __Embedding Model:__ We will utilize an embedding model [bge-small-en-v1.5](https://huggingface.co/BAAI/bge-small-en-v1.5) to convert textual data from our dataset into numerical vectors. By storing these vectors in a Pinecone, our bot can quickly access relevant information to generate accurate and contextually appropriate responses.
+4. __Automatic Speech Recognition Model:__ We will use the [whisper-large-v3](https://huggingface.co/openai/whisper-large-v3) to convert spoken words into text.
+5. __Text Generation Model:__ The [Hermes-2-Pro-Llama-3-8B](https://huggingface.co/NousResearch/Hermes-2-Pro-Llama-3-8B) will generate responses to user queries.
+6. __Text-to-Audio Model:__ [Piper](https://github.com/rhasspy/piper) will convert the generated text responses into speech for a seamless conversational experience.
+
+
+## Crafting Your Application
+This tutorial guides you through creating a customer support voicebot where users can speak their queries and the bot responds with spoken solutions. It leverages technologies such as [Pinecone](https://www.pinecone.io/), [Faster-Whisper](https://github.com/SYSTRAN/faster-whisper), [LlamaIndex](https://www.llamaindex.ai/), [Piper](https://github.com/rhasspy/piper), and [Inferless](https://www.inferless.com/).
+![](/images/SpotifyCustomerSupport.png)
+
+## Document Processing and Storage in Pinecone
+To process and store documents in Pinecone, we download and prepare the [dataset](https://github.com/inferless/Customer-Service-Voicebot/blob/main/SpotifyCustomerSupport.txt), then load it using a `SimpleDirectoryReader`. We initialize Pinecone and create an index to store the document embeddings. These embeddings enable efficient retrieval and querying, providing relevant context for the language model in the application.
+
+## Core Development Steps
+### Speech-to-Speech Generation
+- __Objective:__ Capture user voice input, transcribe it to text, generate the text response, and convert it back to speech.
+- __Action:__ Implement a Python class ([InferlessPythonModel](https://github.com/inferless/Customer-Service-Voicebot/blob/main/app.py)) to handle the entire speech-to-speech process, including voice input handling, model integration, and audio response generation.
+
+```python
+import os
+import time
+import nltk
+import io
+import base64
+import numpy as np
+import pandas as pd
+import requests
+from llama_index.core import ServiceContext, SimpleDirectoryReader, GPTVectorStoreIndex, PromptHelper, VectorStoreIndex, KeywordTableIndex, StorageContext, load_index_from_storage
+from llama_index.llms.vllm import Vllm
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
+from llama_index.core import Settings
+from transformers import AutoTokenizer
+from llama_index.vector_stores.pinecone import PineconeVectorStore
+from pinecone import Pinecone, ServerlessSpec
+from faster_whisper import WhisperModel
+import wave
+from piper.voice import PiperVoice
+
+class InferlessPythonModel:
+    def initialize(self):
+        self.audio_file = "output.mp3"
+        # Initialize tokenizer
+        self.tokenizer = AutoTokenizer.from_pretrained('NousResearch/Hermes-2-Pro-Llama-3-8B', trust_remote_code=True)
+
+        # Initialize LLM
+        self.llm = Vllm(
+            model="NousResearch/Hermes-2-Pro-Llama-3-8B",
+            max_new_tokens=256,
+            top_k=10,
+            top_p=0.95,
+            temperature=0.1,
+            vllm_kwargs={"swap_space": 1, "gpu_memory_utilization": 0.9},
+        )
+
+        # Initialize embedding model
+        self.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
+
+        # Configure settings
+        Settings.llm = self.llm
+        Settings.embed_model = self.embed_model
+        Settings.chunk_size = 1024
+
+        #Load the Dataset to Pinecone
+        self.load_dataset()
+
+        # Initialize Pinecone
+        self.pc = Pinecone(api_key="153e3e06-a636-4925-bd3f-82b3349d59eb")
+        self.index = self.pc.Index("document")
+
+        # Initialize vector store and query engine
+        self.vector_store = PineconeVectorStore(pinecone_index=self.index)
+        self.index = GPTVectorStoreIndex.from_vector_store(self.vector_store)
+        self.query_engine = self.index.as_query_engine()
+
+        # Initialize Whisper model
+        self.model_size = "large-v3"
+        self.model_whisper = WhisperModel(self.model_size, device="cuda", compute_type="float16")
+
+        # Ensure the onnx_models directory exists
+        self.model_dir = "onnx_models"
+        os.makedirs(self.model_dir, exist_ok=True)
+
+        # Download the Piper voice model if it doesn't exist
+        self.model_path = os.path.join(self.model_dir, "en_US-lessac-medium.onnx")
+        self.model_json_path = os.path.join(self.model_dir, "en_US-lessac-medium.onnx.json")
+        self.download_model()
+
+        # Initialize Piper voice model
+        self.voice = PiperVoice.load(self.model_path, use_cuda=True)
+    
+    def base64_to_mp3(self, base64_data, output_file_path):
+        # Convert base64 audio data to mp3 file
+        mp3_data = base64.b64decode(base64_data)
+        with open(output_file_path, "wb") as mp3_file:
+            mp3_file.write(mp3_data)
+
+    def load_dataset(self):
+        # Setup dataset directory and file path
+        dataset_dir = "dataset"
+        os.makedirs(dataset_dir, exist_ok=True)
+        dataset_path = os.path.join(dataset_dir, "SpotifyCustomerSupport.txt")
+        
+        # Download dataset if it doesn't exist
+        if not os.path.exists(dataset_path):
+            url = "https://github.com/inferless/Customer-Service-Voicebot/raw/main/SpotifyCustomerSupport.txt"
+            response = requests.get(url)
+            response.raise_for_status()
+            with open(dataset_path, 'wb') as f:
+                f.write(response.content)
+        
+            # Load documents and initialize Pinecone
+            documents = SimpleDirectoryReader(dataset_dir).load_data()
+            pc = Pinecone(api_key="153e3e06-a636-4925-bd3f-82b3349d59eb")
+            pc.create_index(
+                name="document",
+                dimension=384,
+                metric="euclidean",
+                spec=ServerlessSpec(cloud="aws", region="us-east-1"),
+            )
+            index = pc.Index("document")
+            
+            # Setup vector store and storage context
+            vector_store = PineconeVectorStore(pinecone_index=index)
+            storage_context = StorageContext.from_defaults(vector_store=vector_store)
+            index = VectorStoreIndex.from_documents(documents, storage_context=storage_context)
+
+    def download_model(self):
+        if not os.path.exists(self.model_path):
+            url_list = ["https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx"
+            , "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json"]
+            download_items = [self.model_path,self.model_json_path]
+            for idx in range(len(url_list)):
+                response = requests.get(url_list[idx])
+                response.raise_for_status()  # Check if the request was successful
+                with open(download_items[idx], 'wb') as f:
+                    f.write(response.content)
+                print(f"Downloaded {download_items[idx]}")
+
+    def infer(self, inputs):
+        audio_data = inputs["audio_base64"]
+        
+        #Convert the audio from base64 to .mp3
+        self.base64_to_mp3(audio_data, self.audio_file)
+
+        # Transcribe audio file
+        segments, info = self.model_whisper.transcribe(self.audio_file, beam_size=5)
+        user_text = ''.join([segment.text for segment in segments])
+
+        # Prepare messages for chat template
+        messages = [
+            {"role": "system", "content": "You are Customer Support Assistant."},
+            {"role": "user", "content": user_text}
+        ]
+
+        # Generate input for the LLM
+        gen_input = self.tokenizer.apply_chat_template(messages, return_tensors="pt", tokenize=False)
+
+        # Query the vector store
+        response = self.query_engine.query(gen_input)
+
+        # Synthesize response to audio
+        byte_stream = io.BytesIO()
+        with wave.open(byte_stream, "wb") as wav_file:
+            # Set WAV file parameters
+            wav_file.setnchannels(1)  # Mono
+            wav_file.setsampwidth(2)  # 2 bytes per sample
+            wav_file.setframerate(22050)  # Sample rate
+
+            # Synthesize the speech and write to byte stream
+            self.voice.synthesize(response.response, wav_file)
+
+        # Get the byte stream's content
+        audio_bytes = byte_stream.getvalue()
+
+        # Encode audio bytes to Base64 string
+        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+
+        return {"generated_audio_base64": audio_base64,
+               "question":user_text,
+               "answer":response.response}
+
+    def finalize(self):
+        # Clear GPU memory (implementation depends on the framework used)
+        pass
+```
+### Setting up the Environment
+__Dependencies:__
+- __Objective:__ Ensure all necessary libraries are installed.
+- __Action:__ Run the command below to install dependencies:
+```bash
+pip install llama-index==0.10.36 llama-index-core==0.10.36 llama-index-embeddings-huggingface==0.2.0 llama-index-llms-vllm==0.1.7 llama-index-vector-stores-pinecone==0.1.7 llamaindex-py-client==0.1.19 vllm==0.4.2 piper-tts==1.2.0 onnxruntime-gpu==1.17.1 faster-whisper==1.0.2 nltk==3.8.1 transformers==4.40.2 pinecone-client==3.2.2
+```
+This command ensures your environment has all the tools required for the application.
+### Deploying Your Model with Inferless CLI
+1. __Run the following command to initialize your model:__
+```bash
+inferless init
+```
+2. __Upload Custom Runtime:__ Use the following command to upload your [custom runtime](https://github.com/inferless/Customer-Service-Voicebot/blob/main/inferless-runtime-config.yaml).
+```bash
+inferless runtime upload
+```
+Here's the custom runtime for the application:
+```yaml
+build:
+  python_packages:
+    - "llama-index==0.10.36"
+    - "llama-index-core==0.10.36"
+    - "llama-index-embeddings-huggingface==0.2.0"
+    - "llama-index-llms-vllm==0.1.7"
+    - "llama-index-vector-stores-pinecone==0.1.7"
+    - "llamaindex-py-client==0.1.19"
+    - "vllm==0.4.2"
+    - "piper-tts==1.2.0"
+    - "onnxruntime-gpu==1.17.1"
+    - "faster-whisper==1.0.2"
+    - "nltk==3.8.1"
+    - "transformers==4.40.2"
+    - "pinecone-client==3.2.2"
+```
+3. __Deploy Model:__ Execute `inferless deploy` to deploy and monitor the build logs on Inferless.
+```bash
+inferless deploy
+```
+### Demo of the Customer Service Voicebot.
+<video width="640" height="360" controls>
+  <source src="/videos/customer-support-bot.mp4" type="video/mp4"/>
+  Your browser does not support the video tag.
+</video>
+
+
+### Alternative Deployment Method
+Inferless also supports a user-friendly UI for model deployment, catering to users at all skill levels. Refer to Inferless's documentation for guidance on UI-based deployment.
+## Choosing Inferless for Deployment
+Deploying your Customer Service Voicebot application with Inferless offers compelling advantages, making your development journey smoother and more cost-effective. Here's why Inferless is the go-to choice:
+1. __Ease of Use:__ Forget the complexities of infrastructure management. With Inferless, you simply bring your model, and within minutes, you have a working endpoint. Deployment is hassle-free, without the need for in-depth knowledge of scaling or infrastructure maintenance.
+2. __Cold-start Times:__ Inferless's unique load balancing ensures faster cold-starts. Expect around 2.87 seconds to process each queries, significantly faster than many traditional platforms.
+3. __Cost Efficiency:__ Inferless optimizes resource utilization, translating to lower operational costs. Here's a simplified cost comparison:
+
+### Scenario 1
+You are looking to deploy a Customer Service Voicebot application for processing 100 queries.<br />
+
+__Parameters:__
+- __Total number of queries:__ 100 daily.<br />
+- __Inference Time:__ All models are hypothetically deployed on A100 80GB, taking 2.87 seconds of processing time and a cold start overhead of 24.01 seconds.<br />
+- __Scale Down Timeout:__ Uniformly 60 seconds across all platforms, except Hugging Face, which requires a minimum of 15 minutes. This is assumed to happen 100 times a day.<br />
+
+__Key Computations:__
+1. __Inference Duration:__ <br/>
+Processing 100 queries and each takes 2.87 seconds<br/>
+Total: 100 x 2.87 = 287 seconds (or approximately 0.08 hours)
+2. __Idle Timeout Duration:__<br/>
+Post-processing idle time before scaling down: (60 seconds - 2.87 seconds) x 100 = 5713 seconds (or 1.59 hours approximately)<br/>
+3. __Cold Start Overhead:__<br/>
+Total: 100 x 24.01 = 2401 seconds (or 0.67 hours approximately)<br/>
+
+__Total Billable Hours with Inferless:__ 0.08 (inference duration) + 1.59 (idle time) + 0.67 (cold start overhead)  = 2.34 hours<br/>
+__Total Billable Hours with Inferless:__ 2.34 hours<br/>
+
+### Scenario 2
+You are looking to deploy a Customer Service Voicebot application for processing 1000 queries per day.<br />
+
+__Key Computations:__<br />
+1. __Inference Duration:__<br />
+Processing 1000 queries and each takes 2.87 seconds
+Total: 1000 x 2.87 = 2870 seconds (or approximately 0.8 hours)‍
+2. __Idle Timeout Duration:__<br/>
+Post-processing idle time before scaling down: (60 seconds - 2.87 seconds) x 100 = 5713 seconds (or 1.59 hours approximately)<br/>
+3. __Cold Start Overhead:__<br/>
+Total: 100 x 24.01 = 2401 seconds (or 0.67 hours approximately)<br/>
+
+__Total Billable Hours with Inferless:__ 0.8 (inference duration) + 1.59 (idle time) + 0.67 (cold start overhead)  = 3.06 hours<br/>
+__Total Billable Hours with Inferless:__ 3.06 hours<br/>
+
+
+| Scenarios | On-Demand Cost | Serverless Cost|
+| :--- | :---- | :---- |
+|  100 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$2.85 (2.34 hours billed at $1.22/hour) |
+|  1000 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$3.73 (3.06 hours billed at $1.22/hour) |
+
+By opting for Inferless, **_you can achieve up to 90.10% cost savings._**<br/>
+
+Please note that we have utilized the A100(80 GB) GPU for model benchmarking purposes, while for pricing comparison, we referenced the A10G GPU price from both platforms. This is due to the unavailability of the A100 GPU in SageMaker.
+
+Also, the above analysis is based on a smaller-scale scenario for demonstration purposes. Should the scale increase tenfold, traditional cloud services might require maintaining 2-4 GPUs constantly active to manage peak loads efficiently. In contrast, Inferless, with its dynamic scaling capabilities, adeptly adjusts to fluctuating demand without the need for continuously running hardware.<br/>
+## Conclusion
+By following this guide, you're now equipped to build and deploy a sophisticated Customer Service Voicebot application. This tutorial showcases the seamless integration of advanced technologies, emphasizing the practical application of creating cost-effective solutions.

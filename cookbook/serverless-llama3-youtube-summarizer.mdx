@@ -1,0 +1,177 @@
+---
+title: "Build a Serverless YouTube Video Summarizer"
+description: "This tutorial will walk you through creating a YouTube video summarizer application using Inferless Serverless Infrastructure. You'll learn how to extract summaries from YouTube URLs by harnessing the power of the Llama-3 8B model."
+---
+## Key Components of the Application
+To build this application we will use these components:
+1. __YouTube Video Transcriber:__ This is required as to get the transcription of a given YouTube video. We will use [youtube-transcript-api](https://github.com/jdepoix/youtube-transcript-api).
+2. __Text Summarization Model:__ This model will summarize the transcribe text from the vidoe. We will use a fine-tuned [Llama-3 8B model](https://huggingface.co/NousResearch/Hermes-2-Pro-Llama-3-8B).
+
+## Crafting Your Application
+This tutorial guides you through the creation process of a [YouTube video summarizer application](https://github.com/inferless/YouTube-Video-Summarizer).
+![](/images/youtube-summarizer-llama3.png)
+
+## Core Development Steps
+- __Objective:__ Accept the YouTube video url as a input and generate a summary.
+- __Action:__ Implement a Python class ([InferlessPythonModel](https://github.com/inferless/YouTube-Video-Summarizer/blob/main/app.py)) that handles the entire process, including input handling, transcription, and summary generation.
+```python
+from youtube_transcript_api import YouTubeTranscriptApi
+from vllm import LLM, SamplingParams
+from transformers import AutoTokenizer
+
+
+class InferlessPythonModel:
+    def initialize(self):
+        model_id = "NousResearch/Hermes-2-Pro-Llama-3-8B"
+        self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95, max_tokens=1024)
+        self.llm = LLM(model=model_id)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_id)
+
+    def get_transcription(self,youtube_url):
+        video_id = youtube_url.split("=")[1]
+        transcript_text=YouTubeTranscriptApi.get_transcript(video_id)
+        transcript = ""
+        for i in transcript_text:
+            transcript += " " + i["text"]
+        return transcript
+        
+    def format_template(self,transcript):
+        messages = [
+    {
+        "role": "system",
+        "content": 
+        """You are a Senior NYT Reporter tasked with summarizing a youtube video.
+            "You will be provided with a youtube video transcript.",
+            "Carefully read the transcript a prepare thorough report of key facts and details.",
+            "Provide as many details and facts as possible in the summary.",
+            "Your report will be used to generate a final New York Times worthy report.",
+            "Give the section relevant titles and provide details/facts/processes in each section."
+            "REMEMBER: you are writing for the New York Times, so the quality of the report is important.",
+            "Make sure your report is properly formatted and follows the <report_format> provided below.
+             <report_format>
+        ### Overview
+        {give an overview of the video}
+
+        ### Section 1
+        {provide details/facts/processes in this section}
+
+        ... more sections as necessary...
+
+        ### Takeaways
+        {provide key takeaways from the video}
+        </report_format>
+        """
+    },
+    {"role": "user", "content":transcript}]
+        return messages
+        
+    def infer(self, inputs):
+        youtube_url = inputs["youtube_url"]
+        transcript = self.get_transcription(youtube_url)
+        trimmed_text = self.tokenizer.decode((self.tokenizer.encode(transcript)[:7900]),skip_special_tokens=True)
+        format_text = self.format_template(trimmed_text)
+        text = self.tokenizer.apply_chat_template(format_text,tokenize=False,add_generation_prompt=True)
+        result = self.llm.generate(text, self.sampling_params)
+        result_output = [output.outputs[0].text for output in result]
+        
+        return {"generated_summary": result_output[0]}
+
+    def finalize(self):
+        self.llm = None
+        self.tokenizer = None
+```
+### Setting up the Environment
+__Dependencies:__
+- __Objective:__ Ensure all necessary libraries are installed.
+- __Action:__ Run the command below to install dependencies:
+```bash
+pip install youtube-transcript-api==0.6.2 transformers==4.40.1 torch==2.2.1 xformers==0.0.25 vllm==0.4.1
+```
+This command ensures your environment has all the tools required for the application.
+### Deploying Your Model with Inferless CLI
+1. __Run the following command to initialize your model:__
+```bash
+inferless init
+```
+2. __Upload Custom Runtime:__ Use the following command to upload your [custom runtime](https://github.com/inferless/YouTube-Video-Summarizer/blob/main/inferless-runtime-config.yaml).
+```bash
+inferless runtime upload
+```
+Here's the custom runtime for the application:
+```yaml
+build:
+  python_packages:
+    - "youtube-transcript-api==0.6.2"
+    - "transformers==4.40.1"
+    - "torch==2.2.1"
+    - "xformers==0.0.25"
+    - "vllm==0.4.1"
+```
+3. __Deploy Model:__ Execute `inferless deploy` to deploy and monitor the build logs on Inferless.
+```bash
+inferless deploy
+```
+### Demo of the YouTube Video Summarizer.
+<video width="640" height="360" controls>
+  <source src="/videos/youtube-llama3.mp4" type="video/mp4"/>
+  Your browser does not support the video tag.
+</video>
+
+
+### Alternative Deployment Method
+Inferless also supports a user-friendly UI for model deployment, catering to users at all skill levels. Refer to Inferless's documentation for guidance on UI-based deployment.
+## Choosing Inferless for Deployment
+Deploying your YouTube Video Summarizer with Inferless offers compelling advantages, making your development journey smoother and more cost-effective. Here's why Inferless is the go-to choice:
+1. __Ease of Use:__ Forget the complexities of infrastructure management. With Inferless, you simply bring your model, and within minutes, you have a working endpoint. Deployment is hassle-free, without the need for in-depth knowledge of scaling or infrastructure maintenance.
+2. __Cold-start Times:__ Inferless's unique load balancing ensures faster cold-starts. Expect around 13.42 seconds to process each queries, significantly faster than many traditional platforms.
+3. __Cost Efficiency:__ Inferless optimizes resource utilization, translating to lower operational costs. Here's a simplified cost comparison:
+
+### Scenario 1
+You are looking to deploy a YouTube Video Summarizer for processing 100 queries.<br />
+
+__Parameters:__
+- __Total number of queries:__ 100 daily.<br />
+- __Inference Time:__ All models are hypothetically deployed on A100 80GB, taking 6.67 seconds of processing time and a cold start overhead of 13.42 seconds.<br />
+- __Scale Down Timeout:__ Uniformly 60 seconds across all platforms, except Hugging Face, which requires a minimum of 15 minutes. This is assumed to happen 100 times a day.<br />
+
+__Key Computations:__
+1. __Inference Duration:__ <br/>
+Processing 100 queries and each takes 6.67 seconds<br/>
+Total: 100 x 6.67 = 667 seconds (or approximately 0.19 hours)
+2. __Idle Timeout Duration:__<br/>
+Post-processing idle time before scaling down: (60 seconds - 6.67 seconds) x 100 = 5333 seconds (or 1.48 hours approximately)<br/>
+3. __Cold Start Overhead:__<br/>
+Total: 100 x 13.42 = 1342 seconds (or 0.37 hours approximately)<br/>
+
+__Total Billable Hours with Inferless:__ 0.19 (inference duration) + 1.48 (idle time) + 0.37 (cold start overhead)  = 2.04 hours<br/>
+__Total Billable Hours with Inferless:__ 2.04 hours<br/>
+
+### Scenario 2
+You are looking to deploy a YouTube Video Summarizer for processing 1000 queries per day.<br />
+
+__Key Computations:__<br />
+1. __Inference Duration:__<br />
+Processing 1000 queries and each takes 6.67 seconds
+Total: 1000 x 6.67 = 6670 seconds (or approximately 1.85 hours)‍
+2. __Idle Timeout Duration:__<br />
+Post-processing idle time before scaling down: (60 seconds - 6.67 seconds) x 100 = 5333 seconds (or 1.48 hours approximately)
+3. __Cold Start Overhead:__<br />
+Total: 100 x 13.42 = 1342 seconds (or 0.37 hours approximately)
+
+__Total Billable Hours with Inferless:__ 1.85 (inference duration) + 1.48 (idle time) + 0.37 (cold start overhead)  = 3.7 hours<br/>
+__Total Billable Hours with Inferless:__ 3.7 hours
+
+### Pricing Comparison for all the Scenario
+
+| Scenarios | On-Demand Cost | Serverless Cost|
+| :--- | :---- | :---- |
+|  100 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$2.49 (2.04 hours billed at $1.22/hour) |
+|  1000 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$4.51 (3.7 hours billed at $1.22/hour) |
+
+By opting for Inferless, **_you can achieve up to 91.35% cost savings._**<br/>
+
+Please note that we have utilized the A100(80 GB) GPU for model benchmarking purposes, while for pricing comparison, we referenced the A10G GPU price from both platforms. This is due to the unavailability of the A100 GPU in SageMaker.
+
+Also, the above analysis is based on a smaller-scale scenario for demonstration purposes. Should the scale increase tenfold, traditional cloud services might require maintaining 2-4 GPUs constantly active to manage peak loads efficiently. In contrast, Inferless, with its dynamic scaling capabilities, adeptly adjusts to fluctuating demand without the need for continuously running hardware.<br/>
+## Conclusion
+By following this guide, you're now equipped to build and deploy a sophisticated YouTube Video Summarizer. This tutorial showcases the seamless integration of advanced technologies, emphasizing the practical application of creating cost-effective solutions.
