@@ -1,0 +1,75 @@
+---
+authMethod: "key"
+title: "Model Logs Get"
+description: "This endpoint gets the logs of a model."
+api: 'POST /rest/model/logs/get/'
+---
+
+### Authorizations
+---
+<ParamField path="Authorization" type="string" required>
+  Your workspace API token.
+</ParamField>
+
+### Body
+---
+<ParamField path="model_id" type="string" required>
+  The ID of the model whose settings you want to update.
+</ParamField>
+
+<ParamField path="time_from" type="string" required>
+    The start time of the logs you want to retrieve.
+</ParamField>
+
+<ParamField path="time_to" type="string" required>
+    The end time of the logs you want to retrieve.
+</ParamField>
+
+<ParamField path="is_less_logs" type="boolean">
+    Whether to retrieve less logs or more.
+</ParamField>
+
+<ParamField path="next_token" type="string">
+    The token to retrieve the next set of logs.
+</ParamField>
+
+
+
+<RequestExample>
+```bash curl
+curl --location 'https://api.inferless.com/rest/model/logs/get/' \
+--header 'Authorization: <workspace-token>' \
+--header 'Content-Type: application/json' \
+--data '{
+    "model_id": "<your-model-id>",
+    "time_from": "2024-05-28T00:00:00.000Z",
+    "time_to": "2024-06-01T23:59:59.000Z",
+    "is_less_logs": false
+}'
+```
+</RequestExample>
+
+
+<ResponseExample>
+
+```json Response
+{
+    "status": "success",
+    "details": [
+        {
+            "time": "2024-06-01T00:54:45.370369921Z",
+            "log": "<log-item>",
+            "stream": "stderr"
+        },
+        {
+            "time": "2024-06-01T00:54:44.56988728Z",
+            "log": "<log-item>",
+            "stream": "stdout"
+        }
+    ],
+    "next_token": "1716196866721"
+}
+```
+
+</ResponseExample>
+

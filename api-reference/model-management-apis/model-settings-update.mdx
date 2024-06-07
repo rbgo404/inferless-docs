@@ -1,0 +1,85 @@
+---
+authMethod: "key"
+title: "Model Settings Update"
+description: "This endpoint updates the settings of a model."
+api: 'POST /rest/model/settings/update/'
+---
+
+### Authorizations
+---
+<ParamField path="Authorization" type="string" required>
+  Your workspace API token.
+</ParamField>
+
+### Body
+---
+<ParamField path="model_id" type="string" required>
+  The ID of the model whose settings you want to update.
+</ParamField>
+
+<ParamField path="data" type="object" required>
+    The settings you want to update for the model.
+    <Expandable title="properties">
+        <ParamField path="min_replica" type="integer">
+            The minimum number of replicas for the model.
+        </ParamField>
+        <ParamField path="max_replica" type="integer">
+            The maximum number of replicas for the model.
+        </ParamField>
+        <ParamField path="scale_down_delay" type="integer">
+            The delay in seconds before scaling down the model.
+        </ParamField>
+        <ParamField path="inference_time" type="integer">
+            The maximum time in seconds for the model to process an inference request.
+        </ParamField>
+        <ParamField path="is_dedicated" type="boolean">
+            Whether the model uses a dedicated machine or a shared machine.
+        </ParamField>
+        <ParamField path="machine_type" type="string">
+            The machine type for the model.
+        </ParamField>
+        <ParamField path="container_concurrency" type="integer">
+            The number of concurrent requests the model can handle.
+        </ParamField>
+        <ParamField path="is_input_output_enabled" type="boolean">
+            Whether the model supports input and output tracking.
+        </ParamField>
+    </Expandable>
+</ParamField>
+
+
+<RequestExample>
+
+```bash Request
+curl --location 'https://api.inferless.com/rest/model/settings/update/' \
+--header 'Authorization: <workspace-token>' \
+--header 'Content-Type: application/json' \
+--data '{
+    "model_id": "<model-id>",
+    "data": {
+        "min_replica": 0,
+        "max_replica": 2,
+        "scale_down_delay": 30,
+        "inference_time": 120,
+        "is_dedicated": false,
+        "machine_type": "T4",
+        "container_concurrency": 10,
+        "is_input_output_enabled": false
+    }
+}'
+```
+
+</RequestExample>
+
+
+<ResponseExample>
+
+```json Response
+{
+    "status": "success",
+    "details": "Model updated successfully"
+}
+```
+
+</ResponseExample>
+
