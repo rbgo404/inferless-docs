@@ -5,7 +5,7 @@ title: "Streaming with SSE Events"
 Server-Sent Events (SSE) is a standard that describes how servers can initiate data transmission towards browser clients once an initial client connection has been established. It’s particularly useful for creating a one-way communication channel from the server to the client, such as for real-time notifications, live updates, and streaming data.
 
 
-Server-Sent Events (SSE) can be enabled and configured independently for each model using the IS_STREAMING_OUTPUT property in the model configuration. There are some limitations in streaming the type of input 
+Server-Sent Events (SSE) can be enabled and configured independently for each model using the IS_STREAMING_OUTPUT property in the model configuration. You can use the 'stream_output_handler' to send each event and close the event stream. There are some limitations in streaming the type of input
 
 - Only INT, STRING, BOOLEAN are supported as the datatypes in the INPUT 
 - The shape of the parameter should be [1], multiple inputs or objects are by using "json.dumps(object)" and then passed as string 
