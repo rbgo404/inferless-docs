@@ -146,6 +146,7 @@
         "group": "API Reference",
         "pages": [
           "api-reference/dynamic-batching",
+          "api-reference/streaming",
           {
             "group": "Model Endpoint",
           "pages": [
