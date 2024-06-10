@@ -7,13 +7,14 @@ Server-Sent Events (SSE) is a standard that describes how servers can initiate d
 
 Server-Sent Events (SSE) can be enabled and configured independently for each model using the IS_STREAMING_OUTPUT property in the model configuration. There are some limitations in streaming the type of input 
 
-- Only INT, STRING, BOOLEAN are supported as the data type is supported data type 
+- Only INT, STRING, BOOLEAN are supported as the datatypes in the INPUT 
 - The shape of the parameter should be [1], multiple inputs or objects are by using "json.dumps(object)" and then passed as string 
+- Output should have the same the schema in all the iterative responses 
 
 
 You can use the below repo for example:
 
-[Template](https://github.com/inferless/inferless%5Ftemplate%5Fstreaming)
+[Template]( https://github.com/inferless/inferless%5Ftemplate%5Fstreaming )
 
 
 Define  IS_STREAMING_OUTPUT in the **input\_schema.py**
