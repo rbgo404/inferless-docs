@@ -2,6 +2,15 @@
     "name": "Inferless",
     "logo": "/logo.svg",
     "favicon": "/favicon.svg",
+
+    "api": {
+      "baseUrl": "https://api.inferless.com/",
+      "auth": {
+        "method": "key",
+        "name": "Authorization"
+    }
+    },
+
     "colors": {
       "primary": "#94CF09",
       "light": "#9FDD0C",
@@ -165,7 +174,14 @@
               "api-reference/debugging-model/build-logs"
             ]
               },
-              "api-reference/version-management"           
+              "api-reference/version-management",
+              {
+                "group": "Model Management APIs",
+                "pages": [
+                  "api-reference/model-management-apis/model-settings-update",
+                  "api-reference/model-management-apis/model-logs-get"
+                ]
+              }           
         ]
       },
       {
