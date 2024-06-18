@@ -39,13 +39,15 @@ select a a different runtime.yaml for the model in the current directory.
 $ inferless runtime select -p path/to/file
 ```
 
-create or update runtime in the workspace
+create runtime in the workspace
 
 ```console
 $ inferless runtime upload -p path/to/file -n name
 ```
 
+update runtime in the workspace
+
 ```console
-$ inferless runtime upload --patch -p path/to/file 
+$ inferless runtime patch -p path/to/file 
 ```
 
