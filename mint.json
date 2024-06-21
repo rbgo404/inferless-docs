@@ -68,8 +68,7 @@
         "group": "Getting Started",
         "pages": [
             "getting-started/deploy-ml",
-            "getting-started/deploy-containers",
-            "getting-started/deploy-serverless"            
+            "getting-started/deploy-containers"           
         ]
       },
       {
