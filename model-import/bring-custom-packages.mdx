@@ -7,6 +7,10 @@ Custom Runtime allows you to customize the container to have the software and de
 
 Here is a sample YAML file that you can write to import. You can follow the required structure of the build. You can specify the System as well as the Python packages that you need to run the model. 
 
+**cuda\_version** (Optional): 
+
+By default, it will use CUDA 12.1.1. Above are the available options : "12.4.1" / "12.1.1" / "11.8.0"
+
 **system\_packages** : 
 
 These are any libraries that you need for the model to run, for eg: "opencv" for image processing or like "ffmpeg" to open the audio files. 

@@ -5,13 +5,25 @@ description: The mission is to make deployment for AI models simple and efficien
 
 Our solutions offer far more competitive prices than large cloud providers such as AWS or GCP and let you quickly spin up services 
 
-## Why choose containers? 
 
-- Save time deploying models so as not to slow down ML development.
-- Build your custom runtime containers with your own software.
-- Choose between complete and fractional GPUs 
-- Seamless scaling of replicas and advanced configuration for Batching 
-- No need to worry about provisioning for Hardware.  
+## Key Advantages of Choosing Serverless:
+
+
+* **Simplified Workflow:** No infrastructure management lets you concentrate on code and data.
+
+* **Rapid Cold Starts:** Experience faster initialization of your services, reducing client wait times to up to 3 seconds
+
+* **Custom runtime support:**  Bring your own software libraries with i.e pip, system or custom build software packages 
+
+* **Adaptive Autoscaling:** Adjusts according to demand, ensuring optimal resource allocation.
+
+* **Dynamic Batching:** Send multiple requests from clients and batch them together automatically with sime click configuration.
+
+* **Efficient Deployment:** Streamline your ML rollouts without the operational bottlenecks.
+
+* **Maintenance-Free Environment:** Stay updated without the manual intervention of software patches. Ready Integration: Deploy with Nvidia Triton Inference Server effortlessly.
+
+
 
 ## How does it work?
 1. **Select your model -** Select the model you want to deploy. You can deploy a custom model available on the HuggingFace/AWS/ GCP for NLP, computer vision, or other tasks types
@@ -30,3 +42,21 @@ Our solutions offer far more competitive prices than large cloud providers such 
     
 
 4. **Call your APIs in Production -** You can get the endpoint details and the Model Workspace API keys. Simply call the model in production and enjoy the services.
+
+
+## How does Billing for Serverless work? 
+
+Your invoice will comprise: 
+
+* **Setup Time:** The duration required to load the model weights. Remarkably, Serverless trims this to one-third of container times.
+
+* **Inference Time:** The actual processing time for an inference.
+
+* **Eviction Timeout:** A custom setting dictating the 'warm' status duration for models. Adjustable between 5 seconds and 60 minutes.
+
+**Real-world Billing Example:** Visualize a deployment scenario on A10G dedicated, incurring 9 seconds for a cold start and 5 seconds for inference. For 1000 daily requests, where 10% hit a cold start:
+
+Billed Duration: (10% of 1000 requests \* 9 seconds) + (1000 requests \* 5 seconds) = 5900 seconds.
+
+**Your Bill:** 5900 seconds \* $0.00034 = $2.006.
+

@@ -2,6 +2,15 @@
     "name": "Inferless",
     "logo": "/logo.svg",
     "favicon": "/favicon.svg",
+
+    "api": {
+      "baseUrl": "https://api.inferless.com/",
+      "auth": {
+        "method": "key",
+        "name": "Authorization"
+    }
+    },
+
     "colors": {
       "primary": "#94CF09",
       "light": "#9FDD0C",
@@ -59,8 +68,7 @@
         "group": "Getting Started",
         "pages": [
             "getting-started/deploy-ml",
-            "getting-started/deploy-containers",
-            "getting-started/deploy-serverless"            
+            "getting-started/deploy-containers"           
         ]
       },
       {
@@ -146,6 +154,7 @@
         "group": "API Reference",
         "pages": [
           "api-reference/dynamic-batching",
+          "api-reference/streaming",
           {
             "group": "Model Endpoint",
           "pages": [
@@ -164,7 +173,14 @@
               "api-reference/debugging-model/build-logs"
             ]
               },
-              "api-reference/version-management"           
+              "api-reference/version-management",
+              {
+                "group": "Model Management APIs",
+                "pages": [
+                  "api-reference/model-management-apis/model-settings-update",
+                  "api-reference/model-management-apis/model-logs-get"
+                ]
+              }           
         ]
       },
       {
@@ -234,7 +250,22 @@
                         "changelog/april-2024/16th-april"   
 
                     ]
-                    }
+                    },
+                   { 
+                      "group": "May 2024",
+                    "pages": [
+                        "changelog/may-2024/6th-may",
+                        "changelog/may-2024/27th-may"
+                     
+                    ]
+                      },
+                   { 
+                      "group": "June 2024",
+                    "pages": [
+                        "changelog/june-2024/10th-june",
+                        "changelog/june-2024/21st-june"
+                    ]
+                      }
         ]
       },
       {
@@ -262,8 +293,9 @@
             "how-to-guides/how-to-finetune--and-inference-llama3",
             "how-to-guides/deploy-llama-3-using-inferless",
             "how-to-guides/deploy-tenyx-llama-3-using-inferless",
+            "how-to-guides/deploy-timesfm-using-inferless",
             "how-to-guides/deploy-google-paligemma-3b-using-inferless",
-            "how-to-guides/deploy-timesfm-using-inferless"
+            "how-to-guides/deploy-phi-3-128k"
         ]
       },
       {
