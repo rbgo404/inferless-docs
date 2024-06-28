@@ -20,13 +20,21 @@ How do you want to import the model? (default: Local) [Local, Git]:
 
 Enter the model name:
 
+Enter the region where you want to deploy the model (region-1, region-2) :
+
 GPU Type ( A100 / A10 / T4 )  : 
 
 Do you want to use Dedicated/Shared GPU? (default: Dedicated) [Dedicated, Shared]:
 
 Do you have a custom runtime ? : (default: No) [Yes, No]:
 
-Generate the runtime with requirements.txt? (default: No) [Yes, No]:
+Do you want to use previously created custom runtime ? : (default: No) [yes, No]:
+
+(If no is selected) Generate the runtime with requirements.txt? (default: No) [Yes, No]:
+
+(If yes is selected) Select the custom runtime from the list:
+
+(If yes is selected) Select the custom runtime version: (default: Latest version ie. 0)
 
 
 ### Output
@@ -45,7 +53,7 @@ Once init is complete you will see the below files created
 
 ```
 
-* `input_schema.py `This file will have all the configurations required for the deployment. Users can update this file according to their requirements.
+* `input_schema.py `This file defines the structure and validation rules for the input data that a model expects. This file is crucial for ensuring that the data fed into the model is in the correct format and meets all necessary requirements.
 
 * `inferless-runtime-config.yaml`This file will have all the software packages and the Python packages required for the model inferencing.
 

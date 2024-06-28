@@ -14,7 +14,7 @@ $ inferless runtime COMMAND [OPTIONS]  [ARGS]...
 
 * `list`: list all runtimes.
 * `select [options]`: use an existing runtime with the current model
-* `upload [options]`: create a new runtime on inferless with yaml.
+* `upload [options]`: create or update runtime on inferless with yaml.
 
 
 ## Example
@@ -39,8 +39,15 @@ select a a different runtime.yaml for the model in the current directory.
 $ inferless runtime select -p path/to/file
 ```
 
-create a new runtime in the workspace
+create runtime in the workspace
 
 ```console
 $ inferless runtime upload -p path/to/file -n name
 ```
+
+update runtime in the workspace
+
+```console
+$ inferless runtime patch -p path/to/file 
+```
+
