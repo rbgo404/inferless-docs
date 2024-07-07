@@ -54,7 +54,8 @@ class InferlessPythonModel:
         
     def infer(self, inputs):
         prompt = inputs["prompt"]
-        image = self.pipe(prompt,negative_prompt="low quality",num_inference_steps=28,guidance_scale=7.0,).images[0]
+        negative_prompt = inputs["negative_prompt"]
+        image = self.pipe(prompt,negative_prompt=negative_prompt,num_inference_steps=28,guidance_scale=7.0,).images[0]
         buff = BytesIO()
         image.save(buff, format="JPEG")
         img_str = base64.b64encode(buff.getvalue()).decode()
@@ -69,7 +70,7 @@ class InferlessPythonModel:
 
 We have to create a [`input_schema.py`](https://github.com/inferless/Stable-diffusion-3/blob/main/input_schema.py) in the GitHub/Gitlab repository this will help us create the Input parameters. You can checkout our documentation on [Input / Output Schema](https://docs.inferless.com/model-import/input-output-schema).
 
-For this tutorial, we have defined a parameter `prompt` and which is required during the API call. Now lets create the `input_schema.py`.
+For this tutorial, we have defined two parameters `prompt` and `negative_prompt` which are required during the API call. Now lets create the `input_schema.py`.
 
 ```JSON
 INPUT_SCHEMA = {
@@ -78,6 +79,12 @@ INPUT_SCHEMA = {
         'required': True,
         'shape': [1],
         'example': ["a living room, bright modern Scandinavian style house, large windows, magazine photoshoot, 8k, studio lighting"]
+    },
+    "negative_prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["low quality"]
     }
 }
 ```
