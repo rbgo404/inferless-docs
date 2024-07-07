@@ -33,7 +33,7 @@ You can also add other files to this directory.
 
 In the [app.py](https://github.com/inferless/Stable-diffusion-3/blob/main/app.py) we will define the class and import all the required functions
 
-1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference. We are using `huggingface access token` which will help us to download the gated model.
 
 2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference through the `inputs` parameter.
 
