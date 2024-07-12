@@ -1,0 +1,201 @@
+---
+title: "Deploy Stable Diffusion 3 using Inferless"
+description: "Stability AI has released Stable Diffusion 3, an advanced text-to-image generation model with significant improvements over its predecessors. This new version features a range of models from 800M to 8B parameters, providing users with scalable options to suit their needs."
+---
+
+## Introduction
+
+[Stable Diffusion 3](https://stability.ai/news/stable-diffusion-3) sets a new benchmark in image generation, delivering unparalleled image quality with enhanced efficiency. Utilizing a sophisticated Multimodal Diffusion Transformer (MMDiT) architecture, it significantly reduces noise and improves clarity. The model incorporates three advanced text encoders (OpenCLIP-ViT/G, CLIP-ViT/L and T5-xxl) to better understand and execute complex prompts. With innovative sampling methods like Rectified Flow, Stable Diffusion 3 ensures a streamlined path from noise to a detailed image, making it a powerful tool for creating high-fidelity images efficiently.
+
+## Our Observations
+
+We have deployed this model using A100 GPU and observed that the model took an average cold start time of `9.9 sec` and an average inference time of `4.4 sec` for `28`steps image generation.
+
+## Defining Dependencies
+
+We are using the HuggingFace [Diffusers](https://github.com/huggingface/diffusers) library for the deployment.
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`
+
+```
+Stable-diffusion-3/
+├── app.py
+├── inferless-runtime-config.yaml
+├── inferless.yaml
+└── input_schema.py
+```
+
+You can also add other files to this directory.
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/Stable-diffusion-3/blob/main/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference. We are using `huggingface access token` which will help us to download the gated model.
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference through the `inputs` parameter.
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+```python
+from diffusers import StableDiffusion3Pipeline
+import torch
+from io import BytesIO
+import base64
+import os
+
+class InferlessPythonModel:
+    def initialize(self):
+        HF_TOKEN =  os.getenv("HUGGINGFACE_AUTH_TOKEN") # Access Hugging Face token from environment variable
+        self.pipe = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3-medium-diffusers", torch_dtype=torch.float16,token=HF_TOKEN)
+        self.pipe = self.pipe.to("cuda")
+        
+    def infer(self, inputs):
+        prompt = inputs["prompt"]
+        negative_prompt = inputs["negative_prompt"]
+        inference_steps = inputs["num_inference_steps"]
+        guidance_scale = inputs["guidance_scale"]
+        
+        image = self.pipe(prompt,negative_prompt=negative_prompt,num_inference_steps=inference_steps,guidance_scale=guidance_scale).images[0]
+        buff = BytesIO()
+        image.save(buff, format="JPEG")
+        img_str = base64.b64encode(buff.getvalue()).decode()
+
+        return {"generated_image_base64" : img_str }
+    
+    def finalize(self):
+        self.pipe = None
+
+```
+
+## Create the Input Schema
+
+We have to create a [`input_schema.py`](https://github.com/inferless/Stable-diffusion-3/blob/main/input_schema.py) in the GitHub/Gitlab repository this will help us create the Input parameters. You can checkout our documentation on [Input / Output Schema](https://docs.inferless.com/model-import/input-output-schema).
+
+For this tutorial, we have defined four parameters `prompt`, `negative_prompt`, `num_inference_steps` and `guidance_scale` which are required during the API call. Now lets create the `input_schema.py`.
+
+```JSON
+INPUT_SCHEMA = {
+    "prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["a living room, bright modern Scandinavian style house, large windows, magazine photoshoot, 8k, studio lighting"]
+    },
+    "negative_prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["low quality"]
+    }
+    ,
+    "num_inference_steps": {
+        'datatype': 'INT8',
+        'required': True,
+        'shape': [1],
+        'example': [28]
+    }
+    ,
+    "guidance_scale": {
+        'datatype': 'FP32',
+        'required': True,
+        'shape': [1],
+        'example': [7.0]
+    }
+}
+```
+
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their own custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Stable-diffusion-3/blob/main/inferless-runtime-config.yaml).
+
+```
+build:
+  cuda_version: "12.1.1"
+  python_packages:
+    - "accelerate==0.31.0"
+    - "diffusers==0.29.1"
+    - "transformers==4.41.2"
+    - "torch==2.3.0"
+    - "sentencepiece==0.2.0"
+    - "protobuf==3.20.0"
+```
+
+## Deploying the model on Inferless
+
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub. 
+
+### Import the Model through GitHub
+
+Click on the`Repo(Custom code)` and then click on the `Add provider` to connect to your GitHub account. Once your account integration is completed, click on your Github account and continue.
+
+![](/images/stable-cascade-model-import.png)
+
+### Provide the Model details
+
+Enter the name of the model and pass the GitHub repository URL. 
+
+![](/images/sd3-model-details.png)
+
+## Configure the machine
+
+In this 4th step, the user has to configure the inference setup. On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A10 GPU. Select A10 from the drop-down menu in the GPU Type.
+
+You also have the flexibility to select from different machine types. Opting for a `dedicated` machine type will grant you access to an entire GPU while choosing the `shared` option allocates 50% of the VRAM. In this tutorial, we will opt for the dedicated machine type.
+
+Choose the Minimum and Maximum replicas that you would need for your model:
+
+* **Min replica:** The number of inference workers to keep on at all times.
+
+* **Max replica:** The maximum number of inference workers to allow at any point in time.
+
+If you wish to enable Automatic rebuild for your model setup, toggle the switch. Note that setting up a web-hook is necessary for this feature. Click [here](https://docs.inferless.com/model-import/automatic-build/automatic-build-via-webhooks) for more details.
+
+In the `Advance configuration`, we have the option to select the custom runtime. First, click on the `Add runtime` to upload the [inferless-runtime-config.yaml](https://github.com/inferless/Stable-diffusion-3/blob/main/inferless-runtime-config.yaml) file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
+
+![](/images/musicgen-model-config.png)
+
+### Review and Deploy
+
+In this final stage, carefully review all modifications. Once you've examined all changes, proceed to deploy the model by clicking the `Submit` button.
+
+![](/images/sd3-review.png)
+
+Voilà, your model is now deployed!
+
+![](/gif/sd3-demo.gif)
+
+## Method B: Deploying the model on Inferless CLI
+
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+### Initialization of the model
+
+Create the [app.py](https://github.com/inferless/Stable-diffusion-3/blob/main/app.py) and [inferless-runtime-config.yaml](https://github.com/inferless/Stable-diffusion-3/blob/main/inferless-runtime-config.yaml), move the files to the working directory. Run the following command to initialize your model:
+
+```
+inferless init
+```
+
+### Upload the custom runtime
+
+Once you have created the [inferless-runtime-config.yaml](https://github.com/inferless/Stable-diffusion-3/blob/main/inferless-runtime-config.yaml) file, you can run the following command:
+
+```
+inferless runtime upload
+```
+
+Upon entering this command, you will be prompted to provide the configuration file name. Enter the name and ensure to update it in the [inferless.yaml](https://github.com/inferless/Stable-diffusion-3/blob/main/inferless.yaml) file. Now you are ready for the deployment.
+
+![](/images/llama70b-6.png)
+
+### Deploy the Model
+
+Execute the following command to deploy your model. Once deployed, you can track the build logs on the Inferless platform:
+
+```
+inferless deploy
+```
