@@ -55,7 +55,10 @@ class InferlessPythonModel:
     def infer(self, inputs):
         prompt = inputs["prompt"]
         negative_prompt = inputs["negative_prompt"]
-        image = self.pipe(prompt,negative_prompt=negative_prompt,num_inference_steps=28,guidance_scale=7.0,).images[0]
+        inference_steps = inputs["num_inference_steps"]
+        guidance_scale = inputs["guidance_scale"]
+        
+        image = self.pipe(prompt,negative_prompt=negative_prompt,num_inference_steps=inference_steps,guidance_scale=guidance_scale).images[0]
         buff = BytesIO()
         image.save(buff, format="JPEG")
         img_str = base64.b64encode(buff.getvalue()).decode()
@@ -64,13 +67,14 @@ class InferlessPythonModel:
     
     def finalize(self):
         self.pipe = None
+
 ```
 
 ## Create the Input Schema
 
 We have to create a [`input_schema.py`](https://github.com/inferless/Stable-diffusion-3/blob/main/input_schema.py) in the GitHub/Gitlab repository this will help us create the Input parameters. You can checkout our documentation on [Input / Output Schema](https://docs.inferless.com/model-import/input-output-schema).
 
-For this tutorial, we have defined two parameters `prompt` and `negative_prompt` which are required during the API call. Now lets create the `input_schema.py`.
+For this tutorial, we have defined four parameters `prompt`, `negative_prompt`, `num_inference_steps` and `guidance_scale` which are required during the API call. Now lets create the `input_schema.py`.
 
 ```JSON
 INPUT_SCHEMA = {
@@ -85,6 +89,20 @@ INPUT_SCHEMA = {
         'required': True,
         'shape': [1],
         'example': ["low quality"]
+    }
+    ,
+    "num_inference_steps": {
+        'datatype': 'INT8',
+        'required': True,
+        'shape': [1],
+        'example': [28]
+    }
+    ,
+    "guidance_scale": {
+        'datatype': 'FP32',
+        'required': True,
+        'shape': [1],
+        'example': [7.0]
     }
 }
 ```
@@ -124,7 +142,7 @@ Enter the name of the model and pass the GitHub repository URL.
 
 ## Configure the machine
 
-In this 4th step, the user has to configure the inference setup. On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A100 GPU. Select A100 from the drop-down menu in the GPU Type.
+In this 4th step, the user has to configure the inference setup. On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A10 GPU. Select A10 from the drop-down menu in the GPU Type.
 
 You also have the flexibility to select from different machine types. Opting for a `dedicated` machine type will grant you access to an entire GPU while choosing the `shared` option allocates 50% of the VRAM. In this tutorial, we will opt for the dedicated machine type.
 
