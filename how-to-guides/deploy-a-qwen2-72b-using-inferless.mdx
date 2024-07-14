@@ -92,7 +92,7 @@ class InferlessPythonModel:
 
 We have to create a [input_schema.py](https://github.com/inferless/Qwen2-72B-Instruct/blob/main/input_schema.py) in your GitHub/Gitlab repository this will help us create the Input parameters. You can checkout our documentation on [Input / Output Schema](https://docs.inferless.com/model-import/input-output-schema).
 
-For this tutorial, we have defined a parameter `prompt` which is required during the API call. Now lets create the `input_schema.py`.
+For this tutorial, we have defined these parameter `prompt`, `temperature`, `top_p`, `repetition_penalty`, `max_tokens` and `top_k`  which are required during the API call. Now lets create the `input_schema.py`.
 
 ```JSON
 INPUT_SCHEMA = {
