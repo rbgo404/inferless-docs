@@ -1,0 +1,223 @@
+---
+title: "Deploy Qwen2-72B-Instruct using Inferless"
+description: "Qwen2-72B-Instruct is a part of the Qwen2 series of large language models ranging from 0.5 to 72 billion parameters. The repository is for the 72B instruction-tuned model for deploying the model in the Inferless platform."
+---
+
+## Introduction
+
+
+[Qwen2-72B-Instruct](https://huggingface.co/Qwen/Qwen2-72B-Instruct) is a part of the latest series of [Qwen2 large language models](https://qwenlm.github.io/blog/qwen2/), featuring base and instruction-tuned models ranging from 0.5 to 72 billion parameters, expanding language support to 29 languages. These models showcase state-of-the-art performance across various benchmarks, with significant improvements in coding and mathematical tasks. Notably, the 7B and 72B instruction-tuned versions support an impressive 128K token context length, pushing the boundaries of large language model capabilities.
+
+
+## Our Observations
+
+We have deployed the model on an A100 GPU(80GB). Here are our observations:
+
+| Library      | Inference Time  | Cold Start Time |Tokens/Sec    | Output Tokens Length    |
+| ------------ | --------------- | --------------- | ------------ | ----------------------- |
+| vLLM         | 24.79 sec       | 35.59 sec       | 17.83        | 512                     |
+
+Note: The inference time, cold start time, and tokens per second are average values.
+
+## Defining Dependencies
+
+We are using the [vLLM](https://github.com/vllm-project/vllm/) to serve the model on a single A100 (80GB).
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`.
+
+```
+Qwen2-72B-Instruct/
+├── app.py
+├── inferless-runtime-config.yaml
+├── inferless.yaml
+└── input_schema.py
+```
+
+You can also add other files to this directory.
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/Qwen2-72B-Instruct/blob/main/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference and pass it through `inputs(dict)` parameter.
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+```python
+from vllm import LLM, SamplingParams
+from transformers import AutoTokenizer
+
+class InferlessPythonModel:
+
+    def initialize(self):
+        model_id = "Qwen/Qwen2-72B-Instruct-AWQ"  # Specify the model repository ID
+        # Initialize the LLM object with the downloaded model directory
+        self.llm = LLM(model=model_id, enforce_eager=True, quantization="AWQ")
+        
+        # Load the tokenizer associated with the pre-trained model
+        self.tokenizer = AutoTokenizer.from_pretrained(model_id)
+
+    def infer(self, inputs):
+        prompts = inputs["prompt"]  # Extract the prompt from the input
+        temperature = inputs.get("temperature",0.7)
+        top_p = inputs.get("top_p",0.1)
+        repetition_penalty = inputs.get("repetition_penalty",1.18)
+        top_k = inputs.get("top_k",40)
+        max_tokens = inputs.get("max_tokens",512)
+
+        # Define sampling parameters for model generation
+        sampling_params = SamplingParams(temperature=temperature,top_p=top_p,repetition_penalty=repetition_penalty,
+                                         top_k=top_k,max_tokens=max_tokens)
+        # Apply the chat template and convert to a list of strings (without tokenization)
+        input_text = self.tokenizer.apply_chat_template([{"role": "user", "content": prompts}], tokenize=False)
+
+        # Generate text using the LLM with the specified sampling parameters
+        result = self.llm.generate(input_text, sampling_params)
+
+        # Extract the generated text from the result object
+        result_output = [output.outputs[0].text for output in result]
+
+        # Return a dictionary containing the generated text
+        return {"generated_result": result_output[0]}
+
+    def finalize(self):
+        self.llm = None
+```
+
+## Create the Input Schema
+
+We have to create a [input_schema.py](https://github.com/inferless/Qwen2-72B-Instruct/blob/main/input_schema.py) in your GitHub/Gitlab repository this will help us create the Input parameters. You can checkout our documentation on [Input / Output Schema](https://docs.inferless.com/model-import/input-output-schema).
+
+For this tutorial, we have defined these parameter `prompt`, `temperature`, `top_p`, `repetition_penalty`, `max_tokens` and `top_k`  which are required during the API call. Now lets create the `input_schema.py`.
+
+```JSON
+INPUT_SCHEMA = {
+    "prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["What is deep meaning?"]
+    },
+    "temperature": {
+        'datatype': 'FP32',
+        'required': False,
+        'shape': [1],
+        'example': [0.7]
+    },
+    "top_p": {
+        'datatype': 'FP32',
+        'required': False,
+        'shape': [1],
+        'example': [0.1]
+    },
+    "repetition_penalty": {
+        'datatype': 'FP32',
+        'required': False,
+        'shape': [1],
+        'example': [1.18]
+    },
+    "max_tokens": {
+        'datatype': 'INT16',
+        'required': False,
+        'shape': [1],
+        'example': [512]
+    },
+    "top_k":{
+        'datatype': 'INT8',
+        'required': False,
+        'shape': [1],
+        'example': [40]
+    }
+}
+```
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Qwen2-72B-Instruct/blob/main/inferless-runtime-config.yaml).
+
+```python
+build:
+  python_packages:
+    - "transformers==4.41.2"
+    - "vllm==0.5.0.post1"
+```
+
+## Deploying the model on Inferless
+
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub. 
+
+### Import the Model through GitHub
+
+Click on the`Repo(Custom code)` and then click on the `Add provider` to connect to your GitHub account. Once your account integration is completed, click on your Github account and continue.
+
+![](/images/q2_model_import.png)
+
+### Provide the Model details
+
+Enter the name of the model and pass the GitHub repository URL. 
+
+![](/images/q2_model_details.png)
+
+### Configure the machine
+
+In this 4th step, the user has to configure the inference setup. On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A100 GPU. Select A100 from the drop-down menu in the GPU Type.
+
+You also have the flexibility to select from different machine types. Opting for a `dedicated` machine type will grant you access to an entire GPU while choosing the `shared` option allocates 50% of the VRAM. In this tutorial, we will opt for the dedicated machine type.
+
+Choose the Minimum and Maximum replicas that you would need for your model:
+
+* **Min replica:** The number of inference workers to keep on at all times.
+
+* **Max replica:** The maximum number of inference workers to allow at any point in time.
+
+If you wish to enable Automatic rebuild for your model setup, toggle the switch. Note that setting up a web-hook is necessary for this feature. Click [here](https://docs.inferless.com/model-import/automatic-build/automatic-build-via-webhooks) for more details.
+
+In the `Advance configuration`, we have the option to select the custom runtime. First, click on the `Add runtime` to upload the [inferless-runtime-config.yaml](https://github.com/inferless/Qwen2-72B-Instruct/blob/main/inferless-runtime-config.yaml) file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
+
+![](/images/q2_model_config.png)
+
+### Review and Deploy
+
+In this final stage, carefully review all modifications. Once you've examined all changes, proceed to deploy the model by clicking the `Submit` button.
+
+![](/images/q2_model_review.png)
+
+Voilà, your model is now deployed!
+
+![](/gif/q2_model_demo.gif)
+
+## Method B: Deploying the model on Inferless CLI
+
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+### Initialization of the model
+
+Create the [app.py](https://github.com/inferless/Qwen2-72B-Instruct/blob/main/app.py) and [inferless-runtime-config.yaml](https://github.com/inferless/Qwen2-72B-Instruct/blob/main/inferless-runtime-config.yaml), move the files to the working directory. Run the following command to initialize your model:
+
+```
+inferless init
+```
+
+### Upload the custom runtime
+
+Once you have created the [inferless-runtime-config.yaml](https://github.com/inferless/Qwen2-72B-Instruct/blob/main/inferless-runtime-config.yaml) file, you can run the following command:
+
+```
+inferless runtime upload
+```
+
+Upon entering this command, you will be prompted to provide the configuration file name. Enter the name and ensure to update it in the [inferless.yaml](https://github.com/inferless/Qwen2-72B-Instruct/blob/main/inferless.yaml) file. Now you are ready for the deployment.
+
+![](/images/llama70b-6.png)
+
+### Deploy the Model
+
+Execute the following command to deploy your model. Once deployed, you can track the build logs on the Inferless platform:
+
+```
+inferless deploy
+```
