@@ -296,7 +296,8 @@
             "how-to-guides/deploy-timesfm-using-inferless",
             "how-to-guides/deploy-google-paligemma-3b-using-inferless",
             "how-to-guides/deploy-phi-3-128k",
-            "how-to-guides/deploy-stable-diffusion-3-using-inferless"
+            "how-to-guides/deploy-stable-diffusion-3-using-inferless",
+            "how-to-guides/deploy-text-to-speech-streaming"
         ]
       },
       {
