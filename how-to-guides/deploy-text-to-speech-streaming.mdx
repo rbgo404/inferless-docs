@@ -41,7 +41,7 @@ from transformers.generation.streamers import BaseStreamer
 
 class ParlerTTSStreamer(BaseStreamer):
     def __init__(self):
-        device = "cuda:0"
+        self.device = "cuda:0"
         torch_dtype = torch.float16
        
         repo_id = "parler-tts/parler_tts_mini_v0.1"
@@ -50,7 +50,7 @@ class ParlerTTSStreamer(BaseStreamer):
 
         self.SAMPLE_RATE = self.feature_extractor.sampling_rate
 
-        self.model = ParlerTTSForConditionalGeneration.from_pretrained(repo_id, torch_dtype=torch_dtype, low_cpu_mem_usage=True).to(device)
+        self.model = ParlerTTSForConditionalGeneration.from_pretrained(repo_id, torch_dtype=torch_dtype, low_cpu_mem_usage=True).to(self.device)
         self.decoder = self.model.decoder
         self.audio_encoder = self.model.audio_encoder
         self.generation_config = self.model.generation_config
@@ -165,6 +165,7 @@ In the [app.py](https://github.com/inferless/Parler-tts-streaming/blob/main/app.
 ```python
 import io
 import base64
+import numpy as np
 from threading import Thread
 from pydub import AudioSegment
 from parler import ParlerTTSStreamer
