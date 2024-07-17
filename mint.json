@@ -265,6 +265,12 @@
                         "changelog/june-2024/10th-june",
                         "changelog/june-2024/21st-june"
                     ]
+                      },
+                    { 
+                      "group": "July 2024",
+                    "pages": [
+                        "changelog/july-2024/16th-july"
+                    ]
                       }
         ]
       },
