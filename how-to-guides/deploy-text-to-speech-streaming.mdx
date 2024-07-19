@@ -6,7 +6,7 @@ description: "This tutorial demonstrates how to implement real-time text-to-spee
 ## Introduction
 
 This tutorial implements a text-to-speech (TTS) streaming model, [parler_tts_mini](https://huggingface.co/parler-tts/parler_tts_mini_v0.1) using [Parler_TTS](https://github.com/huggingface/parler-tts) library.
-It will enable real-time TTS streaming, converting text inputs into speech and streaming the resulting audio. It integrates efficient audio handling and conversion to ensure high-quality audio output.
+It will enable real-time TTS streaming, converting text inputs into speech and stream the audio chunk by chunk.
 
 ## Defining Dependencies
 
@@ -26,6 +26,45 @@ Parler-tts-streaming/
 ```
 
 You can also add other files to this directory.
+
+## Create the Input Schema
+
+Let's begin by creating the [`input_schema.py`](https://github.com/inferless/Parler-tts-streaming/blob/main/input_schema.py) file, which defines the input structure for our model. You can find the complete file in our [GitHub repository](https://github.com/inferless/Parler-tts-streaming/blob/main/input_schema.py).
+
+For this tutorial, we'll use two text inputs:
+1. `prompt_value`: The main text to be converted to speech
+2. `input_value`: The voice instructions for the TTS model
+
+Both inputs are of `string` data type. The output will be streamed using Server-Sent Events (SSE), delivering audio chunks as `base64` encoded strings. This approach allows for real-time audio playback as the speech is generated.
+
+To enable streaming with SSE, it's crucial to set the `IS_STREAMING_OUTPUT` property to `True` in your model configuration. This tells the system to expect and handle a continuous output stream rather than a single response.
+
+It's important to note the limitations when working with streaming inputs:
+
+1. Supported datatypes: Only `INT`, `STRING`, and `BOOLEAN` are supported as input datatypes.
+2. Input shape: The shape of each parameter should be `[1]`. For multiple inputs or complex objects, use `json.dumps(object)` to convert them to a string before passing.
+3. Consistent output schema: All iterative responses in the output stream must adhere to the same schema.
+
+Now, let's create the `input_schema.py` file with the following content:
+
+
+```JSON
+INPUT_SCHEMA = {
+    "input_value": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["A male speaker with a low-pitched voice delivering his words at a fast pace in a small, confined space with a very clear audio and an animated tone."]
+    },
+    "prompt_value": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["Remember - this is only the first iteration of the model! To improve the prosody and naturalness of the speech further, we're scaling up the amount of training data by a factor of five times."]
+    }
+}
+IS_STREAMING_OUTPUT = True
+```
 
 ## Create the class for Text-to-Speech Streamer
 In the [parler.py](https://github.com/inferless/Parler-tts-streaming/blob/main/parler.py) file, we define the `ParlerTTSStreamer` class and import all the required functions.
@@ -155,11 +194,34 @@ class ParlerTTSStreamer(BaseStreamer):
 
 ## Create the class for inference
 
-In the [app.py](https://github.com/inferless/Parler-tts-streaming/blob/main/app.py) we will define the class and import all the required functions
+In the [`app.py`](https://github.com/inferless/Parler-tts-streaming/blob/main/app.py) we will define the class and import all the required functions
 
-1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+1.  `def initialize`: In this function, we will create an object of the `ParlerTTSStreamer` class which will load the model. You can define any `variable` that you want to use during inference.
 
-2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference through the `inputs` parameter.
+2. `def infer`: The `infer` function is the core of your model's inference process. It's invoked for each incoming request and is responsible for processing the input and generating the streamed output. Here's a breakdown of its key components:
+
+   a. Output Streaming Setup:
+      - We create a dictionary `output_dict` with a key `'OUT'`.
+      - This dictionary will hold each chunk of the generated audio as a base64-encoded string.
+
+   b. Processing and Streaming:
+      - As the model generates audio chunks, we encode each chunk to base64.
+      - For each encoded chunk (`mp3_str`), we update the `output_dict`:
+        ```python
+        output_dict['OUT'] = mp3_str
+        ```
+      - We then use the `stream_output_handler.send_streamed_output()` function to send this chunk to the client:
+        ```python
+        stream_output_handler.send_streamed_output(output_dict)
+        ```
+      - This process repeats for each audio chunk, allowing real-time streaming of the generated speech.
+
+   c. Finalizing the Stream:
+      - After all chunks have been processed and sent, we call:
+        ```python
+        stream_output_handler.finalise_streamed_output()
+        ```
+      - This function signals the end of the stream to the client, properly closing the event streamer.
 
 3.  `def finalize`: This function cleans up all the allocated memory.
 
@@ -247,34 +309,6 @@ class InferlessPythonModel:
         # Clean up resources
         self.streamer = None
 ```
-
-## Create the Input Schema
-
-We have to create a [`input_schema.py`](https://github.com/inferless/Parler-tts-streaming/blob/main/input_schema.py) in the GitHub/Gitlab repository this will help us create the Input parameters. You can checkout our documentation on [Input / Output Schema](https://docs.inferless.com/model-import/input-output-schema).
-
-For this tutorial, we have defined two parameters `input_value` and `prompt_value`.
-
-To enable streaming with Server-Sent Events (SSE), set the `IS_STREAMING_OUTPUT` property to `True` in your model configuration.
-Now lets create the `input_schema.py`.
-
-```JSON
-INPUT_SCHEMA = {
-    "input_value": {
-        'datatype': 'STRING',
-        'required': True,
-        'shape': [1],
-        'example': ["A male speaker with a low-pitched voice delivering his words at a fast pace in a small, confined space with a very clear audio and an animated tone."]
-    },
-    "prompt_value": {
-        'datatype': 'STRING',
-        'required': True,
-        'shape': [1],
-        'example': ["Remember - this is only the first iteration of the model! To improve the prosody and naturalness of the speech further, we're scaling up the amount of training data by a factor of five times."]
-    }
-}
-IS_STREAMING_OUTPUT = True
-```
-
 
 ## Creating the Custom Runtime
 
