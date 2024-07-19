@@ -210,7 +210,7 @@ In the [`app.py`](https://github.com/inferless/Parler-tts-streaming/blob/main/ap
         ```python
         output_dict['OUT'] = mp3_str
         ```
-      - We then use the `stream_output_handler.send_streamed_output()` function to send this chunk to the client:
+      - We will use the `stream_output_handler` for streaming the generated audio output chunks. It provides  `stream_output_handler.send_streamed_output()` function to send this chunk to the client:
         ```python
         stream_output_handler.send_streamed_output(output_dict)
         ```
