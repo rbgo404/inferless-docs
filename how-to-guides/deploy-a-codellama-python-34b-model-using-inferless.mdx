@@ -32,7 +32,7 @@ We recommend the users to use NVIDIA A100(80GB) GPU to achieve similar results.
 
 ## Defining Dependencies
 
-This tutorial utilizes `vLLM` to load and serve the model. Define this library on the config.yaml file which you need to upload during the deployment.
+This tutorial utilizes `vLLM` to load and serve the model. Define this library on the inferless-runtime-config.yaml file which you need to upload during the deployment.
 
 ## Constructing the Github/Gitlab Template
 
@@ -41,18 +41,20 @@ While uploading your model from GitHub/Gitlab, you need to follow this format:
 ```
 codellama-34b-python/
 ├── app.py
-└── config.yaml
+├── inferless-runtime-config.yaml
+├── inferless.yaml
+└── input_schema.py
 ```
 
-* The[ app.py](https://github.com/inferless/inferless%5Fexamples/blob/main/code%5Fgeneration/CodeLlama-34B/app.py) (Check the Github URL) file will load and serve the model.
+* The[ app.py](https://github.com/inferless/inferless_tutorials/blob/main/code_generation/CodeLlama-34B/app.py) (Check the Github URL) file will load and serve the model.
 
-* The [config.yaml](https://github.com/inferless/inferless%5Ftutorials/blob/main/code%5Fgeneration/CodeLlama-34B/config.yaml) (Check the Github URL) file will have all the software and Python dependencies.
+* The [inferless-runtime-config.yaml](https://github.com/inferless/inferless_tutorials/blob/main/code_generation/CodeLlama-34B/inferless-runtime-config.yaml) (Check the Github URL) file will have all the software and Python dependencies.
 
 * You can also have any additional dependency files.
 
 ## Creating the class for inference
 
-In the [app.py](https://github.com/inferless/inferless%5Fexamples/blob/main/code%5Fgeneration/CodeLlama-34B/app.py) (Check the Github URL) file, first, you will import all the required classes and functions and then create a model class, for example, "InferlessPythonModel".This class will have three functions:
+In the [app.py](https://github.com/inferless/inferless_tutorials/blob/main/code_generation/CodeLlama-34B/app.py) (Check the Github URL) file, first, you will import all the required classes and functions and then create a model class, for example, "InferlessPythonModel".This class will have three functions:
 
 1.  `def initialize`: This function will load the model and tokenizer into the memory whenever the container starts.  
 ```  
@@ -85,7 +87,7 @@ def finalize(self,*args):
 
 ## Creating the custom runtime
 
-Whenever you upload the model through GitHub/GitLab, you must upload a custom runtime, i.e. a `config.yaml` file. This allows the user to add all the system and Python packages required for the model. For this tutorial, we are using the `libssl-dev` system package, and we use the Python packages mentioned in section 1.
+Whenever you upload the model through GitHub/GitLab, you must upload a custom runtime, i.e. a `inferless-runtime-config.yaml` file. This allows the user to add all the system and Python packages required for the model. For this tutorial, we are using the `libssl-dev` system package, and we use the Python packages mentioned in section 1.
 
 ```
 build:
@@ -100,44 +102,57 @@ build:
 
 ## Deploying the model on Inferless
 
-Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-requirements). For this tutorial, we will use GitHub. 
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub. 
 
-### Import the Model through GitHub
+### Step 1: Login to the inferless dashboard can click on Import model button
+Navigate to your desired workspace in Inferless and Click on `Add a custom model` button that you see on the top right. An import wizard will open up.
 
-Click on the`Repo(Custom code)` and then click on the `Add provider` to connect to your GitHub account. Once your account integration is completed, click on your Github account and continue.
+### Step 2: Follow the UI to complete the model  Import
+* Select the GitHub/GitLab Integration
+* Select the Github Repo that has the model code and enter the model name
+* Choose the type of machine, and specify the minimum and maximum number of replicas for deploying your model
+* Optionally you can configure Automatic build,
+* Configure Custom Runtime ( If you have pip or apt packages), and Environment variables like Inference Timeout / Container Concurrency / Scale Down Timeout 
+* Let the Validation Complete and click on Import button
+![](/images/import.jpg)
 
-![](/images/deploy-codellama2.png)
+### Step 3: Wait for the model build to complete usually takes ~5-10 minutes
 
-### Provide the Model details
+### Step 4: Use the APIs to call the model
+Once the model is in 'Active' status you can click on the 'API' page to call the model
 
-Enter the name of the model and pass the GitHub repository URL. 
+### Here is the Demo:
 
-Now, you can define the model's input and output parameters in JSON format. For more information, go through [this page](https://docs.inferless.com/model-import/input-output-json).
+![](/gif/gif16.gif)
 
-* INPUT: Refer to the function `def infer(self, inputs)`, here we mentioned `inputs["prompt"]`, which means `inputs` the parameter will have a key `prompt.`
+## Method B: Deploying the model on Inferless CLI
 
-* OUTPUT: The same goes here, the function mentioned above will return the results as a key-value pair `return {"result": result}`.
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
 
-Input JSON must include `prompt` a key to pass the instruction. For output JSON, it must be included`generated_result` to retrieve the output.
+### Initialization of the model
 
-![](/images/deploy-codellama3.png)
+Create the app.py and inferless-runtime-config.yaml, move the files to the working directory. Run the following command to initialize your model:
 
-### GPU Selection
+```
+inferless init
+```
 
-On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A100 GPU. Select A100 from the drop-down menu in the GPU Type.
+### Upload the custom runtime
 
-![](/images/deploy-codellama4.png)
+Once you have created the inferless-runtime-config.yaml file, you can run the following command:
 
-### Using the Custom Runtime
+```
+inferless runtime upload
+```
 
-In the `Advance configuration`, we have the option to select the custom runtime. First, click on the `Add runtime` to upload the `config.yaml` file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
+Upon entering this command, you will be prompted to provide the configuration file name. Enter the name and ensure to update it in the inferless.yaml file. Now you are ready for the deployment.
 
-![](/images/deploy-codellama5.png)
+![](/images/llama70b-6.png)
 
-### Review and Deploy
+### Deploy the Model
 
-In this final stage, carefully review all modifications. Once you've examined all changes, proceed to deploy the model by clicking the `Import` button.
+Execute the following command to deploy your model. Once deployed, you can track the build logs on the Inferless platform:
 
-Voilà, your model is now deployed!
-
-![](/gif/gif3.gif)
+```
+inferless deploy
+```
