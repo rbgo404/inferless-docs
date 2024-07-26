@@ -155,6 +155,7 @@
         "pages": [
           "api-reference/dynamic-batching",
           "api-reference/streaming",
+          "api-reference/aws-privatelink",
           {
             "group": "Model Endpoint",
           "pages": [

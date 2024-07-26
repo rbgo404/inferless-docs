@@ -1,0 +1,58 @@
+---
+title: "AWS PrivateLink - Inferless"
+---
+
+AWS PrivateLink is an ideal solution for establishing private connectivity between Inferless and your AWS services, your VPC, and on-premises applications without exposing your traffic to the public internet. 
+
+This service enhances security by ensuring that data traverses the Amazon network, significantly reducing the risk of exposure to threats. AWS PrivateLink is especially useful when you need to provide secure and private access to services hosted on AWS . Advantages include simplified network management without the need for IP address management, access control, or firewall rules; reduced data-exfiltration risk; and lower costs due to minimized data transfer charges by keeping traffic within the AWS network.
+
+
+### Step 1: Go to the Intergations page
+
+* Choose your `** AWS PrivateLink **`
+
+* Copy the you AWS Account ID and paste it in the Account ID field.
+
+<Frame caption = "Choose the training framework used for your model">![](/images/aws-private-image1.png)</Frame>
+
+* Copy the you VPC Endpoint Service name and keep it handly. 
+
+
+###  Step 2: Go to your AWS account and open Endpoints - VPC feature .
+
+* Click on  your `** Create endpoint **`
+
+* In Service category select `"Other endpoint services"?`
+
+* Paste the VPC Endpoint Service name that you copied from Inferless and click on Verify Service. 
+
+![](/images/aws-private-image2.png)
+
+* Select the VPC that you want to connect to Inferless and Modify the Additional Settings as per your requirements.
+
+* In DNS name section click on "Enable DNS name" and click on Next.
+
+* Select the SubNet that you want to connect to Inferless and click on Next.
+
+* Select the Security group that you want to attach to the endpoint and click on Next. ( Make sure you have 80 and 443 ports open in the security group)
+
+* Click on Create Endpoint.
+
+
+### Step 3: Go to the Model details 
+
+* Click on  your `** API **` Tab. 
+
+* You will see a checkbox to enable Private Endpoint.
+
+![](/images/aws-private-image3.png)
+
+* After clicking on it, the API will change and you will no longer be able to access it from Public internet
+
+
+
+### During Model Import 
+
+You can also enable this during model import in Step 4 of the model import process.
+
+![](/images/aws-private-image4.png)
