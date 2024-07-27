@@ -61,32 +61,151 @@ An Inferless Platform can pull or build the image based on the format and host t
 GitHub - inferless/inferless-docker-import-examplesGitHub
 </Card>
 
+## UI walkthrough for Docker Hub Import 
 
-## UI walkthrough for Docker Import 
+### Step 1: Add Model in your workspace.
 
-### Step 1: Select the Framework 
+* Navigate to your desired workspace in Inferless and Click on `"Add a Model" `button that you see on the top right. An import wizard will open up.
 
-![](/images/docker1.png)
+<Frame caption = "Click on Add Model">![](/images/step1-common-add-model.png)</Frame>
 
-### Step 2: Select Docker and Docker HUB as the provider
+###  Step 2: Choose the source of your model.
 
-![](/images/docker2.png)
+* Since we are using a model from Docker Hub, select `Docker Hub`as the method of upload from the `Provider` list.
 
-### Step 3: Provide the Details for Health API, Infer API, Port, and Sample Input 
+* To proceed with the upload, you will need to connect your `Docker Hub account`. This is a mandatory step as this helps us download the image from your Docker Hub.
 
-![](/images/docker3.png)
+<Frame caption = "After you have selected Repo ">![](/images/doc1-provider.png)</Frame>
 
-### Step 4: Select the Machine 
+### Step 3: Enter the model details 
+* Provide the details of `Image URL`, `Health check API`, `Infer API` and `Server Port`
+* `Model Name`: The desired name of the model that you wish to give
 
-![](/images/docker4.png)
-
-### Step 5 : Review the Details : 
-
-![](/images/docker5.png)
-
-
-
+<Frame caption = "Enter the details as noted">![](/images/doc2-model-details.png)</Frame>
+   * In case you would like to set up `Automatic rebuild` for your model, enable it  
+         * You would need to set up a webhook for this method. Click [here](/model-import/automatic-build-via-webhooks) for more details.
 
 
+### Step 4: Configure Machine and Environment.
+* Choose the type of machine, and specify the minimum and maximum number of replicas for deploying your model.
+         * **Min scale** \-  
+         ```  
+         The number of inference workers to keep on at all times.  
+         ```  
+         * **Max scale -**  
+         ```  
+         The maximum number of inference workers to allow at any point of time  
+         ``` 
+         * Configure Custom Runtime ( If you have pip or apt packages), choose Volume, Secrets and set Environment variables like Inference Timeout / Container Concurrency / Scale Down Timeout
+
+<Frame caption = "Set runtime and configuration">![](/images/common-machine-env.png)</Frame>
 
 
+### Step 5: Review your model details
+
+* Once you click "Continue," you will be able to review the details added for the model.
+
+* If you would like to make any changes, you can go back and make the changes.
+
+* Once you have reviewed everything, click `Deploy` to start the model import process.
+
+<Frame caption = "Review all the details carefully before proceeding">![](/images/common-deploy.png)</Frame>
+
+
+### Step 6 : Run your model
+
+* Once you click submit, the model import process would start.  
+* It may take some time to complete the import process, and during this time, you will be redirected to your workspace and can see the status of the import under `"In Progress/Failed"` tab.  
+<Frame caption = "View the model under `In-Progress/ Failed`">![](/images/common-in-progress.png)</Frame>
+  
+* If you encounter any errors during the model import process or if you want to view the build logs for any reason, you can click on the three dots menu and select "View build logs". This will show you a detailed log of the import process, which can help you troubleshoot any issues you may encounter.  
+* Post-upload, the model will be available under "My Models"  
+* You can then select the model and go to `-> API -> Inference Endpoint details. `Here you would find the API endpoints that can be called. You can click on the copy button on the right and can call your model.  
+  
+<Frame caption = "Under the API Tab, you can view the API endpoint details."> ![](/images/common-api-call.png)  </Frame>
+
+### Extra Step: Getting API key details
+
+* Make sure you change the "API Key" with your Key and "Input" with your custom input.
+
+* You can now call using this from your end. The inference result would be the output for these calls.  
+* In case you need help with API Keys:  
+   * Click on settings, available on the top, next to your Workspace Name  
+   * Click on "Workspace API keys"  
+   * You can view the details of your key or generate a new one  
+<Frame caption = "Sample for now">![](/images/common-workspace-api.png)</Frame>  
+
+## UI walkthrough for Dockerfile Import 
+
+### Step 1: Add Model in your workspace.
+
+* Navigate to your desired workspace in Inferless and Click on `"Add a Model" `button that you see on the top right. An import wizard will open up.
+
+<Frame caption = "Click on Add Model">![](/images/step1-common-add-model.png)</Frame>
+
+###  Step 2: Choose the source of your model.
+
+* Since we are using a model from Dockerfile, select `Dockerfile`as the method of upload from the `Provider` list.
+
+* To proceed with the upload, you will need to connect your `GitHub/GitLab account`. This is a mandatory step as this helps us get the file from your repository.
+
+<Frame caption = "After you have selected Repo ">![](/images/docf-1-provider.png)</Frame>
+
+### Step 3: Enter the model details 
+* Select your `Github Repository` and the `branch`.
+* Provide the details of `Health check API`, `Infer API`, `Server Port` and the `Docker File Path`
+* `Model Name`: The desired name of the model that you wish to give
+
+<Frame caption = "Enter the details as noted">![](/images/docf-2-model-details.png)</Frame>
+   * In case you would like to set up `Automatic rebuild` for your model, enable it  
+         * You would need to set up a webhook for this method. Click [here](/model-import/automatic-build-via-webhooks) for more details.
+
+
+### Step 4: Configure Machine and Environment.
+* Choose the type of machine, and specify the minimum and maximum number of replicas for deploying your model.
+         * **Min scale** \-  
+         ```  
+         The number of inference workers to keep on at all times.  
+         ```  
+         * **Max scale -**  
+         ```  
+         The maximum number of inference workers to allow at any point of time  
+         ``` 
+         * Configure Custom Runtime ( If you have pip or apt packages), choose Volume, Secrets and set Environment variables like Inference Timeout / Container Concurrency / Scale Down Timeout
+
+<Frame caption = "Set runtime and configuration">![](/images/common-machine-env.png)</Frame>
+
+
+### Step 5: Review your model details
+
+* Once you click "Continue," you will be able to review the details added for the model.
+
+* If you would like to make any changes, you can go back and make the changes.
+
+* Once you have reviewed everything, click `Deploy` to start the model import process.
+
+<Frame caption = "Review all the details carefully before proceeding">![](/images/common-deploy.png)</Frame>
+
+
+### Step 6 : Run your model
+
+* Once you click submit, the model import process would start.  
+   * It may take some time to complete the import process, and during this time, you will be redirected to your workspace and can see the status of the import under `"In Progress/Failed"` tab.  
+<Frame caption = "View the model under `In-Progress/ Failed`">![](/images/common-in-progress.png)</Frame>
+  
+   * If you encounter any errors during the model import process or if you want to view the build logs for any reason, you can click on the three dots menu and select "View build logs". This will show you a detailed log of the import process, which can help you troubleshoot any issues you may encounter.  
+   * Post-upload, the model will be available under "My Models"  
+   * You can then select the model and go to `-> API -> Inference Endpoint details. `Here you would find the API endpoints that can be called. You can click on the copy button on the right and can call your model.  
+  
+<Frame caption = "Under the API Tab, you can view the API endpoint details."> ![](/images/common-api-call.png)  </Frame>
+
+### Extra Step: Getting API key details
+
+* Make sure you change the "API Key" with your Key and "Input" with your custom input.
+
+* You can now call using this from your end. The inference result would be the output for these calls.  
+   * In case you need help with API Keys:  
+   * Click on settings, available on the top, next to your Workspace Name  
+   * Click on "Workspace API keys"  
+   * You can view the details of your key or generate a new one  
+<Frame caption = "Sample for now">![](/images/common-workspace-api.png)</Frame>  

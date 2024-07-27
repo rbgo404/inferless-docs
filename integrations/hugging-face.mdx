@@ -38,14 +38,14 @@ You can use the imported GitHub Repo to change the pre-processing and post-proce
 
 <Frame caption = "Select Hugging Face and also add the neccesary accounts">![](/images/hf-2.png)</Frame>
 
-   * In case you would like to set up `Automatic rebuild` for your model, enable it  
-         * You would need to set up a webhook for this method. Click [here](/model-import/automatic-build-via-webhooks) for more details.
-
 ### Step 3: Enter the model details 
 
 * **Model Details: In this step, Add your `model name`(The name that you wish to call your model), Choose the `model type`(Eg: Transformer), Choose the `task type` (Eg: Text generation) and `Huggingface model name`.
 
 <Frame caption = "Enter the details as noted">![](/images/hf-3-model-details.png)</Frame>
+
+   * In case you would like to set up `Automatic rebuild` for your model, enable it  
+         * You would need to set up a webhook for this method. Click [here](/model-import/automatic-build-via-webhooks) for more details.
 
 
 ### Step 4: Configure Machine and Environment.
@@ -77,12 +77,12 @@ You can use the imported GitHub Repo to change the pre-processing and post-proce
 ### Step 6 : Run your model
 
 * Once you click submit, the model import process would start.  
-   * It may take some time to complete the import process, and during this time, you will be redirected to your workspace and can see the status of the import under `"In Progress/Failed"` tab.  
+* It may take some time to complete the import process, and during this time, you will be redirected to your workspace and can see the status of the import under `"In Progress/Failed"` tab.  
 <Frame caption = "View the model under `In-Progress/ Failed`">![](/images/common-in-progress.png)</Frame>
   
-   * If you encounter any errors during the model import process or if you want to view the build logs for any reason, you can click on the three dots menu and select "View build logs". This will show you a detailed log of the import process, which can help you troubleshoot any issues you may encounter.  
-   * Post-upload, the model will be available under "My Models"  
-   * You can then select the model and go to `-> API -> Inference Endpoint details. `Here you would find the API endpoints that can be called. You can click on the copy button on the right and can call your model.  
+* If you encounter any errors during the model import process or if you want to view the build logs for any reason, you can click on the three dots menu and select "View build logs". This will show you a detailed log of the import process, which can help you troubleshoot any issues you may encounter.  
+* Post-upload, the model will be available under "My Models"  
+* You can then select the model and go to `-> API -> Inference Endpoint details. `Here you would find the API endpoints that can be called. You can click on the copy button on the right and can call your model.  
   
 <Frame caption = "Under the API Tab, you can view the API endpoint details."> ![](/images/common-api-call.png)  </Frame>
 
@@ -91,7 +91,7 @@ You can use the imported GitHub Repo to change the pre-processing and post-proce
 * Make sure you change the "API Key" with your Key and "Input" with your custom input.
 
 * You can now call using this from your end. The inference result would be the output for these calls.  
-   * In case you need help with API Keys:  
+* In case you need help with API Keys:  
    * Click on settings, available on the top, next to your Workspace Name  
    * Click on "Workspace API keys"  
    * You can view the details of your key or generate a new one  

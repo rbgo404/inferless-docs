@@ -6,85 +6,47 @@ title: "Demo S3"
 
 * You would need to note down the S3 Link of the Model file from AWS. A sample of how the S3 link is like -> `s3://infer-global-models/sample-module/gpt2-medium-1.5gb.zip`
 
-### Steps to import model file from AWS S3
+## Steps to import model file from AWS S3
+
+### Step 1: Add Model in your workspace.
 
 * Navigate to your desired workspace in Inferless and Click on `"Add a Model" `button that you see on the top right. An import wizard will open up.
 
-<Frame caption = "Click on Add Model">![](/images/s3-1.png)</Frame>
-
-
-### Step 1: Choose the framework on which your model was trained.
-
-* Choose your `**model training framework.**`
-
-* In case your desired framework is not available, we have provided detailed how-to guides for your reference
-
-<Frame caption="Choose the training framework used for your model">![](/images/s3-2.png)</Frame>
-
+<Frame caption = "Click on Add Model">![](/images/step1-common-add-model.png)</Frame>
 
 ###  Step 2: Choose the source of your model.
-
-* Since we are using a model from AWS S3 in this example, select `File `as the method of uploading.
-
-* Then Select `Cloud URL `in the next step.
+* Since we are using a model from AWS S3 in this example, select `AWS S3` as the method of uploading.
 
 * To proceed with the upload, you will need to connect your `AWS account`. This is a mandatory step as this helps us download the file from your AWS account.
 
 
-<Frame caption = "Select Model Repository -> AWS Sagemaker.">![](/images/s3-3.png)</Frame>
-
-
-* If you are using Inferless for the first time and have not added any providers before, click on the `"Add Provider" `button (+).
-
-![](/images/s3-4.png)
-
-* This would open a new tab with `"My Integrations"`. You can click `Connect Account` on the necessary accounts there.
-
-![](/images/s3-5.png)
-
-* Once you have completed it, you can come back to this page and click the `refresh` button provided. You would be able to see the added accounts then.
-
-![](/images/s3-6.png)
+<Frame caption = "After you have selected Repo ">![](/images/S3-1-provider.png)</Frame>
 
 ### Step 3: Enter the model details 
-
+* Provide the `Cloud URL`, which is a  S3 Link of the Model file from AWS.
 * **Model Name:** The desired name of the model that you wish to give.
-
 * **Sample Input:** Enter an example of how the input should be formatted for the model in JSON format.
-
 * **Sample Output:** Enter an example of how the output would be formatted for the model in JSON format.
+<Frame caption = "Enter the details as noted">![](/images/s3-model-details.png)</Frame>
 
-* After clicking next, you may notice a "Please Wait" status, which means that we are validating your model for requirements. If the validation is successful, the next step will open up. If there are any validation issues, they will be notified to you.
+   * In case you would like to set up `Automatic rebuild` for your model, enable it  
+         * You would need to set up a webhook for this method. Click [here](/model-import/automatic-build-via-webhooks) for more details.
 
-![](/images/s3-7.png)
 
-### Step 4: Model Configuration
+### Step 4: Configure Machine and Environment.
+* Choose the type of machine, and specify the minimum and maximum number of replicas for deploying your model.
+         * **Min scale** \-  
+         ```  
+         The number of inference workers to keep on at all times.  
+         ```  
+         * **Max scale -**  
+         ```  
+         The maximum number of inference workers to allow at any point of time  
+         ``` 
+         * Configure Custom Runtime ( If you have pip or apt packages), choose Volume, Secrets and set Environment variables like Inference Timeout / Container Concurrency / Scale Down Timeout
 
-After successful validation, you will move to the next step where you will be asked to choose the configuration for the model.
+<Frame caption = "Set runtime and configuration">![](/images/common-machine-env.png)</Frame>
 
-#### GPU and Machine Type selection
-
-**GPU Type:** We provide all types of GPUs, you can choose your required GPU from the dropdown list.
-
-**Machine Type:** Choose between our `Shared` and `Dedicated` GPU options. Opt for a Shared GPU to optimize costs and provide you with 50% of the vRAM. Alternatively, the Dedicated GPU provides exclusive resources, making it the ideal choice for deploying large models.
-
-#### Choose the Minimum and Maximum replicas
-
-**Min replica** \- The number of inference workers to keep on at all times.
-
-**Max replica -** The maximum number of inference workers to allow at any point in time
-
-In case you would like to set up an `Automatic rebuild` for your model, enable it. You would need to set up a webhook for this method. Click [here](https://docs.inferless.com/~/changes/Gb6bGbHHJsJFLAEdAzCQ/model-import/automatic-build-via-webhooks/github) for more details.
-
-#### Using the Custom Runtime
-
-In the `Advance configuration`, we have the option to select the custom runtime. First, click on the [Add runtime](https://docs.inferless.com/model-import/bring-custom-packages#how-to-use-custom-runtime-for-the-model) to upload the `config.yaml` file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
-
-#### Using Volume
-
-**Volume** allows you to store the model files on NFS-like writeable volumes, which can store model parameters to help with cold start. Click on the [Add volume](https://docs.inferless.com/model-import/my-volumes) to create a volume and select it from the dropdown menu.
-
-![](/images/s3-8.png)
 
 ### Step 5: Review your model details
 
@@ -92,28 +54,30 @@ In the `Advance configuration`, we have the option to select the custom runtime.
 
 * If you would like to make any changes, you can go back and make the changes.
 
-* Once you have reviewed everything, click "Submit" to start the model import process.
+* Once you have reviewed everything, click `Deploy` to start the model import process.
 
-### Step 6: Run your model
+<Frame caption = "Review all the details carefully before proceeding">![](/images/common-deploy.png)</Frame>
 
-* Once you click submit, the model import process will start.  
-   * It may take some time to complete the import process, and during this time, you will be redirected to your workspace and can see the status of the import under `"In Progress/Failed"` tab.  
+
+### Step 6 : Run your model
+
+* Once you click submit, the model import process would start.  
+* It may take some time to complete the import process, and during this time, you will be redirected to your workspace and can see the status of the import under `"In Progress/Failed"` tab.  
+<Frame caption = "View the model under `In-Progress/ Failed`">![](/images/common-in-progress.png)</Frame>
   
-   * If you encounter any errors during the model import process or if you want to view the build logs for any reason, you can click on the three dots menu and select "View build logs". This will show you a detailed log of the import process, which can help you troubleshoot any issues you may encounter.  
-   * Post upload, the model will be available under "My Models"  
-   * You can then select the model and go to `-> API -> Inference Endpoint details. `Here you would find the API endpoints that can be called. You can click on the copy button on the right and can call your model after modifying the input details.  
+* If you encounter any errors during the model import process or if you want to view the build logs for any reason, you can click on the three dots menu and select "View build logs". This will show you a detailed log of the import process, which can help you troubleshoot any issues you may encounter.  
+* Post-upload, the model will be available under "My Models"  
+* You can then select the model and go to `-> API -> Inference Endpoint details. `Here you would find the API endpoints that can be called. You can click on the copy button on the right and can call your model.  
   
-![](/images/s3-9.png)
+<Frame caption = "Under the API Tab, you can view the API endpoint details."> ![](/images/common-api-call.png)  </Frame>
 
-### Extra Step: API key details
+### Extra Step: Getting API key details
 
-* In case you need help with API Keys:
+* Make sure you change the "API Key" with your Key and "Input" with your custom input.
 
-* Click on settings, available on the top, next to your Workspace Name
-
-* Click on "Workspace API keys"
-
-* You can view the details of your key or generate a new one
-
-<Frame caption ="Sample for now">![](/images/s3-10.png)</Frame>
-
+* You can now call using this from your end. The inference result would be the output for these calls.  
+* In case you need help with API Keys:  
+   * Click on settings, available on the top, next to your Workspace Name  
+   * Click on "Workspace API keys"  
+   * You can view the details of your key or generate a new one  
+<Frame caption = "Sample for now">![](/images/common-workspace-api.png)</Frame>  
