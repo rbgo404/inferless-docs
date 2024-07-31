@@ -57,21 +57,21 @@ INPUT_SCHEMA = {
 - Select the Githib/Gitlab Integration 
 - Select the Github Repo that has the model code and enter the model name
 - Choose the type of machine, and specify the minimum and maximum number of replicas for deploying your model
-- Optionally you can configure Automatic build,
-- Configure Custom Runtime ( If you have pip or apt packages), and Environment variables like Inference Timeout / Container Concurrency / Scale Down Timeout
-- Let the Validation Complete and click on Inport button
+- Optionally you can configure Automatic build and deploy on code push
+- Configure Custom Runtime (If you have pip or apt packages) and Environment variables like Inference Timeout / Container Concurrency / Scale Down Timeout
+- Let the Validation Complete and click on Import button
 
-![](/images/quickstart-2.png)
+<Frame caption = "Model Details">![](/images/quickstart-2.png)</Frame>
 
 ### Step 4: Wait for the model build to complete usually takes ~5-10 minutes 
 
-You can see the progress of the model build in the 
+You can see the progress of the model build on the progress page
 
 <Frame caption = "Progress Page">![](/images/quickstart-3.png)</Frame>
 
 ### Step 5: Use the APIs to call the model 
 
-Once the model is in 'Active' status you can click on the 'API' page to call the model
+Once the model is in 'Active' status you can click on the 'API' page to try the model with sample inputs.
 
 <Frame caption = "Model Details">![](/images/quickstart-4.png)</Frame>
 
