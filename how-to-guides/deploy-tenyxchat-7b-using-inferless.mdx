@@ -26,7 +26,9 @@ Now quickly construct the GitHub/GitLab template, this process is mandatory and 
 ```python
 TenyxChat-7B/
 ├── app.py
-└── inferless-runtime-config.yaml
+├── inferless-runtime-config.yaml
+├── inferless.yaml
+└── input_schema.py
 ```
 
 You can also add other files to this directory.
@@ -80,63 +82,31 @@ build:
     - "scipy==1.11.4"
 ```
 
-## Method A: Deploying the model on Inferless Platform
+##  Method A: Deploying the model on Inferless Platform 
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.
 
-### Selection of the framework
+### Step 1: Login to the inferless dashboard can click on Import model button
+Navigate to your desired workspace in Inferless and Click on `Add a custom model` button that you see on the top right. An import wizard will open up.
 
-Inferless offers comprehensive support for all the major machine learning frameworks. In the first step, it is mandatory to designate the framework for your model. For the purposes of this tutorial, we will opt for `PyTorch`.
+### Step 2: Follow the UI to complete the model  Import
+* Select the GitHub/GitLab Integration
+* Select the GitHub Repo that has the model code and enter the model name
+* Choose the type of machine, and specify the minimum and maximum number of replicas for deploying your model
+* Optionally you can configure Automatic build,
+* Configure Custom Runtime ( If you have pip or apt packages), and Environment variables like Inference Timeout / Container Concurrency / Scale Down Timeout 
+* Let the Validation Complete and click on Import button
+![](/images/import.jpg)
 
-![](/images/teny7b-1.png)
+### Step 3: Wait for the model build to complete usually takes ~5-10 minutes
 
-### Import the Model through GitHub
+### Step 4: Use the APIs to call the model
+Once the model is in 'Active' status you can click on the 'API' page to call the model
 
-Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-requirements). For this tutorial, we will use GitHub.
-
-Click on the`Repo(Custom code)` and then click on the `Add provider` to connect to your GitHub account. Once your account integration is completed, click on your Github account and continue.
-
-![](/images/teny7b-2.png)
-
-### Provide the Model details
-
-Enter the name of the model and pass the GitHub repository URL.
-
-Now, you can define the model's input and output parameters in JSON format. For more information, go through [this page](https://docs.inferless.com/model-import/input-output-json).
-
-1.  [INPUT](https://github.com/rbgo404/TenyxChat-7B/blob/main/input.json): Refer to the function `def infer(self, inputs)`, here we mentioned `inputs["prompt"]`, which means `inputs` the parameter will have a key `prompt`.
-
-2.  [OUTPUT](https://github.com/rbgo404/TenyxChat-7B/blob/main/output.json): The same goes here, the function mentioned above will return the results as a key-value pair `return {"generated_result": result}`.
-
-Input JSON must include `prompt` a key to pass the instruction. For output JSON, it must be included `generated_result` to retrieve the output.
-
-![](/images/teny7b-3.png)
-
-## Configure the machine
-
-In this 4th step, the user has to configure the inference setup. On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A100 GPU. Select A100 from the drop-down menu in the GPU Type.
-
-You also have the flexibility to select from different machine types. Opting for a `dedicated` machine type will grant you access to an entire GPU while choosing the `shared` option allocates 50% of the VRAM. In this tutorial, we will opt for the dedicated machine type.
-
-Choose the Minimum and Maximum replicas that you would need for your model:
-
-* **Min replica:** The number of inference workers to keep on at all times.
-
-* **Max replica:** The maximum number of inference workers to allow at any point in time.
-
-If you wish to enable Automatic rebuild for your model setup, toggle the switch. Note that setting up a web-hook is necessary for this feature. Click [here](https://docs.inferless.com/~/changes/vYzeDgjS7Hi2onmT0QwC/model-import/automatic-build-via-webhooks/github) for more details.
-
-In the `Advance configuration`, we have the option to select the custom runtime. First, click on the `Add runtime` to upload the [inferless-runtime-config.yaml](https://github.com/rbgo404/TenyxChat-7B/blob/main/inferless-runtime-config.yaml) file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
-
-![](/images/teny7b-4.png)
-
-### Review and Deploy
-
-In this final stage, carefully review all modifications. Once you've examined all changes, proceed to deploy the model by clicking the `Submit` button.
-
-![](/images/teny7b-5.png)
-
-Voilà, your model is now deployed!
+### Here is the Demo:
 
 ![](/images/teny7b-6.png)
+
+ 
 
 ## Method B: Deploying the model on Inferless CLI
 
@@ -144,61 +114,23 @@ Inferless allows you to deploy your model using Inferless-CLI. Follow the steps 
 
 ### Initialization of the model
 
-Create the [app.py](https://github.com/rbgo404/TenyxChat-7B/blob/main/app.py) and [inferless-runtime-config.yaml](https://github.com/rbgo404/TenyxChat-7B/blob/main/inferless-runtime-config.yaml), move the files to the working directory. Run the following command to initialize your model:
+Create the app.py and inferless-runtime-config.yaml, move the files to the working directory. Run the following command to initialize your model:
 
 ```
 inferless init
 ```
 
-### Changes in Input and Output
-
-Adjust the input and output keys in the JSON configuration files. For example:
-
-```python
-{
-    "inputs": [
-      {
-        "data": [
-          "What is an AI?"
-        ],
-        "name": "prompt",
-        "shape": [
-          1
-        ],
-        "datatype": "BYTES"
-      }
-    ]
-}
-```
-
-```python
-{
-    "outputs": [
-      {
-        "data": [
-          "data"
-        ],
-        "name": "generated_result",
-        "shape": [
-          1
-        ],
-        "datatype": "BYTES"
-      }
-    ]
-}
-```
-
 ### Upload the custom runtime
 
-Once you have created the [inferless-runtime-config.yaml](https://github.com/rbgo404/TenyxChat-7B/blob/main/inferless-runtime-config.yaml) file, you can run the following command:
+Once you have created the inferless-runtime-config.yaml file, you can run the following command:
 
 ```
 inferless runtime upload
 ```
 
-Upon entering this command, you will be prompted to provide the configuration file name. Enter the name and ensure to update it in the [inferless.yaml](https://github.com/rbgo404/TenyxChat-7B/blob/main/inferless.yaml) file. Now you are ready for the deployment.
+Upon entering this command, you will be prompted to provide the configuration file name. Enter the name and ensure to update it in the inferless.yaml file. Now you are ready for the deployment.
 
-![](/images/teny7b-7.png)
+![](/images/llama70b-6.png)
 
 ### Deploy the Model
 

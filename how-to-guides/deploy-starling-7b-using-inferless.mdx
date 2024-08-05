@@ -16,16 +16,18 @@ We are using the [AutoGPTQ](https://github.com/PanQiWei/AutoGPTQ/) library, whic
 Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`
 
 ```python
-starling-7B/
+Starling-7B/
 ├── app.py
-└── config.yaml
+├── inferless-runtime-config.yaml
+├── inferless.yaml
+└── input_schema.py
 ```
 
 You can also add other files to this directory.
 
 ## Create the class for inference
 
-In the [app.py](https://github.com/inferless/inferless%5Ftutorials/blob/main/text%5Fgeneration/Starling-LM-7B/app.py) we will define the class and import all the required functions
+In the [app.py](https://github.com/inferless/inferless_tutorials/blob/main/text_generation/Starling-LM-7B/app.py) we will define the class and import all the required functions
 
 1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
 
@@ -65,7 +67,7 @@ class InferlessPythonModel:
 
 ## Creating the Custom Runtime
 
-This is a mandatory step where we allow the users to upload their custom runtime through [config.yaml](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/config.yaml).
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/inferless_tutorials/blob/main/video_generation/Stable-Video/inferless-runtime-config.yaml).
 
 ```python
 build:
@@ -78,47 +80,61 @@ build:
     - "accelerate==0.25.0"
 ```
 
-## Deploying the model on Inferless
+##  Method A: Deploying the model on Inferless Platform
 
 Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-requirements). For this tutorial, we will use GitHub. 
 
-### Import the Model through GitHub
+### Step 1: Login to the inferless dashboard can click on Import model button
+Navigate to your desired workspace in Inferless and Click on `Add a custom model` button that you see on the top right. An import wizard will open up.
 
-Click on the`Repo(Custom code)` and then click on the `Add provider` to connect to your GitHub account. Once your account integration is completed, click on your Github account and continue.
+### Step 2: Follow the UI to complete the model  Import
+* Select the GitHub/GitLab Integration
+* Select the GitHub Repo that has the model code and enter the model name
+* Choose the type of machine, and specify the minimum and maximum number of replicas for deploying your model
+* Optionally you can configure Automatic build,
+* Configure Custom Runtime ( If you have pip or apt packages), and Environment variables like Inference Timeout / Container Concurrency / Scale Down Timeout 
+* Let the Validation Complete and click on Import button
+![](/images/import.jpg)
 
-![](/images/starling1.png)
+### Step 3: Wait for the model build to complete usually takes ~5-10 minutes
 
-### Provide the Model details
+### Step 4: Use the APIs to call the model
+Once the model is in 'Active' status you can click on the 'API' page to call the model
 
-Enter the name of the model and pass the GitHub repository URL. 
-
-Now, you can define the model's input and output parameters in JSON format. For more information, go through [this page](https://docs.inferless.com/model-import/input-output-json).
-
-* [INPUT](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/input.json): Refer to the function `def infer(self, inputs)`, here we mentioned `inputs["prompt"]`, which means `inputs` the parameter will have a key `prompt.`
-
-* [OUTPUT](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/output.json): The same goes here, the function mentioned above will return the results as a key-value pair `return {"generated_result": result}`.
-
-Input JSON must include `prompt` a key to pass the instruction. For output JSON, it must be included`generated_result` to retrieve the output.
-
-![](/images/starling2.png)
-
-### GPU Selection
-
-On the Inferless platform, we support all the GPUs. For this tutorial, we recommend using A100 GPU. Select A100 from the drop-down menu in the GPU Type.
-
-![](/images/starling3.png)
-
-### Using the Custom Runtime
-
-In the `Advance configuration`, we have the option to select the custom runtime. First, click on the `Add runtime` to upload the [config.yaml](https://github.com/inferless/inferless%5Ftutorials/blob/main/video%5Fgeneration/Stable-Video/config.yaml) file, give any name and save it. Choose the runtime from the drop-down menu and then click on continue.
-
-![](/images/starling4.png)
-
-### Review and Deploy
-
-In this final stage, carefully review all modifications. Once you've examined all changes, proceed to deploy the model by clicking the `Import` button.
-
-Voilà, your model is now deployed!
-
+### Here is the Demo:
 
 ![](/gif/gif6.gif)
+
+ 
+
+## Method B: Deploying the model on Inferless CLI
+
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+### Initialization of the model
+
+Create the app.py and inferless-runtime-config.yaml, move the files to the working directory. Run the following command to initialize your model:
+
+```
+inferless init
+```
+
+### Upload the custom runtime
+
+Once you have created the inferless-runtime-config.yaml file, you can run the following command:
+
+```
+inferless runtime upload
+```
+
+Upon entering this command, you will be prompted to provide the configuration file name. Enter the name and ensure to update it in the inferless.yaml file. Now you are ready for the deployment.
+
+![](/images/llama70b-6.png)
+
+### Deploy the Model
+
+Execute the following command to deploy your model. Once deployed, you can track the build logs on the Inferless platform:
+
+```
+inferless deploy
+```
