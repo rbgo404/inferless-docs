@@ -48,33 +48,32 @@ INPUT_SCHEMA = {
 
 ### Step 2: Login to the inferless dashboard can click on Import model button 
 
-* Navigate to your desired workspace in Inferless and Click on `"Add a custom model" `button that you see on the top right. An import wizard will open up.
+* Navigate to your desired workspace in Inferless and Click on `"Add a Custom Model" `button that you see on the top right 
 
-<Frame caption = "Click on Add Model">![](/images/github-demo1.png)</Frame>
+<Frame caption = "Click on Add Custom Model">![](/images/quickstart-1.png)</Frame>
 
+### Step 3: Follow steps to complete the model import
 
-### Step 3: Follow the Wizard to enter model detials 
+- Select the Githib/Gitlab Integration 
+- Select the Github Repo that has the model code and enter the model name
+- Choose the type of machine, and specify the minimum and maximum number of replicas for deploying your model
+- Optionally you can configure Automatic build and deploy on code push
+- Configure Custom Runtime (If you have pip or apt packages) and Environment variables like Inference Timeout / Container Concurrency / Scale Down Timeout
+- Let the Validation Complete and click on Import button
 
-- Select the libray(Pytorch/Tensorflow/Onnx) used to be used for inference(Step 1)
-- Select the Github option and click on `Connect with Github` button  (Step 2) 
-- Authorize Inferless to access your Github account  (Step 2)
-- Select the Github Repo that has the model code and enter the model name (Step 3)
-- Choose the type of machine, and specify the minimum and maximum number of replicas for deploying your model (Step 4).
-- Optionally you can configure Automatic build, Custom Runtime, Environment variables (Step 4)
-- Review and click on `Submit` button (Step 5)
-
+<Frame caption = "Model Details">![](/images/quickstart-2.png)</Frame>
 
 ### Step 4: Wait for the model build to complete usually takes ~5-10 minutes 
 
-You can see the progress of the model build in the 
+You can see the progress of the model build on the progress page
 
-<Frame caption = "Click on Add Model">![](/images/github-demo1.png)</Frame>
+<Frame caption = "Progress Page">![](/images/quickstart-3.png)</Frame>
 
 ### Step 5: Use the APIs to call the model 
 
-Once the model is in 'Active' status you can click on the 'API' page to call the model
+Once the model is in 'Active' status you can click on the 'API' page to try the model with sample inputs.
 
-<Frame caption = "Click on Add Model">![](/images/github-demo1.png)</Frame>
+<Frame caption = "Model Details">![](/images/quickstart-4.png)</Frame>
 
 
 
