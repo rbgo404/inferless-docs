@@ -18,10 +18,22 @@ Options:
   - `--type` : you can give the type image Values: 'inferless', 'cog'
   - `--runtime -r` : you can give the filename to build the continer here
   - `--env` : you can give the environment varriables. ex : --env "key:value"
+  - `--docker-base-url` or - `-u` : you can give the socket to connect to docker 
 
 
 Examples:
 
 ```python
 inferless run 
+```
+
+In Windows 
+
+Make sure you have the Deamon enabled on the port 
+
+![](/images/docker-1.png)
+
+
+```python
+inferless run --docker-base-url tcp://localhost:2375
 ```
