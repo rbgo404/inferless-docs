@@ -1,0 +1,213 @@
+---
+title: "Deploy Llama-3.1-8B-Instruct GGUF using Inferless"
+description: "Llama-3.1-8B-Instruct GGUF is a quantized version of Meta's state-of-the-art Llama-3.1 series of large language models.
+This guide will take you through the deployment process of the GGUF model on the Inferless platform."
+---
+
+## Introduction
+
+[Llama-3.1-8B-Instruct GGUF](https://huggingface.co/bartowski/Meta-Llama-3.1-8B-Instruct-GGUF) is a quantized version of Meta's advanced multilingual large language model. The GGUF (GPT-Generated Unified Format) format allows for efficient, including lower-end GPUs.
+
+This 8B Instruct model has been fine-tuned using supervised fine-tuning (SFT) and reinforced through reinforcement learning with human feedback (RLHF). The GGUF version maintains high accuracy while significantly reducing the model size and improving inference speed.
+
+
+## Our Observations
+
+We have deployed the model on an A100 GPU(80GB). Here are our observations:
+
+| Library          | Inference Time  | Cold Start Time |Tokens/Sec    | Output Tokens Length    |
+| ---------------- | --------------- | --------------- | ------------ | ----------------------- |
+| llama-cpp-python | 2.46 sec        | 3.363           | 104.25       | 256                     |
+
+Note: The inference time, cold start time, and tokens per second are average values.
+
+## Defining Dependencies
+
+We are using the [llama-cpp-python](https://github.com/abetlen/llama-cpp-python) to serve the GGUF quantized model on a single A100 (80GB).
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`.
+
+```
+Llama-3.1-8B-Instruct-GGUF/
+├── app.py
+├── inferless-runtime-config.yaml
+├── inferless.yaml
+└── input_schema.py
+```
+
+You can also add other files to this directory.
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/Llama-3.1-8B-Instruct-GGUF/blob/main/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference and pass it through `inputs(dict)` parameter.
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+```python
+from llama_cpp import Llama
+from huggingface_hub import hf_hub_download
+import os
+
+class InferlessPythonModel:
+    def initialize(self):
+        nfs_volume = os.getenv("NFS_VOLUME")
+        if os.path.exists(nfs_volume + "/Meta-Llama-3.1-8B-Instruct-Q8_0.gguf") == False :
+            cache_file = hf_hub_download(
+                                repo_id="bartowski/Meta-Llama-3.1-8B-Instruct-GGUF",
+                                filename="Meta-Llama-3.1-8B-Instruct-Q8_0.gguf",
+                                local_dir=nfs_volume)
+        self.llm = Llama(
+            model_path=f"{nfs_volume}/Meta-Llama-3.1-8B-Instruct-Q8_0.gguf",
+            main_gpu=0,
+            n_gpu_layers=-1)
+
+    def infer(self, inputs):
+        prompt = inputs["prompt"]
+        system_prompt = inputs.get("system_prompt","You are a friendly bot.")
+        temperature = inputs.get("temperature",0.7)
+        top_p = inputs.get("top_p",0.1)
+        top_k = inputs.get("top_k",40)
+        repeat_penalty = inputs.get("repeat_penalty",1.18)
+        max_tokens = inputs.get("max_tokens",256)
+
+        output = self.llm.create_chat_completion(
+                    messages = [
+                      {"role": "system", "content": f"{system_prompt}"},
+                      {"role": "user","content": f"{prompt}"}],
+                    temperature=temperature, top_p=top_p, top_k=top_k,repeat_penalty=repeat_penalty,max_tokens=max_tokens
+        )
+        text_result = output['choices'][0]['message']['content']
+
+        return {'generated_result': text_result}
+
+    def finalize(self):
+        self.llm = None
+```
+
+## Create the Input Schema
+
+We have to create a [input_schema.py](https://github.com/inferless/Llama-3.1-8B-Instruct-GGUF/blob/main/input_schema.py) in your GitHub/Gitlab repository this will help us create the Input parameters. You can checkout our documentation on [Input / Output Schema](https://docs.inferless.com/model-import/input-output-schema).
+
+For this tutorial, we have defined these parameter `prompt`, `temperature`, `top_p`, `repeat_penalty`, `max_tokens` and `top_k`  which are required during the API call. Now lets create the `input_schema.py`.
+
+```JSON
+INPUT_SCHEMA = {
+    "prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["What is deep learning?"]
+    },
+    "system_prompt": {
+        'datatype': 'STRING',
+        'required': False,
+        'shape': [1],
+        'example': ["You are a friendly bot."]
+    },
+    "temperature": {
+        'datatype': 'FP32',
+        'required': False,
+        'shape': [1],
+        'example': [0.7]
+    },
+    "top_p": {
+        'datatype': 'FP32',
+        'required': False,
+        'shape': [1],
+        'example': [0.1]
+    },
+    "repeat_penalty": {
+        'datatype': 'FP32',
+        'required': False,
+        'shape': [1],
+        'example': [1.18]
+    },
+    "max_tokens": {
+        'datatype': 'INT16',
+        'required': False,
+        'shape': [1],
+        'example': [512]
+    },
+    "top_k":{
+        'datatype': 'INT8',
+        'required': False,
+        'shape': [1],
+        'example': [40]
+    }
+}
+```
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Llama-3.1-8B-Instruct-GGUF/blob/main/inferless-runtime-config.yaml).
+
+```python
+build:
+  cuda_version: "12.1.1"
+  python_packages:
+    - "huggingface-hub==0.24.5"
+  run:
+    - 'CMAKE_ARGS="-DGGML_CUDA=on" pip install llama-cpp-python==0.2.85'
+```
+
+## Method A: Deploying the model on Inferless Platform
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.
+
+### Step 1: Login to the inferless dashboard can click on Import model button
+Navigate to your desired workspace in Inferless and Click on `Add a custom model` button that you see on the top right. An import wizard will open up.
+
+### Step 2: Follow the UI to complete the model  Import
+- Select the GitHub/GitLab Integration option to connect your source code repository with the deployment environment.
+- Navigate to the specific GitHub repository that contains your model's code. Here, you will need to identify and enter the name of the model you wish to import.
+- Choose the appropriate type of machine that suits your model's requirements. Additionally, specify the minimum and maximum number of replicas to define the scalability range for deploying your model.
+- Optionally, you have the option to enable automatic build and deployment. This feature triggers a new deployment automatically whenever there is a new code push to your repository.
+- If your model requires additional software packages, configure the Custom Runtime settings by including necessary pip or apt packages. Also, set up environment variables such as  Inference Timeout, Container Concurrency, and Scale Down Timeout to tailor the runtime environment according to your needs.
+- Wait for the validation process to complete, ensuring that all settings are correct and functional. Once validation is successful, click on the "Import" button to finalize the import of your model.
+![](/images/import.jpg)
+
+### Step 3: Wait for the model build to complete usually takes ~5-10 minutes
+
+### Step 4: Use the APIs to call the model
+Once the model is in 'Active' status you can click on the 'API' page to call the model
+
+### Here is the Demo:
+
+![](/gif/llama-3.1-gguf-demo.gif)
+
+## Method B: Deploying the model on Inferless CLI
+
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+### Initialization of the model
+
+Create the app.py and inferless-runtime-config.yaml, move the files to the working directory. Run the following command to initialize your model:
+
+```
+inferless init
+```
+
+### Upload the custom runtime
+
+Once you have created the inferless-runtime-config.yaml file, you can run the following command:
+
+```
+inferless runtime upload
+```
+
+Upon entering this command, you will be prompted to provide the configuration file name. Enter the name and ensure to update it in the inferless.yaml file. Now you are ready for the deployment.
+
+![](/images/llama70b-6.png)
+
+### Deploy the Model
+
+Execute the following command to deploy your model. Once deployed, you can track the build logs on the Inferless platform:
+
+```
+inferless deploy
+```
