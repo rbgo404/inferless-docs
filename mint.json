@@ -304,7 +304,8 @@
             "how-to-guides/deploy-phi-3-128k",
             "how-to-guides/deploy-text-to-speech-streaming",
             "how-to-guides/deploy-a-qwen2-72b-using-inferless",
-            "how-to-guides/deploy-a-Llama-3.1-8B-Instruct-using-inferless"
+            "how-to-guides/deploy-a-Llama-3.1-8B-Instruct-using-inferless",
+            "how-to-guides/deploy-a-Llama-3.1-8B-Instruct-GGUF-using-inferless"
         ]
       },
       {
