@@ -154,6 +154,7 @@
           "api-reference/dynamic-batching",
           "api-reference/streaming",
           "api-reference/aws-privatelink",
+          "api-reference/remote-run",
           {
             "group": "Model Endpoint",
           "pages": [
@@ -319,6 +320,7 @@
                 "references/cli/inferless-token",
                 "references/cli/inferless-init",
                 "references/cli/inferless-run",
+                "references/cli/inferless-remote-run",
                 "references/cli/inferless-deploy",
                 "references/cli/inferless-model",
                 "references/cli/inferless-volume",

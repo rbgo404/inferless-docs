@@ -1,8 +1,8 @@
 ---
-title: "Remote Run": Run your code remotely
+title: "Remote Run: Run your code remotely"
 ---
 
-It is now possible to run your code remotely using Inferless. This feature is extremely useful when you want to run your code partly or entirely on a remote server. By introducing a few annotations in your code, you can run your code on a remote server with the command `inferless remote-run app.py -c config.yaml`.
+It is now possible to run your code remotely using Inferless. This feature is extremely useful when you want to run your code partly or entirely on a remote server. By introducing a few annotations in your code, you can run your code on a remote server with the command <strong>inferless remote-run app.py -c config.yaml</strong>.
 
 ```python
 import inferless
@@ -21,6 +21,7 @@ You can configure the remote run using a configuration file. The configuration f
 Supported GPU types are: `A10`, `T4`
 
 ```yaml
+# config.yaml
 gpu: T4
 ```
 
@@ -28,6 +29,7 @@ gpu: T4
 You can specify <b>system packages</b> (packages installed using `apt-get`) <b>python packages</b> (packages installed using `pip`) and <b>run commands</b> (shell commands) that you want to configure on the remote server.
 
 ```yaml
+# config.yaml
 build:
     system_packages:
         - libssl-dev
@@ -42,11 +44,11 @@ build:
 
 You can use the following annotations to specify the code that you want to run on the remote server.
 
-### @inferless.method
+### <i>@inferless.method</i>
 
 Use this annotation to specify the function that you want to run on the remote server.
 
-### @inferless.Cls
+### <i>@inferless.Cls</i>
 
 Use this annotation to specify the class that you want to run on the remote server. `Cls` contains two sub annotations `@Cls.load` and `@Cls.infer`.
 
@@ -116,10 +118,10 @@ run command `inferless remote-run app.py -c config.yaml`
 
 In this example, only the `test_gpt_neo` function will run on the remote server. The `post_process` function will run on the local machine.
 
-As you can see, the `transformers` is imported inside the function which means it is not required to install the `transformers` package on the local machine.
+As you can see, the `transformers` is imported inside the function which means it is not required to install the transformers package on the local machine.
 
 
-<Note> First time running the command may take some time as it will setup the required packages on the remote server. </Note>
+<Note> For the first call, the command may take some time as it will setup the required packages on the remote server. </Note>
 
 
 ### Example 2 - Run a class on a remote
@@ -163,8 +165,10 @@ class InferlessPythonModel:
 
 model = InferlessPythonModel()
 print(model.infer({"prompt": "Hello, Write a story about a dragon"}))
-
 ```
+
+```yaml
+# config.yaml
 gpu:
   T4
 build:
@@ -173,7 +177,7 @@ build:
     - "transformers==4.41.2"
     - "torch==2.3.0"
     - "vllm==0.4.3"
-```yaml
+```
 
 run command `inferless remote-run app.py -c config.yaml`
 
@@ -182,12 +186,11 @@ In this example, when the `infer` function is called, the `initialize` function 
 Replace `<HF_TOKEN>` with your Hugging Face token.
 
 
-<Card icon="warning">
-### Note
-
-- At the moment, remote run works with a single file only. It will not be able to refer to any other files in the same directory.
-- Use Python3.10 for seamless experience, Other versions may face compatibility issues.
-- Try to avoid unnecessary packages in config file as it may increase the time to setup the environment.
+## Notes
+<Card icon="circle-info">
+<Warning>At the moment, remote run works with a single file only. It will not be able to refer to any other files in the same directory. </Warning>
+<Note>Use Python3.10 for seamless experience, Other versions may face compatibility issues. </Note>
+<Tip>Try to avoid unnecessary packages in config file as it may increase the time to setup the environment. </Tip>
 
 </Card>
 
