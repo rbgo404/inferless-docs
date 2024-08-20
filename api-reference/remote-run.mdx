@@ -1,0 +1,198 @@
+---
+title: "Remote Run": Run your code remotely
+---
+
+It is now possible to run your code remotely using Inferless. This feature is extremely useful when you want to run your code partly or entirely on a remote server. By introducing a few annotations in your code, you can run your code on a remote server with the command `inferless remote-run app.py -c config.yaml`.
+
+```python
+import inferless
+
+@inferless.method
+def my_agent():
+    return "Hello World"
+```
+
+## Configuration
+
+You can configure the remote run using a configuration file. The configuration file is a YAML file through which you can specify the GPU type and custom packages that you want to install on the remote server.
+
+### Specify the GPU type
+
+Supported GPU types are: `A10`, `T4`
+
+```yaml
+gpu: T4
+```
+
+### Install custom packages
+You can specify <b>system packages</b> (packages installed using `apt-get`) <b>python packages</b> (packages installed using `pip`) and <b>run commands</b> (shell commands) that you want to configure on the remote server.
+
+```yaml
+build:
+    system_packages:
+        - libssl-dev
+    python_packages:
+        - accelerate==0.27.2
+        - torch==2.1.1
+    run_commands:
+        - wget https://example.com/model.pth
+```
+
+## Annotations
+
+You can use the following annotations to specify the code that you want to run on the remote server.
+
+### @inferless.method
+
+Use this annotation to specify the function that you want to run on the remote server.
+
+### @inferless.Cls
+
+Use this annotation to specify the class that you want to run on the remote server. `Cls` contains two sub annotations `@Cls.load` and `@Cls.infer`.
+
+`@Cls.load` is used to specify the function that you want to run before the inference.
+
+`@Cls.infer` is used to specify the function that you want to run for inference.
+
+```python
+import inferless
+
+cls = inferless.Cls()
+
+class MyLLModel:
+    @cls.load
+    def load(self):
+        # load the model
+        pass
+
+    @cls.infer
+    def infer(self):
+        # run inference
+        return "generated output"
+```
+
+## Examples
+
+This section contains working examples of how to use the `remote-run` command.
+
+### Example 1 - Run a function on a remote server
+
+```python 
+# app.py
+import inferless
+
+
+@inferless.method
+def test_gpt_neo(prompt):
+    from transformers import pipeline
+    pipe = pipeline("text-generation", model="EleutherAI/gpt-neo-125m")
+    expected_output = pipe(prompt, max_length=50, do_sample=False)[0]['generated_text']
+
+    return expected_output
+
+
+def post_process(output):
+    import re
+    processed_output = re.sub(r'\b(\d{3}-\d{2}-\d{4})\b', '[REDACTED]', output)
+    return processed_output
+
+prompt = "Hello, Write a story about a dragon"
+output = test_gpt_neo(prompt)
+processed_output = post_process(output)
+print(processed_output)
+```
+    
+```yaml
+# config.yaml
+gpu:
+  T4
+build:
+    python_packages:
+        - transformers
+        - torch
+        - accelerate
+```
+run command `inferless remote-run app.py -c config.yaml`
+
+In this example, only the `test_gpt_neo` function will run on the remote server. The `post_process` function will run on the local machine.
+
+As you can see, the `transformers` is imported inside the function which means it is not required to install the `transformers` package on the local machine.
+
+
+<Note> First time running the command may take some time as it will setup the required packages on the remote server. </Note>
+
+
+### Example 2 - Run a class on a remote
+    
+```python
+# app.py
+
+import os
+import inferless
+
+InferlessCls = inferless.Cls()
+HF_TOKEN = "<HF_TOKEN>"
+
+class InferlessPythonModel:
+
+    @InferlessCls.load
+    def initialize(self):
+        from vllm import LLM, SamplingParams
+        from transformers import AutoTokenizer
+
+        model_id = "TheBloke/Llama-2-7B-chat-AWQ"
+        tokenizer_model = "meta-llama/Llama-2-7b-chat-hf"
+        self.sampling_params = SamplingParams(
+            temperature=0.7,
+            top_p=0.1,
+            repetition_penalty=1.18,
+            top_k=40,
+            max_tokens=512,
+        )
+        self.llm = LLM(model=model_id, enforce_eager=True, quantization="AWQ")
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_model, token=HF_TOKEN)
+
+    @InferlessCls.infer
+    def infer(self, inputs):
+        prompts = inputs["prompt"]
+        input_text = self.tokenizer.apply_chat_template([{"role": "user", "content": prompts}], tokenize=False)
+        result = self.llm.generate(input_text, self.sampling_params)
+        result_output = [output.outputs[0].text for output in result]
+        return {"generated_result": result_output[0]}
+
+
+model = InferlessPythonModel()
+print(model.infer({"prompt": "Hello, Write a story about a dragon"}))
+
+```
+gpu:
+  T4
+build:
+  python_packages:
+    - "accelerate==0.30.1"
+    - "transformers==4.41.2"
+    - "torch==2.3.0"
+    - "vllm==0.4.3"
+```yaml
+
+run command `inferless remote-run app.py -c config.yaml`
+
+In this example, when the `infer` function is called, the `initialize` function will run first. The `initialize` function will load the model and tokenizer. The `infer` function will run the inference on the remote server.
+
+Replace `<HF_TOKEN>` with your Hugging Face token.
+
+
+<Card icon="warning">
+### Note
+
+- At the moment, remote run works with a single file only. It will not be able to refer to any other files in the same directory.
+- Use Python3.10 for seamless experience, Other versions may face compatibility issues.
+- Try to avoid unnecessary packages in config file as it may increase the time to setup the environment.
+
+</Card>
+
+
+
+
+
+
