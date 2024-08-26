@@ -11,14 +11,20 @@ inferless remote-run <filename>
 ```
 
 Params:
-  - `--config  -c` : Path to the configuration file
+  - `--config  -c` : Path to the runtime configuration file
+  - `--exclude  -e` : Path to the ignore file. This file contains the list of files that you want to exclude from the remote run similar to `.gitignore` file.
 
 
 Examples:
 
 ```python
-inferless remote-run -c config.yaml 
+inferless remote-run -c runtime.yaml 
 ```
+
+```python
+inferless remote-run app.py -c runtime.yaml -e .ignore
+```
+
 
 <Card icon="info" href="/api-reference/remote-run">
 For more details and examples refer to the Remote Run documentation. 

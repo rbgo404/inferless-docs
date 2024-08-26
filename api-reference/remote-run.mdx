@@ -7,29 +7,19 @@ It is now possible to run your code remotely using Inferless. This feature is ex
 ```python
 import inferless
 
-@inferless.method
+@inferless.method(gpu="T4")
 def my_agent():
     return "Hello World"
 ```
 
-## Configuration
+## Runtime Configuration
 
-You can configure the remote run using a configuration file. The configuration file is a YAML file through which you can specify the GPU type and custom packages that you want to install on the remote server.
+You can configure the runtime for remote run using a configuration file. The configuration file is a YAML file through which you can specify custom packages that you want to install on the remote server.
 
-### Specify the GPU type
-
-Supported GPU types are: `A10`, `T4`
-
-```yaml
-# config.yaml
-gpu: T4
-```
-
-### Install custom packages
 You can specify <b>system packages</b> (packages installed using `apt-get`) <b>python packages</b> (packages installed using `pip`) and <b>run commands</b> (shell commands) that you want to configure on the remote server.
 
 ```yaml
-# config.yaml
+# runtime.yaml
 build:
     system_packages:
         - libssl-dev
@@ -43,6 +33,8 @@ build:
 ## Annotations
 
 You can use the following annotations to specify the code that you want to run on the remote server.
+The annotations accept a `gpu` parameter which specifies the GPU that you want to use on the remote server.
+Currently, the supported GPUs are `T4` & `A10`
 
 ### <i>@inferless.method</i>
 
@@ -59,15 +51,15 @@ Use this annotation to specify the class that you want to run on the remote serv
 ```python
 import inferless
 
-cls = inferless.Cls()
+app = inferless.Cls(gpu="T4")
 
 class MyLLModel:
-    @cls.load
+    @app.load
     def load(self):
         # load the model
         pass
 
-    @cls.infer
+    @app.infer
     def infer(self):
         # run inference
         return "generated output"
@@ -84,7 +76,7 @@ This section contains working examples of how to use the `remote-run` command.
 import inferless
 
 
-@inferless.method
+@inferless.method(gpu="T4")
 def test_gpt_neo(prompt):
     from transformers import pipeline
     pipe = pipeline("text-generation", model="EleutherAI/gpt-neo-125m")
@@ -105,16 +97,14 @@ print(processed_output)
 ```
     
 ```yaml
-# config.yaml
-gpu:
-  T4
+# runtime.yaml
 build:
     python_packages:
         - transformers
         - torch
         - accelerate
 ```
-run command `inferless remote-run app.py -c config.yaml`
+run command `inferless remote-run app.py -c runtime.yaml`
 
 In this example, only the `test_gpt_neo` function will run on the remote server. The `post_process` function will run on the local machine.
 
@@ -132,12 +122,12 @@ As you can see, the `transformers` is imported inside the function which means i
 import os
 import inferless
 
-InferlessCls = inferless.Cls()
+app = inferless.Cls(gpu="A10")
 HF_TOKEN = "<HF_TOKEN>"
 
 class InferlessPythonModel:
 
-    @InferlessCls.load
+    @app.load
     def initialize(self):
         from vllm import LLM, SamplingParams
         from transformers import AutoTokenizer
@@ -154,7 +144,7 @@ class InferlessPythonModel:
         self.llm = LLM(model=model_id, enforce_eager=True, quantization="AWQ")
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_model, token=HF_TOKEN)
 
-    @InferlessCls.infer
+    @app.infer
     def infer(self, inputs):
         prompts = inputs["prompt"]
         input_text = self.tokenizer.apply_chat_template([{"role": "user", "content": prompts}], tokenize=False)
@@ -168,7 +158,7 @@ print(model.infer({"prompt": "Hello, Write a story about a dragon"}))
 ```
 
 ```yaml
-# config.yaml
+# runtime.yaml
 gpu:
   T4
 build:
@@ -179,17 +169,27 @@ build:
     - "vllm==0.4.3"
 ```
 
-run command `inferless remote-run app.py -c config.yaml`
+run command `inferless remote-run app.py -c runtime.yaml`
 
 In this example, when the `infer` function is called, the `initialize` function will run first. The `initialize` function will load the model and tokenizer. The `infer` function will run the inference on the remote server.
 
 Replace `<HF_TOKEN>` with your Hugging Face token.
 
 
+## Working Directory
+
+By default, the files from the working directory are copied to the server excluding: ".git", "*.pyc", "__pycache__"
+
+If a `.gitignore` file is present in the working directory, the files mentioned in the `.gitignore` file will not be copied to the server.
+
+You can also specify a custom ignore file using the `--exclude`  `-e` option.
+`inferless remote-run app.py -c runtime.yaml -e custom_ignore_file.txt`
+
+<Note> Maximum file size that can be copied to the server is 10MB. </Note>
+
 ## Notes
 <Card icon="circle-info">
-<Warning>At the moment, remote run works with a single file only. It will not be able to refer to any other files in the same directory. </Warning>
-<Note>Use Python3.10 for seamless experience, Other versions may face compatibility issues. </Note>
+<Note>Use Python3.10 for seamless experience, Other versions may face compatibility issues while using some libraries. </Note>
 <Tip>Try to avoid unnecessary packages in config file as it may increase the time to setup the environment. </Tip>
 
 </Card>
