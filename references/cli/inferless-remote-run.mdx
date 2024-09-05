@@ -1,0 +1,31 @@
+---
+title: "inferless remote run"
+---
+Use the command `inferless remote-run` to run model inference on remote GPU from your local machine.
+This command will execute particular function or class in the cloud environment.
+
+### Usage
+
+```python
+inferless remote-run <filename> 
+```
+
+Params:
+  - `--config  -c` : Path to the runtime configuration file
+  - `--exclude  -e` : Path to the ignore file. This file contains the list of files that you want to exclude from the remote run similar to `.gitignore` file.
+
+
+Examples:
+
+```python
+inferless remote-run -c runtime.yaml 
+```
+
+```python
+inferless remote-run app.py -c runtime.yaml -e .ignore
+```
+
+
+<Card icon="info" href="/api-reference/remote-run">
+For more details and examples refer to the Remote Run documentation. 
+</Card>
