@@ -1,0 +1,503 @@
+---
+title: "Deploy and Run ComfyUI as an API on Inferless"
+description: "Welcome to an immersive tutorial that guides you through leveraging the power of ComfyUI's API capabilities and deploying your workflows on Inferless. This resource is designed to help you create and deploy custom workflows, extending ComfyUI's API functionality. You'll learn how to interact with ComfyUI and deploy on Inferless."
+---
+
+## Introduction
+
+ComfyUI is an open-source graphical user interface for Stable Diffusion, revolutionizing AI image generation. It employs a node-based approach, allowing users of all skill levels to create complex image generation workflows without extensive coding knowledge. ComfyUI's intuitive design supports various models and offers extensive customization options, making it a powerful tool for AI-driven creativity.
+
+ComfyUI can also be used through API extends its capabilities, enables programmatic interaction with workflows. In this tutorial we will show you how you can use your custom workflow with the ComfyUI API on Inferless.
+
+## Overview of the Solution
+
+Our solution revolves around these key files that works together to set up and run ComfyUI on Inferless, alongside an NFS (Network File System) volume for persistent storage.
+
+1. [`build.sh`](https://github.com/inferless/ComfyUI-Inferless-template/blob/main/build.sh): This shell script is responsible for preparing the ComfyUI environment on the NFS volume. 
+    - It clones the ComfyUI repository, ensuring we have the latest version available.
+    - Create necessary directory to download the models files required for ComfyUI.
+    
+    ```python
+    VOL_DIR="$NFS_VOLUME"
+    COMFY_DIR="$VOL_DIR/ComfyUI"
+    # Check if the ComfyUI directory exists
+    if [ ! -d "$COMFY_DIR" ]; then
+        cd "$VOL_DIR"
+        git clone https://github.com/comfyanonymous/ComfyUI.git && cd ComfyUI && git pull
+        pip install -r requirements.txt
+    else
+        cd "$COMFY_DIR" && git pull
+    fi
+    
+    # Create necessary directories if they don't exist
+    mkdir -p "$COMFY_DIR/models/unet"
+    mkdir -p "$COMFY_DIR/models/clip"
+    mkdir -p "$COMFY_DIR/models/vae"
+    mkdir -p "$VOL_DIR/workflows"
+    # Function to download file with progress bar if it doesn't exist
+    download_file() {
+        local url=$1
+        local destination=$2
+        local header=$3
+        local filename=$(basename "$destination")
+    
+        if [ ! -f "$destination" ]; then
+            if [ -n "$header" ]; then
+                wget --header="$header" --progress=bar:force -c -O "$destination" "$url"
+            else
+                wget --progress=bar:force -c -O "$destination" "$url"
+            fi
+        fi
+    }
+    
+    # Authorization header for Hugging Face
+    AUTH_HEADER="Authorization: Bearer $HF_ACCESS_TOKEN"
+    
+    # Download UNET model with authorization header
+    download_file "https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/flux1-dev.safetensors" "$COMFY_DIR/models/unet/flux1-dev.safetensors" "$AUTH_HEADER"
+    
+    # Download CLIP models without authorization header
+    download_file "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors" "$COMFY_DIR/models/clip/t5xxl_fp16.safetensors"
+    download_file "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors" "$COMFY_DIR/models/clip/clip_l.safetensors"
+    download_file "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors" "$COMFY_DIR/models/clip/t5xxl_fp8_e4m3fn.safetensors"
+    
+    # Download VAE model without authorization header
+    download_file "https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/ae.safetensors" "$COMFY_DIR/models/vae/ae.safetensors"
+    
+    # Download SD1.5 for workflow-2
+    download_file "https://huggingface.co/autismanon/modeldump/resolve/main/dreamshaper_8.safetensors" "$COMFY_DIR/models/checkpoints/dreamshaper_8.safetensors"
+    
+    # Download the workflow files
+    download_file "https://github.com/inferless/ComfyUI-Inferless-template/raw/main/workflows/flux_workflow.json" "$VOL_DIR/workflows/flux_workflow.json"
+    download_file "https://github.com/inferless/ComfyUI-Inferless-template/raw/main/workflows/sd1-5_workflow.json" "$VOL_DIR/workflows/sd1-5_workflow.json"
+    ```
+    
+2. [`app.py`](https://github.com/inferless/ComfyUI-Inferless-template/blob/main/app.py): This Python script contains the `InferlessPythonModel` class, which Inferless uses to manage the application lifecycle.
+    - initialize function within this class triggers the `build.sh` script to set up the environment.
+    - infer function processes incoming user requests, interacts with the ComfyUI server, and returns the generated images.This function also includes logic for loading specific workflows, updating them with user prompts, and managing the ComfyUI server's lifecycle.
+    
+    ```python
+    import subprocess
+    import os
+    import uuid
+    from comfy_utils import run_comfyui_in_background, check_comfyui, load_workflow, prompt_update_workflow, send_comfyui_request, get_img_file_path, image_to_base64, stop_server_on_port, is_comfyui_running
+    
+    class InferlessPythonModel:
+        def initialize(self):
+            self.directory_path = os.getenv('NFS_VOLUME')
+            if not os.path.exists(self.directory_path+"/ComfyUI"):
+                subprocess.run(["wget", "https://github.com/inferless/ComfyUI-Inferless-template/raw/main/build.sh"])
+                subprocess.run(["bash", "build.sh"], check=True)
+              
+            self._data_dir = self.directory_path+"/workflows"
+            self.server_address = "127.0.0.1:8188"
+            self.client_id = str(uuid.uuid4())
+            
+            if is_comfyui_running(self.server_address):
+                stop_server_on_port(8188)    
+            run_comfyui_in_background()
+            self.ws = check_comfyui(self.server_address,self.client_id)
+    
+        def infer(self, inputs):
+            workflow_name = inputs.get("workflow_name")
+            prompt = inputs.get("prompt")
+            negative_prompt = inputs.get("negative_prompt")
+            
+            workflow = load_workflow(self.directory_path,workflow_name)
+            prompt = prompt_update_workflow(workflow_name,workflow,prompt)
+            prompt_id = send_comfyui_request(self.ws, prompt, self.server_address,self.client_id)
+            file_path = get_img_file_path(self.server_address,prompt_id)
+            image_base64 = image_to_base64(file_path)
+            
+            return {"generated_image_base64":image_base64}
+        
+        def finalize(self):
+            pass
+    ```
+    
+3. [`comfy_utils.py`](https://github.com/inferless/ComfyUI-Inferless-template/blob/main/comfy_utils.py): This utility script have helper functions that streamline our interaction with ComfyUI. 
+    
+    ```python
+    import json
+    import urllib.request
+    import time
+    import subprocess
+    import os
+    import websocket
+    import threading
+    import sys
+    import base64
+    import requests
+    import psutil
+
+    
+    COMFYUI_DIR = f"{os.getenv('NFS_VOLUME')}/ComfyUI"
+    
+    def start_comfyui():
+        try:
+            process = subprocess.Popen(
+                [sys.executable, "main.py"],
+                cwd=COMFYUI_DIR,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            # Wait for a short time to see if the process starts successfully
+            time.sleep(5)
+            
+            if process.poll() is None:
+                return process
+            else:
+                stdout, stderr = process.communicate()
+                raise Exception("ComfyUI server failed to start")
+        except Exception as e:
+            raise Exception("Error setting up ComfyUI repo") from e
+    
+    def run_comfyui_in_background():
+        def run_server():
+            process = start_comfyui()
+            if process:
+                stdout, stderr = process.communicate()
+    
+        server_thread = threading.Thread(target=run_server)
+        server_thread.start()
+    
+    def check_comfyui(server_address,client_id):
+        socket_connected = False
+        while not socket_connected:
+            try:
+                ws = websocket.WebSocket()
+                ws.connect(
+                    "ws://{}/ws?clientId={}".format(server_address, client_id)
+                )
+                socket_connected = True
+            except Exception as e:
+                time.sleep(5)
+        return ws
+    
+    def load_workflow(directory_path,workflow_name):
+        with open(f"{directory_path}/workflows/{workflow_name}.json", 'rb') as file:
+            return json.load(file)
+    
+    def prompt_update_workflow(workflow_name,workflow,prompt,negative_prompt=None):
+        workflow["6"]["inputs"]["text"] = prompt
+        if workflow_name == "sd1-5_workflow":
+            workflow["7"]["inputs"]["text"]  = negative_prompt
+            
+        return workflow
+        
+    def send_comfyui_request(ws, prompt, server_address,client_id):
+        p = {"prompt": prompt,"client_id": client_id}
+        data = json.dumps(p).encode("utf-8")
+        url = f"http://{server_address}/prompt"
+        req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+    
+        with urllib.request.urlopen(req, timeout=10) as response:
+            response = json.loads(response.read())
+        
+        while True:
+            prompt_id = response["prompt_id"]
+            out = ws.recv()
+            if isinstance(out, str):
+                message = json.loads(out)
+                if message["type"] == "executing":
+                    data = message["data"]
+                    if data["node"] is None and data["prompt_id"] == prompt_id:
+                        break
+            else:
+                continue
+        return prompt_id
+    
+    def get_img_file_path(server_address,prompt_id):
+        with urllib.request.urlopen(
+            "http://{}/history/{}".format(server_address, prompt_id),timeout=10
+        ) as response:
+            output = json.loads(response.read())
+        outputs = output[prompt_id]["outputs"]
+        for node_id in outputs:
+            node_output = outputs[node_id]
+          
+        if "images" in node_output:
+            image_outputs = []
+            for image in node_output["images"]:
+                    image_outputs.append({"filename": image.get("filename")})
+        
+        for node_id in image_outputs:
+            file_path = f"{COMFYUI_DIR}/output/{node_id.get('filename')}"
+        
+        return file_path
+    
+    def image_to_base64(image_path):
+        with open(image_path, "rb") as image_file:
+            encoded_string = base64.b64encode(image_file.read())
+            return encoded_string.decode('utf-8')
+            
+    def stop_server_on_port(port):
+        for connection in psutil.net_connections():
+            if connection.laddr.port == port:
+                process = psutil.Process(connection.pid)
+                process.terminate()
+    
+    def is_comfyui_running(server_address="127.0.0.1:8188"):
+    
+        try:
+            response = requests.get(f"http://{server_address}/", timeout=5)
+            return response.status_code == 200
+        except requests.RequestException:
+            return False
+    ```
+    
+4. [`inferless-runtime-config.yaml`](https://github.com/inferless/ComfyUI-Inferless-template/blob/main/inferless-runtime-config.yaml) : This YAML file is crucial for configuring the runtime environment for your ComfyUI application on Inferless.
+
+```python
+build:
+  system_packages:
+    - "wget"
+    - "ffmpeg"
+    - "libgl1-mesa-glx"
+  python_packages:
+    - "websocket-client==1.6.4"
+    - "accelerate==0.23.0"
+    - "opencv-python==4.10.0.84"
+    - "boto3==1.35.9"
+    - "pillow==10.4.0"
+    - "torchvision==0.19.0"
+    - "einops==0.8.0"
+    - "transformers==4.44.2"
+    - "scipy==1.14.1"
+    - "torchsde==0.2.6"
+    - "aiohttp==3.10.5"
+    - "safetensors==0.4.4"
+    - "pydantic==2.8.2"
+    - "groq==0.10.0"
+    - "aiohttp-sse==2.2.0"
+    - "spandrel==0.3.4"
+    - "kornia==0.7.3"
+    - "torchaudio==2.4.0"
+    - "matplotlib==3.8.0"
+    - "scikit-image==0.24.0"
+    - "simpleeval==0.9.13"
+    - "imageio-ffmpeg==0.5.1"
+    - "pypng==0.20220715.0"
+```
+
+## Architecture overview
+
+![Untitled design.png](/images/Untitled_design.png)
+
+The architecture of our ComfyUI solution on Inferless follows a streamlined request-response model:
+
+1. User Input and Inferless Routing: Users send requests to the Inferless endpoint, specifying a workflow name and prompt. Inferless routes these requests to our ComfyUI application.
+2. ComfyUI Processing: Our application loads the specified workflow, updates it with the user's prompt, and processes it through ComfyUI. This involves sending the workflow to the ComfyUI server, waiting for image generation, and retrieving the result.
+3. Response: The generated image, converted to base64 format, is returned to the user.
+
+## Deploy your ComfyUI application
+
+Deploying your ComfyUI application on Inferless involves a series of straightforward steps that leverage the platform's serverless capabilities and our prepared files. Here's the steps for deployment:
+
+1. Begin by creating an NFS volume on Inferless. This volume will serve as the persistent storage for your ComfyUI files, workflows, and generated images. Note the mount path (e.g., `/var/nfs-mount/YOUR_VOLUME_MOUNT_PATH`) as you'll need to pass as an environment variable as `NFS_VOLUME`.
+2. Ensure your `build.sh`, `app.py`, `comfy_utils.py`, and any custom workflow JSON files are ready. These files should be uploaded to a GitHub repository for easy access during deployment.
+3. Log into your Inferless account and click on the `Add a custom model`. Then follow these steps:
+    - Select the Github from the model provider list and then select the GitHub repository URL and branch.
+    
+    ![comfyui-inferless-github.png](/images/comfyui-inferless-github.png)
+    
+    - Choose the type of machine, and specify the minimum and maximum number of replicas for deploying your ComfyUI.
+    
+    ![comfyui-inferless-cfg-machine.png](/images/comfyui-inferless-cfg-machine.png)
+    
+    - Upload the  Custom Runtime and choose the NFS Volume that we have created. Secrets and set Environment variables like Inference Timeout, Container Concurrency, Scale Down Timeout.
+    - Now pass the NFS Volume path and Hugging Face access token as a environment variables `NFS_VOLUME` as key and YOUR_VOLUME_MOUNT_PATH as the value. And then `HF_TOKEN` as key and YOUR_HF_ACCESS_TOKEN as the value.
+    ![comfyui-inferless-setup-envs.png](/images/comfyui-inferless-setup-envs.png)
+    
+    
+    - Click on the deploy to start the deployment process.
+    
+    ![comfyui-inferless-deploy.png](/images/comfyui-inferless-deploy.png)
+    
+
+## Adding your ComfyUI workflow with Example
+
+Let's take **[ComfyUI workflow for Flux](https://openart.ai/workflows/maitruclam/comfyui-workflow-for-flux-simple/iuRdGnfzmTbOOzONIiVV)** as an example and import this workflow into Inferless.
+
+1. First, download the `workflow.json` for the Flux workflow and convert it into a format compatible with the ComfyUI API. 
+2. Identifying Required Models:
+For the Flux workflow, we need to download the FLUX model. We'll add this to our `build.sh` script. You can add other models in similar way.
+
+```bash
+VOL_DIR="YOUR_VOLUME_MOUNT_PATH"
+COMFY_DIR="$VOL_DIR/ComfyUI"
+
+download_file() {
+    local url=$1
+    local destination=$2
+    local header=$3
+    local filename=$(basename "$destination")
+
+    if [ -f "$destination" ]; then
+    else
+        if [ -n "$header" ]; then
+            wget --header="$header" --progress=bar:force -c -O "$destination" "$url"
+        else
+            wget --progress=bar:force -c -O "$destination" "$url"
+        fi
+    fi
+}
+
+# Authorization header for Hugging Face
+AUTH_HEADER="Authorization: Bearer $HF_ACCESS_TOKEN"
+
+# Download UNET model with authorization header
+download_file "https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/flux1-dev.safetensors" "$COMFY_DIR/models/unet/flux1-dev.safetensors" "$AUTH_HEADER"
+```
+
+1. Creating Necessary Directories:
+Ensure that the required directories exist for storing the models. Add this to your `build.sh`:
+
+```bash
+mkdir -p "$COMFY_DIR/models/unet"
+mkdir -p "$COMFY_DIR/models/clip"
+mkdir -p "$COMFY_DIR/models/vae"
+mkdir -p "$VOL_DIR/workflows"
+```
+
+1. Updating Input Schema:
+If your Flux workflow requires additional inputs, you need to update the [`input_schema.py`](https://github.com/inferless/ComfyUI-Inferless-template/blob/main/input_schema.py) file. For example, if your workflow needs a prompt and a  negative prompt value.
+
+```python
+INPUT_SCHEMA = {
+    "prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["A cat holding a sign that says hello world"]
+    },
+     "negative_prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["low quality"]
+    }
+}
+```
+
+## Running Comfy-UI on Inferless
+
+Once you've set up your ComfyUI workflow and deployed it on Inferless, you can easily run it using a simple API call. Inferless provides a straightforward way to interact with your deployed model. Here's how you can do it:
+
+1. API Endpoint:
+Inferless provides a unique URL for your deployed model. This URL will be in the format:
+2. Authentication:
+You need to include an authorization token in your request headers. Inferless uses bearer token authentication.
+3. Input Format:
+The input to your model should be formatted as a JSON object, specifying the input parameters defined in your `input_schema.py`.
+
+Here's a Python example of how to make a request to your deployed ComfyUI model on Inferless:
+
+In this example:
+
+```python
+import requests 
+import json
+curl --location '<your_inference_url>' \
+    --header 'Content-Type: application/json' \
+    --header 'Authorization: Bearer <your_api_key>' \
+URL = '<your_inference_url>'
+headers = {"Content-Type": "application/json", "Authorization": "Bearer <your_api_key>"}
+          
+data = {
+	"inputs": [
+		{
+			"name": "prompt",
+			"shape": [
+				1
+			],
+			"data": [
+				"A cat holding a sign that says hello world"
+			],
+			"datatype": "BYTES"
+		},
+		{
+			"name": "workflow_name",
+			"shape": [
+				1
+			],
+			"data": [
+				"flux_workflow"
+			],
+			"datatype": "BYTES"
+		}
+	]
+} 
+response = requests.post(URL, headers=headers, data=json.dumps(data)) 
+print(response.json())
+```
+
+## Choosing Inferless for Deployment
+
+Deploying your Voice Conversational Chatbot application with Inferless offers compelling advantages, making your development journey smoother and more cost-effective. Here’s why Inferless is the go-to choice:
+
+1. **Ease of Use:** Forget the complexities of infrastructure management. With Inferless, you simply bring your model, and within minutes, you have a working endpoint. Deployment is hassle-free, without the need for in-depth knowledge of scaling or infrastructure maintenance.
+2. **Cold-start Times:** Inferless’s unique load balancing ensures faster cold-starts. Expect around `10.59` seconds to process each queries, significantly faster than many traditional platforms.
+3. **Cost Efficiency:** Inferless optimizes resource utilization, translating to lower operational costs. Here’s a simplified cost comparison:
+
+### Scenario 1
+
+You are looking to deploy a ComfyUI application for processing 100 queries.
+
+**Parameters:**
+
+- **Total number of queries:** 100 daily.
+- **Inference Time:** All models are hypothetically deployed on A100 80GB, taking 
+`10.59` seconds of processing time and a cold start overhead of `6.88` seconds.
+- **Scale Down Timeout:** Uniformly 60 seconds across all platforms, except Hugging Face, which requires a minimum of 15 minutes. This is assumed to happen 100 times a day.
+
+**Key Computations:**
+
+1. **Inference Duration:**
+Processing 100 queries and each takes 10.59 seconds
+Total: 100 x 10.59 = 1059 seconds (or approximately 0.29 hours)
+2. **Idle Timeout Duration:**
+Post-processing idle time before scaling down: (60 seconds - 10.59 seconds) x 100 = 4941 seconds (or 1.37 hours approximately)
+3. **Cold Start Overhead:**
+Total: 100 x 6.88 = 688 seconds (or 0.19 hours approximately)
+
+**Total Billable Hours with Inferless:** 0.29 (inference duration) + 1.37 (idle time) + 0.19 (cold start overhead) = 1.85 hours
+
+**Total Billable Hours with Inferless:** `1.85` hours
+
+### Scenario 2
+
+You are looking to deploy a ComfyUI application for processing 1000 queries per day.
+
+**Key Computations:**
+
+1. **Inference Duration:**
+Processing 1000 queries and each takes 10.59 seconds
+Total: 1000 x 10.59 = 10590 seconds (or approximately 2.94 hours)
+2. **Idle Timeout Duration:**
+Post-processing idle time before scaling down: (60 seconds - 10.59 seconds) x 100 = 4941 seconds (or 1.37 hours approximately)
+3. **Cold Start Overhead:**
+Total: 100 x 6.88 = 688 seconds (or 0.19 hours approximately)
+
+**Total Billable Hours with Inferless:** 2.94 (inference duration) + 1.37 (idle time) + 0.19 (cold start overhead) = 4.5 hours
+
+**Total Billable Hours with Inferless:** `4.5` hours
+
+### Pricing Comparison for all the Scenario
+
+| **Scenarios** | **AWS SageMaker Cost** | **Inferless Cost** |
+| --- | --- | --- |
+| 100 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$2.26 (1.85 hours billed at $1.22/hour) |
+| 1000 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$5.49 (4.5 hours billed at $1.22/hour) |
+
+By opting for Inferless, you can achieve up to ***80.94%*** cost savings.
+
+Please note that we have utilized the A100(80 GB) GPU for model benchmarking purposes, while for pricing comparison, we referenced the A10G GPU price from both platforms. This is due to the unavailability of the A100 GPU in SageMaker.
+
+Also, the above analysis is based on a smaller-scale scenario for demonstration purposes. Should the scale increase tenfold, traditional cloud services might require maintaining 2-4 GPUs constantly active to manage peak loads efficiently. In contrast, Inferless, with its dynamic scaling capabilities, adeptly adjusts to fluctuating demand without the need for continuously running hardware.
+
+## Conclusion
+
+By following this approach, you can easily integrate your ComfyUI workflows into other applications or scripts, leveraging the power of Inferless for efficient and scalable AI image generation.
