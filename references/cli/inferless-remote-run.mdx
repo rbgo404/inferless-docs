@@ -4,39 +4,9 @@ title: "inferless remote run"
 Use the command `inferless remote-run` to run model inference on remote GPU from your local machine.
 This command will execute a particular function or class in the cloud environment.
 
-### Getting Started Let's assume you have an app.py with 2 functions init and load 
+### Getting Started 
 
-```python
-from threading import Thread
-model_id = 'meta-llama/Llama-2-7b-chat-hf'
-class InferlessPythonModel:
-
-    
-    def initialize(self):
-        import torch
-        from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
-        self.model = AutoModelForCausalLM.from_pretrained(
-            "meta-llama/Llama-2-7b-chat-hf",
-            torch_dtype=torch.float16,
-            device_map='auto',
-            token=token,
-        )
-        self.tokenizer = AutoTokenizer.from_pretrained(model_id, token=token)
-
-   
-    def infer(self, inputs):
-        message = inputs['message']
-        chat_history = inputs['chat_history'] if 'chat_history' in inputs else []
-        system_prompt = inputs['system_prompt'] if 'system_prompt' in inputs else ''
-        result = self.run_function(
-            message=message,
-            chat_history=chat_history,
-            system_prompt=system_prompt,
-        )
-        return {"generated_text": result}
-```
-
-You need to 4 lines of code to your app.py to make it run with remote run by initialising the inferless cls and adding functional annotations 
+Let's assume you have an app.py with 2 functions init and load, You need to 4 lines of code to your app.py to make it run with remote run by initialising the inferless cls and adding functional annotations 
 
 ```python 
 from threading import Thread
