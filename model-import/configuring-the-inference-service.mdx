@@ -5,10 +5,10 @@ description: "This guide will help you to understand how you can configure the I
 
 ## Method A: Configure using Inferless Platform
 
-After successful model validation in `step 3`, you will move to the next step where you will be asked to choose your desired runtime and machine configurations.
+In the model configuration you are asked to choose your desired runtime and machine configurations.
 
 * We suggest using ONNX for the most optimal results. If we are unable to convert to ONNX, we will use your native framework and load the model. If you would like to keep the same framework as your input model, you can select it from the dropdown.
-
+* Choose the type of machine, and specify the minimum and maximum number of replicas for deploying your model.
 * Choose the Minimum and Maximum replicas that you would need for your model  
    * **Min replica** \-  
    ```  
@@ -23,7 +23,7 @@ After successful model validation in `step 3`, you will move to the next step wh
    * You would need to set up a web hookwebhook for this method. Click [here](https://inferless.gitbook.io/inferless-dos/~/changes/vYzeDgjS7Hi2onmT0QwC/) for more details.
 
 
-![](/images/configure-inf1.png)
+![](/images/config.png)
 
 ## Method B: Configure using Inferless CLI
 

@@ -62,7 +62,7 @@
     "navigation": [
       {
         "group": "",
-        "pages": ["introduction"]
+        "pages": ["introduction/introduction"]
       },
       {
         "group": "Getting Started",
@@ -83,9 +83,7 @@
                 "model-import/file-structure-req/import-using-cli",
                 "model-import/file-structure-req/importing-from-cloud-buckets",
                 "model-import/file-structure-req/import-using-docker",
-                "model-import/file-structure-req/importing-your-file-from-your-system",
-                "model-import/file-structure-req/importing-from-sagemaker",
-                "model-import/file-structure-req/importing-from-google-vertex-ai"
+                "model-import/file-structure-req/importing-your-file-from-your-system"
             ]
               },
               "model-import/input-output-schema",
@@ -156,6 +154,7 @@
           "api-reference/dynamic-batching",
           "api-reference/streaming",
           "api-reference/aws-privatelink",
+          "api-reference/remote-run",
           {
             "group": "Model Endpoint",
           "pages": [
@@ -306,7 +305,9 @@
             "how-to-guides/deploy-phi-3-128k",
             "how-to-guides/deploy-text-to-speech-streaming",
             "how-to-guides/deploy-a-qwen2-72b-using-inferless",
-            "how-to-guides/deploy-a-Llama-3.1-8B-Instruct-using-inferless"
+            "how-to-guides/deploy-a-Llama-3.1-8B-Instruct-using-inferless",
+            "how-to-guides/deploy-a-Llama-3.1-8B-Instruct-GGUF-using-inferless",
+            "how-to-guides/deploy-flux-schnell-using-inferless"
         ]
       },
       {
@@ -320,6 +321,7 @@
                 "references/cli/inferless-token",
                 "references/cli/inferless-init",
                 "references/cli/inferless-run",
+                "references/cli/inferless-remote-run",
                 "references/cli/inferless-deploy",
                 "references/cli/inferless-model",
                 "references/cli/inferless-volume",

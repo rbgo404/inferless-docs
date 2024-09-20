@@ -1,27 +1,84 @@
 ---
-title: "inferless run"
+title: 'inferless run'
 ---
 
-To test a model quickly, you can use the `inferless run` command. This command will run the model locally for you test and display the endpoint. 
+To test a model quickly, you can use the `inferless run` command. This command will run the model locally for you test and display the endpoint.
 
-### Usage
+## Usage
 
 ```python
-inferless run 
+inferless run
 ```
 
 You will need to have 'app.py' and "
 
-
 Options:
 
-  - `--type` : you can give the type image Values: 'inferless', 'cog'
-  - `--runtime -r` : you can give the filename to build the continer here
-  - `--env` : you can give the environment varriables. ex : --env "key:value"
-
+- `--type` : you can give the type image Values: 'inferless', 'cog'
+- `--runtime -r` : you can give the filename to build the continer here
+- `--env` : you can give the environment varriables. ex : --env "key:value"
+- `--docker-base-url` or - `-u` : you can give the socket to connect to docker
 
 Examples:
 
 ```python
-inferless run 
+inferless run
 ```
+
+### In Windows
+
+Make sure you have the Deamon enabled on the port
+
+![](/images/docker-1.png)
+
+```python
+inferless run --docker-base-url tcp://localhost:2375
+```
+
+## Advance Usage
+
+### Executing Into the Container
+
+To access the container's shell, you can use the following command:
+
+```python
+docker exec -it <CONTAINER_ID> /bin/bash
+```
+
+Replace `<CONTAINER_ID>` with the actual container ID of your running Docker container.
+
+### Accessing and Modifying Model Files
+
+Inside the container, the app.py and model files are located in the model directory. You can access them by navigating to the following path:
+
+`cd /models/<model_name>/1`
+
+Replace `<model_name>` with the name of your model. This directory contains all the files related to your model, including app.py.
+
+You can modify the app.py file and the model files as needed. However, for the changes to take effect, you need to unload and then reload the model using the following steps.
+
+### Unloading the Model
+
+To unload the model, execute the following curl command:
+
+```python
+curl --location 'http://localhost:8000/v2/repository/models/<model_name>/unload' \
+--header 'Content-Type: application/json' \
+--request POST
+```
+
+Replace {model_name} with the name of your model. This command will unload the model from memory, allowing you to make changes to the model files.
+
+### Loading the Model
+
+After modifying the files, reload the model using this curl command:
+
+```python
+curl --location 'http://localhost:8000/v2/repository/models/<model_name>/load' \
+--header 'Content-Type: application/json' \
+--request POST
+```
+
+This command loads the updated model back into memory, making your changes effective.
+
+NOTE: `.inferless-logs` directory is created to store the logs. You can add this directory to your .gitignore file to exclude it from version control.

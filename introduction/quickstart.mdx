@@ -55,12 +55,12 @@ Read more about the model code structure [here](/model-import/input-output-schem
 
 ### Step 3: Follow steps to complete the model import
 
-- Select the Githib/Gitlab Integration 
-- Select the Github Repo that has the model code and enter the model name
-- Choose the type of machine, and specify the minimum and maximum number of replicas for deploying your model
-- Optionally you can configure Automatic build and deploy on code push
-- Configure Custom Runtime (If you have pip or apt packages) and Environment variables like Inference Timeout / Container Concurrency / Scale Down Timeout
-- Let the Validation Complete and click on Import button
+- Select the GitHub/GitLab Integration option to connect your source code repository with the deployment environment.
+- Navigate to the specific GitHub repository that contains your model's code. Here, you will need to identify and enter the name of the model you wish to import.
+- Choose the appropriate type of machine that suits your model's requirements. Additionally, specify the minimum and maximum number of replicas to define the scalability range for deploying your model.
+- Optionally, you have the option to enable automatic build and deployment. This feature triggers a new deployment automatically whenever there is a new code push to your repository.
+- If your model requires additional software packages, configure the Custom Runtime settings by including necessary pip or apt packages. Also, set up environment variables such as  Inference Timeout, Container Concurrency, and Scale Down Timeout to tailor the runtime environment according to your needs.
+- Wait for the validation process to complete, ensuring that all settings are correct and functional. Once validation is successful, click on the "Import" button to finalize the import of your model.
 
 <Frame caption = "Model Details">![](/images/quickstart-2.png)</Frame>
 

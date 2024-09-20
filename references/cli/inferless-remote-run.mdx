@@ -1,0 +1,71 @@
+---
+title: "inferless remote run"
+---
+Use the command `inferless remote-run` to run model inference on remote GPU from your local machine.
+This command will execute a particular function or class in the cloud environment.
+
+### Getting Started 
+
+Let's assume you have an app.py with 2 functions init and load, You need to 4 lines of code to your app.py to make it run with remote run by initialising the inferless cls and adding functional annotations 
+
+```python 
+from threading import Thread
+from inferless import Cls # Add the inferless library 
+
+model_id = 'meta-llama/Llama-2-7b-chat-hf'
+
+InferlessCls = Cls(gpu="A10")  # Init the class with the type of GPU you want to run with 
+class InferlessPythonModel:
+
+    @InferlessCls.load     # Add the annotation 
+    def initialize(self):
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
+        self.model = AutoModelForCausalLM.from_pretrained(
+            "meta-llama/Llama-2-7b-chat-hf",
+            torch_dtype=torch.float16,
+            device_map='auto',
+            token=token,
+        )
+        self.tokenizer = AutoTokenizer.from_pretrained(model_id, token=token)
+
+   @InferlessCls.infer    # Add the annotation 
+    def infer(self, inputs):
+        message = inputs['message']
+        chat_history = inputs['chat_history'] if 'chat_history' in inputs else []
+        system_prompt = inputs['system_prompt'] if 'system_prompt' in inputs else ''
+        result = self.run_function(
+            message=message,
+            chat_history=chat_history,
+            system_prompt=system_prompt,
+        )
+        return {"generated_text": result}
+
+model = InferlessPythonModel() # Call the test classs 
+print(model.infer({'message': 'Hello'}))
+
+````
+
+
+### Usage
+
+```python
+inferless remote-run <filename> 
+```
+
+Params:
+  - `--config  -c` : Path to the runtime configuration file
+  - `--exclude  -e` : Path to the ignore file. This file contains the list of files that you want to exclude from the remote run similar to `.gitignore` file.
+
+
+Examples:
+
+```python
+inferless remote-run app.py -c runtime.yaml 
+```
+
+```python
+inferless remote-run app.py -c runtime.yaml -e .ignore
+```
+
+For more details and examples refer to the <a  href="/api-reference/remote-run" > Remote Run documentation </a>. 

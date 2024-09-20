@@ -22,82 +22,45 @@ You can use the imported GitHub Repo to change the pre-processing and post-proce
 
 <Frame caption = "The fields to be copied/noted are mentioned in RED.">![](/images/hugging1.png)</Frame>
 
+### Step 1: Add Model in your workspace.
 
-* Navigate to your desired workspace in Inferless and Click on `"Add a Model" `button that you see on the top right. An import wizard will open up.
+* Navigate to your desired workspace in Inferless and Click on `"Add a custom model" `button that you see on the top right. An import wizard will open up.
 
-<Frame caption = "Click on Add Model">![](/images/hugging2.png)</Frame>
-
-
-### Step 1: Choose the framework on which your model was trained.
-
-
-* Choose your `**model training framework.**`You have noted this from hugging face in the previous step
-
-* In case your desired framework is not available, we have provided detailed how-to guides for your reference
-
-<Frame caption = "Choose the training framework used for your model">![](/images/hugging3.png)</Frame>
-
+<Frame caption = "Click on Add Model">![](/images/step1-common-add-model.png)</Frame>
 
 ###  Step 2: Choose the source of your model.
 
-* Since we are using a model from Hugging Face in this example, select `Hugging Face `as the method of uploading.
+* Since we are using a model from Hugging Face in this example, select `Hugging Face `as the method of uploading from the `Provider` list.
 
 * To proceed with the upload, you will need to connect your `Hugging Face account `and a private `GitHub account`. This is a mandatory step as the Hugging Face credentials enable us to import your private repositories, while GitHub creates the template of the Hugging face repo where you can make changes later to modify your pre-processing and post-processing function
 
 * **For more information:** Inferless works by copying the model from Hugging Face and creating a new repository in GitHub. The model repository is then loaded into Inferless.
 
-<Frame caption = "Select Hugging Face and also add the neccesary accounts">![](/images/hugging4.png)</Frame>
-
-
-* If you are using Inferless for the first time and have not added any providers before, click on the `"Add Provider" `button (+).
-
-<Frame caption = "Click on Add provider to add your HF and Github accounts">![](/images/hugging5.png)</Frame>
-
-
-* This would open a new tab with `"My Integrations"`. You can click connect on the necessary accounts there.
-
-<Frame caption = "Click connect account and follow the process.">![](/images/hugging6.png)</Frame>
-
-
-* Once you have completed it, you can come back to this page and click the `refresh` button provided. You would be able to see the added accounts then.
-
-<Frame caption = "Click on the refresh button to view the connection details">![](/images/hugging7.png)</Frame>
-
+<Frame caption = "Select Hugging Face and also add the neccesary accounts">![](/images/hf-2.png)</Frame>
 
 ### Step 3: Enter the model details 
 
-* **Model Details: I**n this step, Add your `model name `(The name that you wish to call your model), Choose the `type of model `(Eg: Transformer), Choose the `task type` (Eg: Text generation) and `Hugging Face model name (`paste the name of the HF model from the hugging face portal).
+* **Model Details: In this step, Add your `model name`(The name that you wish to call your model), Choose the `model type`(Eg: Transformer), Choose the `task type` (Eg: Text generation) and `Huggingface model name`.
 
-* **Sample Input / Output:** It will automatically generate the Input/Output contract for the Model import.
+<Frame caption = "Enter the details as noted">![](/images/hf-3-model-details.png)</Frame>
 
-<Frame caption = "Enter the details as noted">![](/images/hugging8.png)</Frame>
-
-
-<Frame caption = "Reference if required.">![](/images/hugging9.png)</Frame>
-
-
-* After clicking next, you may notice a "Please Wait" status, which means that we are validating your model for requirements. If the validation is successful, the next step will open up. If there are any validation issues, they will be notified to you.
-
-<Frame>![](/images/hugging10.png)</Frame>
-
-### Step 4: Configure the Runtime details and machine configuration.
-
-* After successful validation, you will move to the next step where you will be asked to choose your desired runtime and machine configurations.  
-   * We suggest using ONNX for the most optimal results. If we are unable to convert to ONNX, we will use your native framework and load the model.  
-   * If you would like to keep the same framework as your input model, you can select it from the dropdown.  
-   * Choose the Minimum and Maximum replicas that you would need for your model  
-         * **Min replica** \-  
-         ```  
-         The number of inference workers to keep on at all times.  
-         ```  
-         * **Max replica -**  
-         ```  
-         The maximum number of inference workers to allow at any point of time  
-         ```  
    * In case you would like to set up `Automatic rebuild` for your model, enable it  
          * You would need to set up a webhook for this method. Click [here](/model-import/automatic-build-via-webhooks) for more details.
 
-<Frame caption = "Set runtime and configuration">![](/images/hugging11.png)</Frame>
+
+### Step 4: Configure Machine and Environment.
+* Choose the type of machine, and specify the minimum and maximum number of replicas for deploying your model.
+         * **Min scale** \-  
+         ```  
+         The number of inference workers to keep on at all times.  
+         ```  
+         * **Max scale -**  
+         ```  
+         The maximum number of inference workers to allow at any point of time  
+         ``` 
+         * Configure Custom Runtime ( If you have pip or apt packages), choose Volume, Secrets and set Environment variables like Inference Timeout / Container Concurrency / Scale Down Timeout
+
+<Frame caption = "Set runtime and configuration">![](/images/common-machine-env.png)</Frame>
 
 
 ### Step 5: Review your model details
@@ -106,32 +69,32 @@ You can use the imported GitHub Repo to change the pre-processing and post-proce
 
 * If you would like to make any changes, you can go back and make the changes.
 
-* Once you have reviewed everything, click "Submit" to start the model import process.
+* Once you have reviewed everything, click `Deploy` to start the model import process.
 
-<Frame caption = "Review all the details carefully before proceeding">![](/images/hugging12.png)</Frame>
+<Frame caption = "Review all the details carefully before proceeding">![](/images/common-deploy.png)</Frame>
 
 
 ### Step 6 : Run your model
 
 * Once you click submit, the model import process would start.  
-   * It may take some time to complete the import process, and during this time, you will be redirected to your workspace and can see the status of the import under `"In Progress/Failed"` tab.  
-<Frame caption = "View the model under `In-Progress/ Failed`">![](/images/hugging13.png)</Frame>
+* It may take some time to complete the import process, and during this time, you will be redirected to your workspace and can see the status of the import under `"In Progress/Failed"` tab.  
+<Frame caption = "View the model under `In-Progress/ Failed`">![](/images/common-in-progress.png)</Frame>
   
-   * If you encounter any errors during the model import process or if you want to view the build logs for any reason, you can click on the three dots menu and select "View build logs". This will show you a detailed log of the import process, which can help you troubleshoot any issues you may encounter.  
-   * Post-upload, the model will be available under "My Models"  
-   * You can then select the model and go to `-> API -> Inference Endpoint details. `Here you would find the API endpoints that can be called. You can click on the copy button on the right and can call your model.  
+* If you encounter any errors during the model import process or if you want to view the build logs for any reason, you can click on the three dots menu and select "View build logs". This will show you a detailed log of the import process, which can help you troubleshoot any issues you may encounter.  
+* Post-upload, the model will be available under "My Models"  
+* You can then select the model and go to `"My Model" -> API -> Inference Endpoint details. `Here you would find the API endpoints that can be called. You can click on the copy button on the right and can call your model.  
   
-<Frame caption = "Under the API Tab, you can view the API endpoint details."> ![](/images/hugging14.png)  </Frame>
+<Frame caption = "Under the API Tab, you can view the API endpoint details."> ![](/images/common-api-call.png)  </Frame>
 
 ### Extra Step: Getting API key details
 
-* Make sure you change the "API Key" with your Key and "Input" with your custom input.
+
 
 * You can now call using this from your end. The inference result would be the output for these calls.  
-   * In case you need help with API Keys:  
+* In case you need help with API Keys:  
    * Click on settings, available on the top, next to your Workspace Name  
    * Click on "Workspace API keys"  
    * You can view the details of your key or generate a new one  
-<Frame caption = "Sample for now">![](/images/hugging15.png)</Frame>  
+<Frame caption = "Sample for now">![](/images/common-workspace-api.png)</Frame>  
 
 #### Here is a sample video of the whole process for a 7GB Stable diffusion Model : [Click to view](https://www.youtube.com/watch?v=5vYsmPu9pZM)
