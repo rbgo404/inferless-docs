@@ -1,0 +1,106 @@
+---
+title: "Bring custom packages"
+description: "Custom software and dependencies in your Runtime"
+---
+
+Custom Runtime allows you to customize the container to have the software and dependency that you need to run your model. 
+
+Here is a sample YAML file that you can write to import. You can follow the required structure of the build. You can specify the System as well as the Python packages that you need to run the model. 
+
+**cuda\_version** (Optional): 
+
+By default, it will use CUDA 12.1.1. Above are the available options : "12.4.1" / "12.1.1" / "11.8.0"
+
+**system\_packages** : 
+
+These are any libraries that you need for the model to run, for eg: "opencv" for image processing or like "ffmpeg" to open the audio files. 
+
+**python\_packages** :
+
+These are pip-based libraries that you need in your Python runtime for example torch is required to load PyTorch-based models 
+
+**run** :
+
+These are shell commands executed while building the runtime for example symlink is created here. All commands are executed Sequentially. If you have a package that requires step by step installation you can use run 
+
+```python
+build:
+  system_packages:
+    - "libssl-dev"
+    - "opencv"
+    - "ffmpeg"
+  python_packages:
+    - "transformers==4.29.0"
+    - "torch==2.0.1"
+    - "numpy==1.23.5"
+    - "pandas==2.0.1"
+  run:
+    - "ln -s /usr/local/lib/python3.10/site-packages/torch/lib/lib{nv,cu}* /usr/lib"
+```
+
+## Runtime Versions 
+
+
+You can edit the runtime in UI or patch the runtime using CLI to create a new version of the runtime. All your models will remain in the older version you previously deployed with unless you explicitly update them in Model Settings. 
+
+You can see all the versions of the runtime by clicking the 'View Runtime Versions'.
+
+![](/images/run1.png)
+
+You can look at the packages in the version by clicking on "View"
+
+![](/images/run2.png)
+
+To update the Runtime of a model you can go to the Model Card and navigate to the Settings Page and select the version of the runtime you want to deploy and click on update. 
+
+![](/images/run3.png)
+
+
+## Method A: Create a new Runtime using Inferless Platform 
+
+1.  Select on **Runtime** Tab in the left navigation and click on **Create Runtime**
+
+![](/images/run4.png)
+
+2.  Upload the Yaml file created with the required dependencies.
+
+![](/images/run5.png)
+
+
+
+### How to use Custom Runtime for the Model 
+
+1.  Go to the **Model Import wizard**. To use the custom runtime, select it in the `Setup Environment` step.
+
+![](/images/run6.png)
+
+2.  Select the Runtime that you have created. Now you all access to all the required software libraries while running the model
+
+## Method B: Create a new Runtime using Inferless CLI
+
+Using the Inferless-CLI, `inferless runtime` command allows users to `list`, `select` and `upload` the runtimes. 
+
+**Commands**:
+
+- `generate`: use to generate a new runtime from your virtual env
+- `list`: list all runtimes.
+- `select [options]`: use an existing runtime with the current model
+- `upload [options]`: create or update runtime on inferless with yaml.
+- `patch [options]`: update the runtime with the config file
+- `version-list`: use to update the runtime in inferless.
+
+
+
+### Creating the runtime file
+
+You can create the runtime file in multiple ways:
+
+1.  You can create the requirements.txt file and then run the command `inferless init`, continue the process and select the requirements.txt file. This will create the `inferless-runtime-config.yaml`, which you can update according to your software and Python libraries requirements.
+
+2.  You can use inferless generate command to generate the runtime file. You can run the command `inferless runtime generate` and then select the virtual environment that you want to use. This will create the `inferless-runtime-config.yaml` file.
+
+### Upload the Runtime
+
+Once you have created your runtime file, you can now run the command `inferless runtime upload` to start the uploading process. First, you are required to pass the file name, and then you need to set a name to your runtime. Update the same to the inferless.yaml file.
+
+Now your runtime is ready to use!
