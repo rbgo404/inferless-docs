@@ -72,6 +72,86 @@
         ]
       },
       {
+        "group": "Concepts",
+        "pages": [
+            "concepts/overview",
+            "concepts/configuring-input-output-schema",
+            "concepts/multiple-inputs",
+            "concepts/multiple-outputs",
+            "concepts/building-custom-images",
+            "concepts/working-with-files",
+            "concepts/working-with-nfs-volumes",
+            "concepts/dynamic-batching",
+            "concepts/streaming-with-sse",
+            "concepts/processing-concurrent-requests",
+            "concepts/setting-up-automatic-builds",
+            "concepts/managing-secrets-on-inferless"
+        ]
+      },
+      {
+        "group": "Integrations",
+        "pages": [
+          "integrations/hugging-face", 
+          {
+            "group": "Git (Custom Code)",
+          "pages": [
+              "integrations/git-custom-code/git--custom-code", 
+              "integrations/git-custom-code/github---demo",
+              "integrations/git-custom-code/gitlab---demo"
+          ]
+            },
+          "integrations/docker",
+          {
+            "group": "Cloud Buckets - S3/ GCS",
+          "pages": [
+              "integrations/cloud-buckets/cloud-buckets---s3--gcs", 
+              "integrations/cloud-buckets/demo-s3",
+              "integrations/cloud-buckets/demo-gcs"
+          ]
+            },
+            {
+              "group": "File Import from System",
+            "pages": [
+                "integrations/file-import-system/file-import-from-system", 
+                "integrations/file-import-system/import-from-system"
+            ]
+              }       
+        ]
+      },
+      {
+        "group": "API Reference",
+        "pages": [
+          "api-reference/aws-privatelink",
+          "api-reference/remote-run",
+          {
+            "group": "Model Endpoint",
+          "pages": [
+            "api-reference/model-endpoint/model-endpoint", 
+            "api-reference/model-endpoint/test-your-model-endpoint",
+            "api-reference/model-endpoint/configuring-the-model-settings",
+            "api-reference/model-endpoint/setting-up-webhooks",
+            "api-reference/model-endpoint/inferless-python-client"
+          ]
+            },
+            {
+              "group": "Debugging your Model with Logs",
+            "pages": [
+              "api-reference/debugging-model/debugging-your-model-with-logs", 
+              "api-reference/debugging-model/call-logs",
+              "api-reference/debugging-model/build-logs"
+            ]
+              },
+              "api-reference/version-management",
+              {
+                "group": "Model Management APIs",
+                "pages": [
+                  "api-reference/model-management-apis/model-settings-update",
+                  "api-reference/model-management-apis/model-logs-get"
+                ]
+              }           
+        ]
+      },
+      {
         "group": "Model Import",
         "pages": [
             "model-import/cli-import",
@@ -102,85 +182,6 @@
                 "model-import/configuring-the-inference-service",
                 "model-import/my-volumes",
                 "model-import/my-secrets"
-        ]
-      },
-      {
-        "group": "Integrations",
-        "pages": [
-          "integrations/hugging-face", 
-          {
-            "group": "Git (Custom Code)",
-          "pages": [
-              "integrations/git-custom-code/git--custom-code", 
-              "integrations/git-custom-code/github---demo",
-              "integrations/git-custom-code/gitlab---demo"
-          ]
-            },
-          "integrations/docker",
-          {
-            "group": "Cloud Buckets - S3/ GCS",
-          "pages": [
-              "integrations/cloud-buckets/cloud-buckets---s3--gcs", 
-              "integrations/cloud-buckets/demo-s3",
-              "integrations/cloud-buckets/demo-gcs"
-          ]
-            },
-            {
-              "group": "File Import from System",
-            "pages": [
-                "integrations/file-import-system/file-import-from-system", 
-                "integrations/file-import-system/import-from-system"
-            ]
-              },
-              {
-                "group": "AWS Sagemaker",
-              "pages": [
-                  "integrations/aws-sagemaker/aws-sagemaker", 
-                  "integrations/aws-sagemaker/demo"
-              ]
-                },
-                {
-                  "group": "Google Vertex AI",
-                "pages": [
-                    "integrations/google-vertex-ai/google-vertex-ai", 
-                    "integrations/google-vertex-ai/demo"
-                ]
-                  }        
-        ]
-      },
-      {
-        "group": "API Reference",
-        "pages": [
-          "api-reference/dynamic-batching",
-          "api-reference/streaming",
-          "api-reference/aws-privatelink",
-          "api-reference/remote-run",
-          {
-            "group": "Model Endpoint",
-          "pages": [
-            "api-reference/model-endpoint/model-endpoint", 
-            "api-reference/model-endpoint/test-your-model-endpoint",
-            "api-reference/model-endpoint/configuring-the-model-settings",
-            "api-reference/model-endpoint/setting-up-webhooks",
-            "api-reference/model-endpoint/inferless-python-client"
-          ]
-            },
-            {
-              "group": "Debugging your Model with Logs",
-            "pages": [
-              "api-reference/debugging-model/debugging-your-model-with-logs", 
-              "api-reference/debugging-model/call-logs",
-              "api-reference/debugging-model/build-logs"
-            ]
-              },
-              "api-reference/version-management",
-              {
-                "group": "Model Management APIs",
-                "pages": [
-                  "api-reference/model-management-apis/model-settings-update",
-                  "api-reference/model-management-apis/model-logs-get"
-                ]
-              }           
         ]
       },
       {
@@ -301,10 +302,11 @@
             "how-to-guides/deploy-tenyx-llama-3-using-inferless",
             "how-to-guides/deploy-timesfm-using-inferless",
             "how-to-guides/deploy-google-paligemma-3b-using-inferless",
+            "how-to-guides/deploy-phi-3-128k",
             "how-to-guides/deploy-stable-diffusion-3-using-inferless",
             "how-to-guides/deploy-phi-3-128k",
-            "how-to-guides/deploy-text-to-speech-streaming",
             "how-to-guides/deploy-a-qwen2-72b-using-inferless",
+            "how-to-guides/deploy-text-to-speech-streaming",
             "how-to-guides/deploy-a-Llama-3.1-8B-Instruct-using-inferless",
             "how-to-guides/deploy-a-Llama-3.1-8B-Instruct-GGUF-using-inferless",
             "how-to-guides/deploy-flux-schnell-using-inferless"
