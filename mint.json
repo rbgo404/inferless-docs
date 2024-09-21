@@ -75,7 +75,7 @@
         "group": "Concepts",
         "pages": [
             "concepts/overview",
-            "concepts/configuring-input-output-schema",
+            "concepts/configuring-the-input-output-schema",
             "concepts/multiple-inputs",
             "concepts/multiple-outputs",
             "concepts/building-custom-images",
