@@ -75,16 +75,18 @@ $ inferless volume COMMAND [OPTIONS] [ARGS]...
 * `select`: Select a volume for the current Inferless configuration file.
 
 
-
-### `inferless volume list`
-
 This command allows you to list all the volumes present in your workspace. It will help you to get the `ID` of the volume, which is required when you run the `inferless volume select` command.
+
+
+`inferless volume list`
+
 
 ![](/images/my-volume9.png)
 
-### `inferless volume select --id`
-
 This command allows you to use any volume that you have created using volume's `id`. Run the following command and update the `volume` directly on the inference configuration file(`inference.yaml`).
+
+`inferless volume select --id <>`
+
 
 ```
 inferless volume select --id 4e39f657-d115-4cb7-b713-012984213750
