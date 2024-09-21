@@ -59,13 +59,22 @@ To delete volumes make sure it's not attached to any Deployment, You can delete 
 
 Use this command `inferless volume` to see all the functions available for volume.
 
-![](/images/my-volume8.png)
+Manage Inferless volumes 
 
-### `inferless volume create`
+```console
+$ inferless volume COMMAND [OPTIONS] [ARGS]...
+```
 
-This command is used to create a volume. Run this command and enter the name of your volume. Once the volume is created you can follow the process and update your volume directly to the inference configuration file(`inferenece.yaml`)
+**Commands**:
 
-![](/images/my-volume12.png)
+* `create`: Create a new volume.
+* `cp`: Add a file or directory to a volume.
+* `ls`: List files and directories within a volume.
+* `rm`: Specify the Inferless path to the file.
+* `list`: List all existing volumes.
+* `select`: Select a volume for the current Inferless configuration file.
+
+
 
 ### `inferless volume list`
 
@@ -80,5 +89,3 @@ This command allows you to use any volume that you have created using volume's `
 ```
 inferless volume select --id 4e39f657-d115-4cb7-b713-012984213750
 ```
-
-![](/images/myvolume-11.png)
