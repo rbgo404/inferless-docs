@@ -81,9 +81,9 @@
             "concepts/building-custom-images",
             "concepts/working-with-files",
             "concepts/working-with-nfs-volumes",
+            "concepts/processing-concurrent-requests",
             "concepts/dynamic-batching",
             "concepts/streaming-with-sse",
-            "concepts/processing-concurrent-requests",
             "concepts/setting-up-automatic-builds",
             "concepts/managing-secrets-on-inferless"
         ]
