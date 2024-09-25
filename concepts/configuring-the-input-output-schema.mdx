@@ -1,0 +1,92 @@
+---
+title: "Handling Input / Output with Inferless"
+---
+
+To build APIs with inferless you need to follow Inference Protocol v2. You can define all the inputs that you need to process the model in a schema file 'input_schema.py'. For outputs you can return a dict with key and value pairs for different outputs. 
+
+### Input Schema 
+
+You have to define the **input\_schema.py** in your GitHub/Gitlab repository this will help us create the Input parameters : 
+
+For each input, there are 3 fields required 
+
+* **datatype**: "STRING", "BOOL", "INT8", "INT16", "INT32", "FP16" "FP32", "UINT8", "UINT16", "UINT32", "UINT64", "INT64" , "FP64" , "BYTES", "BF16"
+
+* **shape**: The length of the array, If the shape is \[1\] you will get the variable, if the array > 1 you will get an array, If the length is variable you can put -1
+
+* **required**: If the parameter is required in all API calls
+
+* **example**( optional ): Sample value for calling the API
+
+In code
+```API 
+def infer(self, inputs):
+    prompt = inputs["prompt"] # "There is a fine house in the forest"
+    shape = inputs["shape"] # [ 512,1 ]
+```
+
+
+In input\_schema.py 
+```input_schema Example
+INPUT_SCHEMA = {
+    "prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["There is a fine house in the forest"]
+    },
+    'shape': {
+        'datatype': 'INT8',
+        'required': False,
+        'example': [ 512, 1 ],
+        'shape': [2]
+    },
+}
+```
+
+### Output Schema 
+
+You can return any dictionary in the return statement of app.py. You don't need to provide any configuration. There are some limitations on the dictories that you can return.
+
+Possible return types are
+
+* String 
+* Float
+* Int
+* List[String|Float|Int]
+
+You can't have nested dictionaries, arrays of arrays, or arrays of dictionaries.
+
+If you have nested Object/Dictionary you can serialise the object to JSON and return the JSON string.
+
+### Returning Dicts
+
+```
+# Example Return Statement 
+
+return { "label_1" : 0.398 , "label_2" : 0.563, "label_3" : 0.434 }
+```
+
+### Returning Variable Length Array 
+
+```
+# Example Return Statement 
+return { "generated_images_base64" : [ img_str1 , img_str2 , img_str3 ] }
+```
+
+
+### Returning Dictionary with Variable keys 
+
+```
+# Example Return Statement 
+dict = {"label_x": 0.4554 , "label_y", 0.3232 }
+return { "result": json.dumps(dict) }
+```
+
+### Returning List of Dictionaries 
+
+```
+# Example Return Statement
+List =  [ {"label_x": 0.4554 , "label_y", 0.3232 } , {"label_x": 0.4554 , "label_y", 0.3232 } ]
+return { "list_result" : json.dumps(List) }
+``` 

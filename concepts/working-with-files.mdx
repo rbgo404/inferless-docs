@@ -1,0 +1,54 @@
+---
+title: "Working with Files on Inferless "
+---
+
+Inferless does not allow you to access the root file system, So if you have a model file that need to store or load the files from local storage there are 2 ways you can do this 
+
+* **Method A**: Use the '/tmp' directpry to store the files(Temporary Storage)
+* **Method B**: Use My Volume to store the files(Persistant Storage)
+
+
+### Method A: Use the '/tmp' directory to store the files
+
+Using the '/tmp' directory is a temporary storage and the files will be deleted once the model is stopped. This is ideally good for use cases when you have a audio/video file that you need to process and you don't want to store the files after the processing is done. 
+
+```python
+import os
+
+
+Class MyModel:
+    def initialise(self):
+        pass
+
+    def infer(self, inputs):
+        # Save the file to the /tmp directory
+        file_path = "/tmp/myfile.txt"
+        with open(file_path, "w") as f:
+            f.write("Hello World")
+
+```
+
+### Method B: Use My Volume to store the files(Persistant Storage)
+
+To use the My Volume you need to create a volume and attach it during model import. The files stored in the volume will be available even after the model is stopped. 
+
+```python
+
+VOLUME_PATH = "/var/nfs-share/my-volume"
+
+import os
+Class MyModel:
+    def initialise(self):
+        # Load file from nfs mount
+        file_path = os.path.join(VOLUME_PATH, "myfile.txt")
+        with open(file_path, "r") as f:
+            print(f.read())
+    
+
+    def infer(self, inputs):
+        # Save the file to the volume
+        file_path = os.path.join(VOLUME_PATH, "myfile.txt")
+        with open(file_path, "w") as f:
+            f.write("Hello World")
+            
+        

@@ -1,0 +1,82 @@
+---
+title: "Working with NFS - My Volumes"
+---
+
+Inferless provides NFS-like writable volumes that support simultaneous connections to various replicas. Similar to networked file-sharing systems that enable collective access to files across a network, these volumes in Inferless address multiple needs:
+
+* Storing model parameters
+
+* Archiving datasets similar to centralized storage
+
+* Setting up a communal cache for collaborative tasks, akin to a shared cache over a network.
+
+## Method A: Create a Volume using Inferless Platform
+
+Here is how you can create a volume `Go to the Volumes` section in your console 
+
+![](/images/vol1.png)
+
+Volumes 
+
+#### Step 1
+
+Click on the Create Volume button 
+
+![](/images/vol2.png)
+
+#### Step 2
+
+After this Volume is created and ready copy the `Mount Path`
+
+![](/images/vol3.png)
+
+#### Step 3
+
+Use the mount path on your app.py code as shown below :
+
+![](/images/my-volume4.png)
+
+#### Step 4
+
+In the model import step, select the Mount Volume to attach
+
+![](/images/vol4-model-import-select.png)
+
+### View Volumes
+
+You can also browse the files in your volume by clicking on the Volume Card 
+
+
+![](/images/vol5-dir.png)
+
+### Delete Volumes 
+
+To delete volumes make sure it's not attached to any Deployment, You can delete it form the My Volumes page 
+
+![](/images/vol6-delete.png)
+
+## Method B: Create a volume using Inferless CLI
+
+Use this command `inferless volume` to see all the functions available for volume.
+
+Manage Inferless volumes 
+
+```console
+$ inferless volume COMMAND [OPTIONS] [ARGS]...
+```
+
+**Commands**:
+
+* `create`: Create a new volume.
+* `cp`: Add a file or directory to a volume.
+* `ls`: List files and directories within a volume.
+* `rm`: Specify the Inferless path to the file.
+* `list`: List all existing volumes.
+* `select`: Select a volume for the current Inferless configuration file.
+
+
+### Example Usage 
+
+```
+inferless volume select --id 4e39f657-d115-4cb7-b713-012984213750
+```

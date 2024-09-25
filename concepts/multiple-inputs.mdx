@@ -1,0 +1,67 @@
+---
+title: "Handling variable input array"
+description: "This will help you understand how to handle multiple varrible inputs sizes on Inferless"
+---
+
+Often time you will want to send 1 or more inputs to your model. Inferless allows you to send multiple inputs to your model. In this guide, we'll walk you through the steps to handle multiple inputs in Inferless.
+
+To handle multiple inputs you can define the **input\_schema.py** in your GitHub/GitLab repository with 'shape' as -1 which will allow dynamic input sizes.
+
+In input\_schema.py 
+```input_schema Example
+INPUT_SCHEMA = {
+    "prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [-1] ,
+        'example': ["There is a fine house in the forest"]
+    },
+}
+```
+
+In code app.py
+
+```python 
+def infer(self, inputs):
+    prompt = inputs["prompt"] 
+    # If while making the API call you send shape as [1] you will get the variable, if the array > 1 you will get an array
+    if isinstance(prompt, list):
+        for each in prompt:
+            print(each)
+    else:
+        print(prompt)
+```
+
+You can also flatten it to get all the values in a single list in app.py
+```python
+def infer(self, inputs):
+    prompts = []
+    # If while making the API call you send shape as [1] you will get the variable, if the array > 1 you will get an array
+    if isinstance(inputs["prompt"], list):
+        prompts = inputs["prompt"] 
+    else:
+        prompts.append(inputs["prompt"])
+
+```
+
+This is how the API call will look like
+
+```shell
+curl --location 'https://<>.default.model-v1-dev.inferless.com/v2/models/<model_name>/versions/1/infer' \
+          --header 'Content-Type: application/json' \
+          --header 'Authorization: Bearer 432424.....3432423' \
+          --data '{
+    "inputs": [
+        {
+            "name": "prompt",
+            "shape": [
+                3
+            ],
+            "data": [
+                "There is a fine house in the forest", "There is a house in the forest", "There is a tree in the forest"
+            ],
+            "datatype": "BYTES"
+        }
+    ]
+}'
+```
