@@ -51,7 +51,7 @@ Our solution revolves around these key files that works together to set up and r
             
             if is_comfyui_running(self.server_address):
                 stop_server_on_port(8188)    
-            run_comfyui_in_background()
+            run_comfyui_in_background(self.directory_path+'/ComfyUI')
             self.ws = check_comfyui(self.server_address,self.client_id)
 
         def infer(self, inputs):
@@ -98,9 +98,10 @@ Our solution revolves around these key files that works together to set up and r
     import requests
     import psutil
 
-    def start_comfyui():
+    def start_comfyui(comfyui_path):
         try:
-            process = subprocess.Popen("comfy launch -- --listen 127.0.0.1 --port 8188",shell=True)
+            
+            process = subprocess.Popen(f"comfy --skip-prompt --workspace={comfyui_path} launch -- --listen 127.0.0.1 --port 8188",shell=True)
             # Wait for a short time to see if the process starts successfully
             time.sleep(5)
             
@@ -112,9 +113,9 @@ Our solution revolves around these key files that works together to set up and r
         except Exception as e:
             raise Exception("Error setting up ComfyUI repo") from e
 
-    def run_comfyui_in_background():
+    def run_comfyui_in_background(comfyui_path):
         def run_server():
-            process = start_comfyui()
+            process = start_comfyui(comfyui_path)
             if process:
                 stdout, stderr = process.communicate()
 
@@ -209,13 +210,36 @@ Our solution revolves around these key files that works together to set up and r
 4. [`inferless-runtime-config.yaml`](https://github.com/inferless/ComfyUI-Inferless-template/blob/main/inferless-runtime-config.yaml) : This YAML file is crucial for configuring the runtime environment for our ComfyUI application on Inferless.
 
 ```python
-build:
-  system_packages:
-    - "wget"
-    - "ffmpeg"
-    - "libgl1-mesa-glx"
-  python_packages:
-    - "comfy-cli==1.2.3"
+    build:
+    system_packages:
+        - "wget"
+        - "ffmpeg"
+        - "libgl1-mesa-glx"
+    python_packages:
+        - "comfy-cli==1.2.3"
+        - "websocket-client==1.6.4"
+        - "accelerate==0.23.0"
+        - "opencv-python==4.10.0.84"
+        - "boto3==1.35.9"
+        - "pillow==10.4.0"
+        - "torchvision==0.19.0"
+        - "einops==0.8.0"
+        - "transformers==4.44.2"
+        - "scipy==1.14.1"
+        - "torchsde==0.2.6"
+        - "aiohttp==3.10.5"
+        - "safetensors==0.4.4"
+        - "pydantic==2.8.2"
+        - "groq==0.10.0"
+        - "aiohttp-sse==2.2.0"
+        - "spandrel==0.3.4"
+        - "kornia==0.7.3"
+        - "torchaudio==2.4.0"
+        - "matplotlib==3.8.0"
+        - "scikit-image==0.24.0"
+        - "simpleeval==0.9.13"
+        - "imageio-ffmpeg==0.5.1"
+        - "pypng==0.20220715.0"
 ```
 
 ## Architecture overview
