@@ -273,7 +273,11 @@
                     "pages": [
                         "changelog/july-2024/16th-july"
                     ]
-                      }
+                      },
+                    {
+                      "group": "September 2024",
+                    "pages": [
+                        "changelog/september-2024/30th-september"
         ]
       },
       {
