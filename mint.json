@@ -310,7 +310,8 @@
             "how-to-guides/deploy-text-to-speech-streaming",
             "how-to-guides/deploy-a-Llama-3.1-8B-Instruct-using-inferless",
             "how-to-guides/deploy-a-Llama-3.1-8B-Instruct-GGUF-using-inferless",
-            "how-to-guides/deploy-flux-schnell-using-inferless"
+            "how-to-guides/deploy-flux-schnell-using-inferless",
+            "how-to-guides/deploy-a-Llama-3.2-11B-Vision-Instruct-using-inferless"
         ]
       },
       {

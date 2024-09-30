@@ -1,0 +1,193 @@
+---
+title: "Deploy Llama-3.2-11B-Vision-Instruct using Inferless"
+description: "The Llama 3.2 11B Vision Instruct model is part of Meta's latest series of large language models that introduce significant advancements in multimodal AI capabilities, allowing for both text and image inputs."
+---
+
+## Introduction
+
+[Llama 3.2-Vision](https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct) enhances the Llama 3.1 text model with image recognition capabilities. It uses a vision adapter with cross-attention layers to integrate image representations into the core language model. The base model is fine-tuned for helpfulness and safety using supervised learning and reinforcement learning with human feedback.
+
+## Our Observations
+
+We have deployed the model on an A100 GPU(80GB). Here are our observations:
+
+| Library              | Inference Time  | Cold Start Time |
+| -------------------- | --------------- | --------------- |
+| Transformers         | 2.44 sec        | 10.60 sec       |
+
+Note: The inference time and cold start time are average values.
+
+## Defining Dependencies
+
+We are using the [Transformers](https://github.com/huggingface/transformers) to serve the model on a single A100 (80GB).
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`.
+
+```
+Llama-3.2-11B-Vision-Instruct/
+├── app.py
+├── inferless-runtime-config.yaml
+├── inferless.yaml
+└── input_schema.py
+```
+
+You can also add other files to this directory.
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/Llama-3.2-11B-Vision-Instruct/blob/main/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference and pass it through `inputs(dict)` parameter.
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+```python
+import requests
+import torch
+from PIL import Image
+from transformers import MllamaForConditionalGeneration, AutoProcessor
+
+class InferlessPythonModel:
+    def initialize(self):
+        model_id = "meta-llama/Llama-3.2-11B-Vision-Instruct"
+        self.model = MllamaForConditionalGeneration.from_pretrained(
+            model_id,
+            torch_dtype=torch.bfloat16,
+            device_map="cuda",
+        )
+        self.processor = AutoProcessor.from_pretrained(model_id)
+
+    def infer(self, inputs):
+        image_url = inputs["image_url"]
+        prompt = inputs["prompt"]
+        max_new_tokens = inputs.get("max_new_tokens",30)
+        
+        messages = [
+                    [
+                        {
+                            "role": "user", 
+                            "content": [
+                                {"type": "image"},
+                                {"type": "text", "text": prompt}
+                            ]
+                        }
+                    ],
+                ]
+        input_text = self.processor.apply_chat_template(messages, add_generation_prompt=True)
+        image = Image.open(requests.get(image_url, stream=True).raw)
+        inputs = self.processor(image, input_text, return_tensors="pt").to(self.model.device)
+        
+        output = self.model.generate(**inputs, max_new_tokens=max_new_tokens)
+        output_text = self.processor.decode(output[0],skip_special_tokens=True)
+        
+        return {"generated_text":output_text}
+
+    def finalize(self):
+        self.model = None
+```
+
+## Create the Input Schema
+
+We have to create a [input_schema.py](https://github.com/inferless/Llama-3.2-11B-Vision-Instruct/blob/main/input_schema.py) in your GitHub/Gitlab repository this will help us create the Input parameters. You can checkout our documentation on [Input / Output Schema](https://docs.inferless.com/model-import/input-output-schema).
+
+For this tutorial, we have defined these parameter `prompt`, `image_url` and `max_new_tokens`  which are required during the API call. Now lets create the `input_schema.py`.
+
+```python
+INPUT_SCHEMA = {
+    "prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["Describe this image?"]
+    },
+    "image_url": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["https://huggingface.co/datasets/huggingface/documentation-images/resolve/0052a70beed5bf71b92610a43a52df6d286cd5f3/diffusers/rabbit.jpg"]
+    },
+    "max_new_tokens": {
+        'datatype': 'INT32',
+        'required': False,
+        'shape': [1],
+        'example': [50]
+    }
+}
+```
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Llama-3.2-11B-Vision-Instruct/blob/main/inferless-runtime-config.yaml).
+
+```python
+build:
+  cuda_version: 12.1.1
+  python_packages:
+    - accelerate==0.34.2
+    - torch==2.4.1
+    - transformers==4.45.0
+    - pillow==10.4.0
+```
+
+## Method A: Deploying the model on Inferless Platform
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.
+
+### Step 1: Login to the inferless dashboard can click on Import model button
+Navigate to your desired workspace in Inferless and Click on `Add a custom model` button that you see on the top right. An import wizard will open up.
+
+### Step 2: Follow the UI to complete the model  Import
+- Select the GitHub/GitLab Integration option to connect your source code repository with the deployment environment.
+- Navigate to the specific GitHub repository that contains your model's code. Here, you will need to identify and enter the name of the model you wish to import.
+- Choose the appropriate type of machine that suits your model's requirements. Additionally, specify the minimum and maximum number of replicas to define the scalability range for deploying your model.
+- Optionally, you have the option to enable automatic build and deployment. This feature triggers a new deployment automatically whenever there is a new code push to your repository.
+- If your model requires additional software packages, configure the Custom Runtime settings by including necessary pip or apt packages. Also, set up environment variables such as  Inference Timeout, Container Concurrency, and Scale Down Timeout to tailor the runtime environment according to your needs.
+- If you're deploying a model from Hugging Face that requires authentication, set your Hugging Face access token as an environment variable named `HF_TOKEN` in step 4. This environment variable will be used to authenticate your requests to Hugging Face. 
+![](/images/inferless_hf_access_token_import.png)
+- Wait for the validation process to complete, ensuring that all settings are correct and functional. Once validation is successful, click on the "Import" button to finalize the import of your model.
+![](/images/inferless_model_import.png)
+
+
+### Step 3: Wait for the model build to complete usually takes ~5-10 minutes
+
+### Step 4: Use the APIs to call the model
+Once the model is in 'Active' status you can click on the 'API' page to call the model
+
+### Here is the Demo:
+
+![](/gif/inferless_Llama-3.2-11B-Vision-Instruct.gif)
+
+## Method B: Deploying the model on Inferless CLI
+
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+### Initialization of the model
+
+Create the app.py and inferless-runtime-config.yaml, move the files to the working directory. Run the following command to initialize your model:
+
+```
+inferless init
+```
+
+### Upload the custom runtime
+
+Once you have created the inferless-runtime-config.yaml file, you can run the following command:
+
+```
+inferless runtime upload
+```
+
+Upon entering this command, you will be prompted to provide the configuration file name. Enter the name and ensure to update it in the inferless.yaml file. Now you are ready for the deployment.
+
+![](/images/llama70b-6.png)
+
+### Deploy the Model
+
+Execute the following command to deploy your model. Once deployed, you can track the build logs on the Inferless platform:
+
+```
+inferless deploy
+```
