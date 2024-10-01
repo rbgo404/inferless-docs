@@ -12,7 +12,6 @@ Let's assume you have an app.py with 2 functions init and load, You need to 4 li
 from threading import Thread
 from inferless import Cls # Add the inferless library 
 
-model_id = 'meta-llama/Llama-2-7b-chat-hf'
 
 InferlessCls = Cls(gpu="A10")  # Init the class with the type of GPU you want to run with 
 class InferlessPythonModel:
@@ -20,26 +19,15 @@ class InferlessPythonModel:
     @InferlessCls.load     # Add the annotation 
     def initialize(self):
         import torch
-        from transformers import AutoModelForCausalLM, AutoTokenizer, TextIteratorStreamer
-        self.model = AutoModelForCausalLM.from_pretrained(
-            "meta-llama/Llama-2-7b-chat-hf",
-            torch_dtype=torch.float16,
-            device_map='auto',
-            token=token,
-        )
-        self.tokenizer = AutoTokenizer.from_pretrained(model_id, token=token)
+        from transformers import pipeline
+        self.generator = pipeline("text-generation", model="EleutherAI/gpt-neo-125M",device=0)
 
    @InferlessCls.infer    # Add the annotation 
     def infer(self, inputs):
         message = inputs['message']
-        chat_history = inputs['chat_history'] if 'chat_history' in inputs else []
-        system_prompt = inputs['system_prompt'] if 'system_prompt' in inputs else ''
-        result = self.run_function(
-            message=message,
-            chat_history=chat_history,
-            system_prompt=system_prompt,
-        )
-        return {"generated_text": result}
+        pipeline_output = self.generator(prompt, do_sample=True, min_length=120)
+        generated_txt = pipeline_output[0]["generated_text"]
+        return {"generated_text": generated_txt }
 
 model = InferlessPythonModel() # Call the test classs 
 print(model.infer({'message': 'Hello'}))
