@@ -279,7 +279,14 @@
                     "pages": [
                         "changelog/september-2024/30th-september"
                     ]
-                    }
+                     },
+                    {
+                      "group": "October 2024",
+                    "pages": [
+                        "changelog/october-2024/7th-october"
+                    ]
+                     }
+            
         ]
       },
       {
