@@ -62,7 +62,7 @@ class InferlessPythonModel:
         temperature = inputs.get("temperature",0.7)
         top_p = inputs.get("top_p",0.1)
         repetition_penalty = inputs.get("repetition_penalty",1.18)
-        top_k = inputs.get("top_k",40)
+        top_k = int(inputs.get("top_k",40))
         max_tokens = inputs.get("max_tokens",256)
 
         sampling_params = SamplingParams(temperature=temperature,top_p=top_p,repetition_penalty=repetition_penalty,
@@ -161,7 +161,7 @@ Once the model is in 'Active' status you can click on the 'API' page to call the
 
 ### Here is the Demo:
 
-![](/gif/inferless_Ministral-8B-Instruct.gif)
+![](/gif/demo_ministral.gif)
 
 ## Method B: Deploying the model on Inferless CLI
 
