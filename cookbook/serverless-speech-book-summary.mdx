@@ -31,7 +31,7 @@ To build this application, you have to follow these steps:
 
 ### Text-to-Speech Generation
 - **Objective:** Convert the final text summary of the book into natural-sounding speech, allowing users to listen to an audio version of the summarized content.
-- **Action:** Implement a Python class, such as [`InferlessPythonModel`](https://github.com/inferless/Speech-Book-Summary/blob/main/app.py), to manage the entire text-to-speech process. This class should handle the text input from the user to integrate with the TTS model (xTTS-v2) for producing the final audio response.
+- **Action:** Implement a Python class, such as [`InferlessPythonModel`](https://github.com/inferless/Book-Audio-Summary-Generator/blob/main/app.py), to manage the entire text-to-speech process. This class should handle the text input from the user to integrate with the TTS model (xTTS-v2) for producing the final audio response.
 
 ```python
 from vllm import LLM, SamplingParams
@@ -149,7 +149,7 @@ This command ensures your environment has all the tools required for the applica
 ```bash
 inferless init
 ```
-2. __Upload Custom Runtime:__ Use the following command to upload your [custom runtime](https://github.com/inferless/Speech-Book-Summary/blob/main/inferless-runtime-config.yaml).
+2. __Upload Custom Runtime:__ Use the following command to upload your [custom runtime](https://github.com/inferless/Book-Audio-Summary-Generator/blob/main/inferless-runtime-config.yaml).
 ```bash
 inferless runtime upload
 ```
