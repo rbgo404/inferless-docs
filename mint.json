@@ -285,6 +285,12 @@
                     "pages": [
                         "changelog/october-2024/7th-october"
                     ]
+                     },
+                     {
+                      "group": "November 2024",
+                    "pages": [
+                        "changelog/november-2024/14th-november"
+                    ]
                      }
             
         ]
