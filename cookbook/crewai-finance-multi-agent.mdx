@@ -1,0 +1,258 @@
+---
+title: "Build a Multi-Agent Financial Analysis System"
+description: "Dive into this comprehensive tutorial that guides you through building a sophisticated multi-agent system for financial analysis. Learn how to leverage multiple AI agents, powered by large language models, to perform detailed stock analysis and generate financial investment reports."
+---
+## Key Components of the Application
+1. __LLaMA Model:__ Meta's LLaMA 3.1 70B model serves as the core reasoning engine, powering natural language understanding and generation for sophisticated financial analysis and report creation.
+2. __Ollama Integration:__ Provides local deployment of the LLaMA model with efficient model management, optimization, and streamlined quantization (Q4_K_L) for faster analysis.
+3. __CrewAI Framework:__ Orchestrates the interaction between agents, managing task execution and tool integration for complex financial analysis workflows.\
+   Key CrewAI Components:
+   - __Agents:__ Specialized roles (Researcher, Analyst, Advisor)
+   - __Tasks:__ Structured workflow definitions
+   - __Tools:__ Integration with financial data sources
+   - __Crew:__ Coordination and process management
+
+## Crafting Your Application
+The system follows a sequential processing architecture where each agent performs specialized tasks:
+![](/images/agent-diagram.png)
+
+## Core Development Steps
+- __Objective:__ Accept user input and Create a robust framework for multi-agent coordination.
+- __Action:__  Implement the InferlessPythonModel class that handles initialization, inference, and agent creation.
+```python
+from crewai import Agent, Task, Crew, Process, LLM
+from crewai_tools import SerperDevTool, LlamaIndexTool, tool
+from llama_index.tools.yahoo_finance import YahooFinanceToolSpec
+import yfinance as yf
+import pandas as pd
+from datetime import datetime
+from ollama_utils import start_and_check_ollama, install_ollama
+
+
+class InferlessPythonModel:
+    def initialize(self):
+        ollama_install_status = install_ollama()
+        if ollama_install_status:
+            print("INSTALL SUCCESSFUL",flush=True)
+        ollama_status = start_and_check_ollama()
+        if ollama_status:
+          self.llm =LLM(model="ollama/hf.co/bartowski/Meta-Llama-3.1-70B-Instruct-GGUF:Q4_K_L")
+          self.agent = self.create_agent(self.llm)
+        
+    def infer(self, inputs):
+        stock_symbol = inputs['stock_symbol']
+        result = self.agent.kickoff(inputs={'stock_symbol': stock_symbol})
+        result_str = str(result)
+      
+        return {"agent_response":result_str}
+
+    def create_agent(self,llm):
+        # Tools Initialization
+        serper_tool = SerperDevTool()
+        yf_fundamental_tool = yf_fundamental_analysis
+        yf_tools = [LlamaIndexTool.from_tool(t) for t in YahooFinanceToolSpec().to_tool_list()]
+        # Agents Definitions
+        researcher = Agent(
+            role='Equity Market Analyst',
+            goal='Conduct an in-depth analysis of the financial performance and market position of {stock_symbol}',
+            verbose=True,
+            memory=True,
+            backstory="Holding a Ph.D. in Financial Economics and possessing 15 years of experience in equity research, you are renowned for your meticulous data collection and insightful analysis. Your expertise encompasses evaluating financial statements, assessing market trends, and providing strategic investment recommendations.",
+            tools=[serper_tool]+yf_tools,
+            llm=llm,
+            max_iter = 1,
+            allow_delegation=True
+        )
+    
+        fundamental_analyst = Agent(
+            role='Senior Equity Fundamental Analyst',
+            goal='Conduct a comprehensive fundamental analysis of {stock_symbol}, focusing on financial statements, valuation metrics, and key value drivers to assess intrinsic value.',
+            verbose=True,
+            memory=True,
+            backstory="As a Chartered Financial Analyst (CFA) with 15 years of experience in value investing, you possess a deep understanding of financial statement analysis and valuation techniques. Your expertise includes identifying undervalued securities through meticulous examination of financial health, earnings quality, and market position.",
+            tools=[yf_fundamental_tool],
+            llm=llm,
+            max_iter = 1,
+            allow_delegation=True
+        )
+    
+        reporter = Agent(
+            role='Senior Investment Advisor',
+            goal='Provide comprehensive stock analyses and strategic investment recommendations to impress a high-profile client.',
+            verbose=True,
+            memory=True,
+            backstory="As the most experienced investment advisor, you integrate various analytical insights to formulate strategic investment advice. Currently, you are working for a highly important client whom you need to impress.",
+            tools=[serper_tool, yf_fundamental_tool]+yf_tools,
+            llm=llm,
+            max_iter = 1,
+            allow_delegation=False
+        )
+    
+        # Task Definitions
+        research_task = Task(
+            description=
+            (
+                "Conduct research on {stock_symbol}. Your analysis should include:\n"
+                "1. Current stock price and historical performance (5 years).\n"
+                "2. Key financial metrics (P/E, EPS growth, revenue growth, margins) compared to industry averages and competitors.\n"
+                "3. Recent news and press releases (past 1 month) and their potential impact.\n"
+                "4. Analyst ratings and price targets (min 5 analysts), including consensus and notable insights.\n"
+                "5. Reddit and social media sentiment analysis (100 posts), categorizing sentiments.\n"
+                "6. Major institutional holders and recent changes.\n"
+                "7. Competitive landscape and {stock_symbol}'s market share.\n"
+                "8. Macro-economic and industry trends affecting the company.\n"
+                "9. Regulatory and legal considerations.\n"
+                "10. Environmental, Social, and Governance (ESG) factors compared with industry peers.\n"
+                "Use reputable financial websites and databases for data. Include charts where applicable and cite all sources appropriately.\n"
+            ),
+            expected_output="A comprehensive 500-word research report covering all points with data sources, charts, and actionable insights.",
+            agent=researcher
+        )
+        
+        fundamental_analysis_task = Task(
+            description=(
+                "Conduct fundamental analysis of {stock_symbol}. Include:\n"
+                "1. Review last 3 years of financial statements.\n"
+                "2. Key ratios (P/E, P/B, P/S, PEG, Debt-to-Equity, etc.).\n"
+                "3. Comparison with main competitors and industry averages.\n"
+                "4. Revenue and earnings growth trends.\n"
+                "5. Management effectiveness (ROE, capital allocation).\n"
+                "6. Competitive advantages and market position.\n"
+                "7. Growth catalysts and risks (2-3 years).\n"
+                "8. DCF valuation model with assumptions.\n"
+                "Use yf_fundamental_analysis tool for data."
+            ),
+            expected_output='A 100-word fundamental analysis report with buy/hold/sell recommendation and key metrics summary.',
+            agent=fundamental_analyst
+        )
+    
+        report_task = Task(
+            description=(
+                "Create an investment report on {stock_symbol}. Include:\n"
+                "1. Executive Summary: Investment recommendation.\n"
+                "2. Company Snapshot: Key facts.\n"
+                "3. Financial Highlights: Top metrics and peer comparison.\n"
+                "4. Fundamental Analysis: Top strengths and concerns.\n"
+                "5. Risk and Opportunity: Major risk and growth catalyst.\n"
+                "6. Investment Thesis: Bull and bear cases.\n"
+                "7. Price Target: 12-month forecast.\n"
+            ),
+            expected_output='A 600-word investment report with clear sections mentioned in the description.',
+            agent=reporter
+        )
+    
+        # Crew Definition and Kickoff for Result
+        self.crew = Crew(
+            agents=[researcher, fundamental_analyst, reporter],
+            tasks=[research_task, fundamental_analysis_task, report_task],
+            process=Process.sequential,
+            cache=True
+        )
+        return self.crew
+
+
+    def finalize(self):
+        pass
+```
+### Setting up the Environment
+__Dependencies:__
+- __Objective:__ Ensure all necessary libraries are installed.
+- __Action:__ Run the command below to install dependencies:
+```bash
+pip install crewai==0.80.0 crewai-tools==0.14.0 langchain-community==0.3.7 llama-index-tools-yahoo-finance==0.2.0 yfinance==0.2.49
+```
+Install Ollama for LLM serving:
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+```
+These commands ensures your environment has all the tools required for the application.
+
+### Deploying Your Model with Inferless CLI
+1. __Run the following command to initialize your model:__
+```bash
+inferless init
+```
+2. __Upload Custom Runtime:__ Use the following command to upload your [custom runtime](https://github.com/inferless/Voice-Conversational-Chatbot/blob/main/inferless-runtime-config.yaml).
+```bash
+inferless runtime upload
+```
+Here's the custom runtime for the application:
+```yaml
+build:
+  python_packages:
+    - crewai==0.80.0
+    - crewai-tools==0.14.0
+    - langchain-community==0.3.7
+    - llama-index-tools-yahoo-finance==0.2.0
+    - yfinance==0.2.49
+  run:
+    - "curl -fsSL https://ollama.com/install.sh | sh"
+```
+3. __Deploy Model:__ Execute `inferless deploy` to deploy and monitor the build logs on Inferless.
+```bash
+inferless deploy
+```
+### Demo of the Multi-Agent Financial Analysis System.
+<video width="640" height="360" controls>
+  <source src="/videos/" type="video/mp4"/>
+  Your browser does not support the video tag.
+</video>
+
+
+### Alternative Deployment Method
+Inferless also supports a user-friendly UI for model deployment, catering to users at all skill levels. Refer to Inferless's documentation for guidance on UI-based deployment.
+## Choosing Inferless for Deployment
+Deploying your Voice Conversational Chatbot application with Inferless offers compelling advantages, making your development journey smoother and more cost-effective. Here's why Inferless is the go-to choice:
+1. __Ease of Use:__ Forget the complexities of infrastructure management. With Inferless, you simply bring your model, and within minutes, you have a working endpoint. Deployment is hassle-free, without the need for in-depth knowledge of scaling or infrastructure maintenance.
+2. __Cold-start Times:__ Inferless's unique load balancing ensures faster cold-starts. Expect around 72.19 seconds to process each queries, significantly faster than many traditional platforms.
+3. __Cost Efficiency:__ Inferless optimizes resource utilization, translating to lower operational costs. Here's a simplified cost comparison:
+
+### Scenario 1
+You are looking to deploy a Voice Conversational Chatbot application for processing 100 queries.<br />
+
+__Parameters:__
+- __Total number of queries:__ 100 daily.<br />
+- __Inference Time:__ All models are hypothetically deployed on A100 80GB, taking 72.19 seconds of processing time and a cold start overhead of 21.09 seconds.<br />
+- __Scale Down Timeout:__ Uniformly 60 seconds across all platforms, except Hugging Face, which requires a minimum of 15 minutes. This is assumed to happen 100 times a day.<br />
+
+__Key Computations:__
+1. __Inference Duration:__ <br/>
+Processing 100 queries and each takes 72.19 seconds<br/>
+Total: 100 x 72.19 = 7219 seconds (or approximately 2 hours)
+2. __Idle Timeout Duration:__<br/>
+Post-processing idle time before scaling down: (100 seconds - 72.19 seconds) x 100 = 2781 seconds (or 0.77 hours approximately)<br/>
+3. __Cold Start Overhead:__<br/>
+Total: 100 x 21.09 = 2109 seconds (or 0.59 hours approximately)<br/>
+
+__Total Billable Hours with Inferless:__ 2 (inference duration) + 0.77 (idle time) + 0.59 (cold start overhead)  = 3.36 hours<br/>
+__Total Billable Hours with Inferless:__ 3.36 hours<br/>
+
+### Scenario 2
+You are looking to deploy a Voice Conversational Chatbot application for processing 1000 queries per day.<br />
+
+__Key Computations:__<br />
+1. __Inference Duration:__<br />
+Processing 1000 queries and each takes 72.19 seconds
+Total: 1000 x 72.19 = 72000 seconds (or approximately 7.94 hours)‍
+2. __Idle Timeout Duration:__<br />
+Post-processing idle time before scaling down: (100 seconds - 72.19 seconds) x 100 = 2781 seconds (or 0.77 hours approximately)
+3. __Cold Start Overhead:__<br />
+Total: 100 x 21.09 = 2109 seconds (or 0.59 hours approximately)
+
+__Total Billable Hours with Inferless:__ 20 (inference duration) + 0.77 (idle time) + 0.59 (cold start overhead)  = 21.36 hours<br/>
+__Total Billable Hours with Inferless:__ 21.36 hours
+
+### Pricing Comparison for all the Scenario
+
+| Scenarios | AWS SageMaker Cost | Inferless Cost |
+| :--- | :---- | :---- |
+|  100 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$2.73 (2.24 hours billed at $1.22/hour) |
+|  1000 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$26.05 (21.36 hours billed at $1.22/hour) |
+
+By opting for Inferless, **_you can achieve up to 90.52% cost savings._**<br/>
+
+Please note that we have utilized the A100(80 GB) GPU for model benchmarking purposes, while for pricing comparison, we referenced the A10G GPU price from both platforms. This is due to the unavailability of the A100 GPU in SageMaker.
+
+Also, the above analysis is based on a smaller-scale scenario for demonstration purposes. Should the scale increase tenfold, traditional cloud services might require maintaining 2-4 GPUs constantly active to manage peak loads efficiently. In contrast, Inferless, with its dynamic scaling capabilities, adeptly adjusts to fluctuating demand without the need for continuously running hardware.<br/>
+## Conclusion
+By following this guide, you're now equipped to build and deploy a Multi-Agent Financial Analysis System. This tutorial showcases the seamless integration of advanced technologies, emphasizing the practical application of creating cost-effective solutions.

@@ -192,7 +192,8 @@
             "cookbook/serverless-voice-chatbot",
             "cookbook/serverless-llama3-youtube-summarizer",
             "cookbook/serverless-customer-service-bot",
-            "cookbook/comfyui-api-inferless"
+            "cookbook/comfyui-api-inferless",
+            "cookbook/crewai-finance-multi-agent"
         ]
       },
       {
