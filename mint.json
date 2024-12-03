@@ -76,6 +76,8 @@
         "pages": [
             "concepts/overview",
             "concepts/configuring-the-input-output-schema",
+            "concepts/multiple-inputs",
+            "concepts/multiple-outputs",
             "concepts/building-custom-images",
             "concepts/working-with-files",
             "concepts/working-with-nfs-volumes",
