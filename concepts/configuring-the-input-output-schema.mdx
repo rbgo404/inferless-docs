@@ -4,11 +4,108 @@ title: "Handling Input / Output with Inferless"
 
 # Handling Input / Output with Inferless
 
-Inferless allows you to easily define input and output schemas for APIs following the **Inference Protocol v2**. You can now define your inputs and outputs directly within your code using Pydantic models, or, for backward compatibility, you can still use an `input_schema.py` file. This document explains both methods.
+Inferless allows you to easily define input and output schemas for APIs following the **Inference Protocol v2**. You can now define your inputs and outputs directly within your code using Pydantic models or use an `input_schema.py` file. This document explains both methods.
 
 ---
 
-## Input Schema (New Way)
+
+
+### Input Schema  with input_schema.py
+
+For backward compatibility, you can still use the older method of defining an input schema using an external input_schema.py file. In this method, you create a dictionary that defines the required inputs for your model.
+
+For each input, there are 3 fields required 
+
+* **datatype**: "STRING", "BOOL", "INT8", "INT16", "INT32", "FP16" "FP32", "UINT8", "UINT16", "UINT32", "UINT64", "INT64" , "FP64" , "BYTES", "BF16"
+
+* **shape**: The length of the array, If the shape is \[1\] you will get the variable, if the array > 1 you will get an array, If the length is variable you can put -1
+
+* **required**: If the parameter is required in all API calls
+
+* **example**( optional ): Sample value for calling the API
+
+In code
+```API 
+def infer(self, inputs):
+    prompt = inputs["prompt"] # "There is a fine house in the forest"
+    shape = inputs["shape"] # [ 512,1 ]
+```
+
+
+In input\_schema.py 
+```input_schema Example
+INPUT_SCHEMA = {
+    "prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["There is a fine house in the forest"]
+    },
+    'shape': {
+        'datatype': 'INT8',
+        'required': False,
+        'example': [ 512, 1 ],
+        'shape': [2]
+    },
+}
+```
+
+More example of varrible length array <a href="/concepts/multiple-inputs"> here </a>
+
+
+### Output Schema 
+
+You can return any dictionary in the return statement of app.py. You don't need to provide any configuration. There are some limitations on the dictories that you can return.
+
+Possible return types are
+
+* String 
+* Float
+* Int
+* Boolean
+* List[String|Float|Int|Boolean]
+
+You can't have nested dictionaries, arrays of arrays, or arrays of dictionaries.
+
+If you have nested Object/Dictionary you can serialise the object to JSON and return the JSON string.
+
+### Returning Dicts
+
+```
+# Example Return Statement 
+
+return { "label_1" : 0.398 , "label_2" : 0.563, "label_3" : 0.434 }
+```
+
+### Returning Variable Length Array 
+
+```
+# Example Return Statement 
+return { "generated_images_base64" : [ img_str1 , img_str2 , img_str3 ] }
+```
+
+
+### Returning Dictionary with Variable keys 
+
+```
+# Example Return Statement 
+dict = {"label_x": 0.4554 , "label_y", 0.3232 }
+return { "result": json.dumps(dict) }
+```
+
+### Returning List of Dictionaries 
+
+```
+# Example Return Statement
+List =  [ {"label_x": 0.4554 , "label_y", 0.3232 } , {"label_x": 0.4554 , "label_y", 0.3232 } ]
+return { "list_result" : json.dumps(List) }
+``` 
+
+More example of complex outputs <a href="/concepts/multiple-outputs"> here </a>
+
+
+
+## Input Schema with Pydantic
 
 With the new approach, you define your input schema directly in your code using Pydantic models. You no longer need to define an external schema file. Simply use the `@inferless.request` decorator to define the required inputs. you need to inferless python clinet
 
@@ -86,7 +183,7 @@ def infer(self, request: RequestObjects) -> ResponseObjects:
         count_iterations=iterations, 
         quality=0.9, 
         positions=[10, 20],
-        is_aws=False
+        is_color=False
     )
 ```
 
@@ -98,97 +195,3 @@ def infer(self, request: RequestObjects) -> ResponseObjects:
 - **Return Response**: Return a `ResponseObjects` object with the output parameters.
 
 ---
-
-
-### Input Schema ( Old Way with input_schema.py )
-
-For backward compatibility, you can still use the older method of defining an input schema using an external input_schema.py file. In this method, you create a dictionary that defines the required inputs for your model.
-
-For each input, there are 3 fields required 
-
-* **datatype**: "STRING", "BOOL", "INT8", "INT16", "INT32", "FP16" "FP32", "UINT8", "UINT16", "UINT32", "UINT64", "INT64" , "FP64" , "BYTES", "BF16"
-
-* **shape**: The length of the array, If the shape is \[1\] you will get the variable, if the array > 1 you will get an array, If the length is variable you can put -1
-
-* **required**: If the parameter is required in all API calls
-
-* **example**( optional ): Sample value for calling the API
-
-In code
-```API 
-def infer(self, inputs):
-    prompt = inputs["prompt"] # "There is a fine house in the forest"
-    shape = inputs["shape"] # [ 512,1 ]
-```
-
-
-In input\_schema.py 
-```input_schema Example
-INPUT_SCHEMA = {
-    "prompt": {
-        'datatype': 'STRING',
-        'required': True,
-        'shape': [1],
-        'example': ["There is a fine house in the forest"]
-    },
-    'shape': {
-        'datatype': 'INT8',
-        'required': False,
-        'example': [ 512, 1 ],
-        'shape': [2]
-    },
-}
-```
-
-More example of varrible length array <a href="/concepts/multiple-inputs"> here </a>
-
-
-### Output Schema ( Old Way with dict return )
-
-You can return any dictionary in the return statement of app.py. You don't need to provide any configuration. There are some limitations on the dictories that you can return.
-
-Possible return types are
-
-* String 
-* Float
-* Int
-* Boolean
-* List[String|Float|Int|Boolean]
-
-You can't have nested dictionaries, arrays of arrays, or arrays of dictionaries.
-
-If you have nested Object/Dictionary you can serialise the object to JSON and return the JSON string.
-
-### Returning Dicts
-
-```
-# Example Return Statement 
-
-return { "label_1" : 0.398 , "label_2" : 0.563, "label_3" : 0.434 }
-```
-
-### Returning Variable Length Array 
-
-```
-# Example Return Statement 
-return { "generated_images_base64" : [ img_str1 , img_str2 , img_str3 ] }
-```
-
-
-### Returning Dictionary with Variable keys 
-
-```
-# Example Return Statement 
-dict = {"label_x": 0.4554 , "label_y", 0.3232 }
-return { "result": json.dumps(dict) }
-```
-
-### Returning List of Dictionaries 
-
-```
-# Example Return Statement
-List =  [ {"label_x": 0.4554 , "label_y", 0.3232 } , {"label_x": 0.4554 , "label_y", 0.3232 } ]
-return { "list_result" : json.dumps(List) }
-``` 
-
-More example of complex outputs <a href="/concepts/multiple-outputs"> here </a>
