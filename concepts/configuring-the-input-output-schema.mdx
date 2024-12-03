@@ -2,11 +2,17 @@
 title: "Handling Input / Output with Inferless"
 ---
 
-To build APIs with inferless you need to follow Inference Protocol v2. You can define all the inputs that you need to process the model in a schema file 'input_schema.py'. For outputs you can return a dict with key and value pairs for different outputs. 
+# Handling Input / Output with Inferless
 
-### Input Schema 
+Inferless allows you to easily define input and output schemas for APIs following the **Inference Protocol v2**. You can now define your inputs and outputs directly within your code using Pydantic models or use an `input_schema.py` file. This document explains both methods.
 
-You have to define the **input\_schema.py** in your GitHub/Gitlab repository this will help us create the Input parameters : 
+---
+
+
+
+### Input Schema  with input_schema.py
+
+For backward compatibility, you can still use the older method of defining an input schema using an external input_schema.py file. In this method, you create a dictionary that defines the required inputs for your model.
 
 For each input, there are 3 fields required 
 
@@ -44,6 +50,9 @@ INPUT_SCHEMA = {
 }
 ```
 
+More example of varrible length array <a href="/concepts/multiple-inputs"> here </a>
+
+
 ### Output Schema 
 
 You can return any dictionary in the return statement of app.py. You don't need to provide any configuration. There are some limitations on the dictories that you can return.
@@ -53,7 +62,8 @@ Possible return types are
 * String 
 * Float
 * Int
-* List[String|Float|Int]
+* Boolean
+* List[String|Float|Int|Boolean]
 
 You can't have nested dictionaries, arrays of arrays, or arrays of dictionaries.
 
@@ -90,3 +100,98 @@ return { "result": json.dumps(dict) }
 List =  [ {"label_x": 0.4554 , "label_y", 0.3232 } , {"label_x": 0.4554 , "label_y", 0.3232 } ]
 return { "list_result" : json.dumps(List) }
 ``` 
+
+More example of complex outputs <a href="/concepts/multiple-outputs"> here </a>
+
+
+
+## Input Schema with Pydantic
+
+With the new approach, you define your input schema directly in your code using Pydantic models. You no longer need to define an external schema file. Simply use the `@inferless.request` decorator to define the required inputs. you need to inferless python clinet
+
+```shell
+pip install inferless
+```
+
+### Code Example:
+
+```python
+import inferless
+from pydantic import BaseModel, Field
+from typing import List, Optional
+
+@inferless.request
+class RequestObjects(BaseModel):
+    input_image_url: str = Field(default='https://hello.world')  # URL input for an image
+    count_iterations: int = Field(default=4)  # Number of iterations for processing
+    prompt: str = Field(default="a horse near a beach")  # Text prompt input
+    mask_arr: List[int] = Field(default=[1, 5])  # List of integers for mask
+    is_bytes: Optional[bool] = None  # Optional boolean field
+
+```
+
+### Explanation:
+
+- **Field**: Used to provide a default value and metadata for each input parameter.
+- **Optional Fields**: If a field is optional (e.g., `is_aws`), you can set it using `Optional`.
+- **Field Types**: Use Pydantic field types such as `str`, `int` , `bool` , `float`, `List`, etc., to define the expected data types.
+- **Default Values**: You can set default values for inputs if needed.
+
+
+## Output Schema (New Way)
+
+For outputs, instead of manually handling dictionary returns, you can define the output schema directly within the code using the `@inferless.response` decorator. This allows you to declare structured outputs in a more maintainable way.
+
+### Code Example:
+
+```python
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_txt: str = Field(default='Test output')  # Generated text
+    count_iterations: int = Field(default=4)  # Return number of iterations
+    quality: float = Field(default=0.7)  # Quality score as a float
+    positions: List[int] = Field(default=[1, 5])  # List of integer positions
+    is_color: Optional[float] = Field(default=False)  # Optional boolean field
+
+```
+
+### Explanation:
+
+- **Field**: Used to provide a default value and metadata for each output parameter.
+- **Optional Fields**: If a field is optional (e.g., `is_aws`), you can set it using `Optional`.
+- **Field Types**: Use Pydantic field types such as `str`, `int` , `bool` , `float`, `List`, etc., to define the expected data types.
+- **Default Values**: You can set default values for outputs if needed.
+
+---
+
+## Example Usage
+
+Here’s an example showing how you can process these input and output schemas inside your API:
+
+### Code Example:
+
+```python
+def infer(self, request: RequestObjects) -> ResponseObjects:
+    prompt = request.prompt  # Access the prompt from the request
+    iterations = request.count_iterations  # Access count of iterations
+    
+    # Perform your inference logic here
+    
+    # Example response
+    return ResponseObjects(
+        generated_txt="Inference completed", 
+        count_iterations=iterations, 
+        quality=0.9, 
+        positions=[10, 20],
+        is_color=False
+    )
+```
+
+### Explanation:
+
+- **Request Object**: The `infer` function takes a `request` object of type `RequestObjects` as input.
+- **Accessing Inputs**: You can access the input parameters directly from the `request` object.
+- **Perform Inference**: Perform your inference logic using the input parameters.
+- **Return Response**: Return a `ResponseObjects` object with the output parameters.
+
+---
