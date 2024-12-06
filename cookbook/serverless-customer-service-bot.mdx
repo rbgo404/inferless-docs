@@ -201,36 +201,25 @@ pip install llama-index==0.10.36 llama-index-core==0.10.36 llama-index-embedding
 ```
 This command ensures your environment has all the tools required for the application.
 ### Deploying Your Model with Inferless CLI
-1. __Run the following command to initialize your model:__
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+#### Clone the repository of the model
+Let's begin by cloning the model repository:
 ```bash
-inferless init
+git clone https://github.com/inferless/Customer-Service-Voicebot.git
 ```
-2. __Upload Custom Runtime:__ Use the following command to upload your [custom runtime](https://github.com/inferless/Customer-Service-Voicebot/blob/main/inferless-runtime-config.yaml).
+
+#### Deploy the Model
+To deploy the model using Inferless CLI, execute the following command:
 ```bash
-inferless runtime upload
+inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
 ```
-Here's the custom runtime for the application:
-```yaml
-build:
-  python_packages:
-    - "llama-index==0.10.36"
-    - "llama-index-core==0.10.36"
-    - "llama-index-embeddings-huggingface==0.2.0"
-    - "llama-index-llms-vllm==0.1.7"
-    - "llama-index-vector-stores-pinecone==0.1.7"
-    - "llamaindex-py-client==0.1.19"
-    - "vllm==0.4.2"
-    - "piper-tts==1.2.0"
-    - "onnxruntime-gpu==1.17.1"
-    - "faster-whisper==1.0.2"
-    - "nltk==3.8.1"
-    - "transformers==4.40.2"
-    - "pinecone-client==3.2.2"
-```
-3. __Deploy Model:__ Execute `inferless deploy` to deploy and monitor the build logs on Inferless.
-```bash
-inferless deploy
-```
+
+**Explanation of the Command:**
+
+- `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
+- `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
+
 ### Demo of the Customer Service Voicebot.
 <video width="640" height="360" controls>
   <source src="/videos/customer-support-bot.mp4" type="video/mp4"/>

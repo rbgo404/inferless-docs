@@ -88,33 +88,24 @@ pip install accelerate==0.28.0 diffusers==0.27.0 transformers==4.38.2 peft==0.9.
 ```
 This command ensures your environment has all the tools required for the application.
 ### Deploying Your Model with Inferless CLI
-1. __Run the following command to initialize your model:__
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+#### Clone the repository of the model
+Let's begin by cloning the model repository:
 ```bash
-inferless init
+git clone https://github.com/inferless/Logo-Generator.git
 ```
-2. __Upload Custom Runtime:__ Use the following command to upload your [custom runtime](https://github.com/inferless/Logo-Generator/blob/main/inferless-runtime-config.yaml).
+
+#### Deploy the Model
+To deploy the model using Inferless CLI, execute the following command:
 ```bash
-inferless runtime upload
+inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
 ```
-Here's the custom runtime for the application:
-```yaml
-build:
-  cuda_version: "12.1.1"
-  system_packages:
-    - "libssl-dev"
-    - "libx11-6"
-    - "libxext6"
-    - "libgl1-mesa-glx"
-  python_packages:
-    - "accelerate==0.28.0"
-    - "diffusers==0.27.0"
-    - "transformers==4.38.2"
-    - "peft==0.9.0"
-```
-3. __Deploy Model:__ Execute `inferless deploy` to deploy and monitor the build logs on Inferless.
-```bash
-inferless deploy
-```
+
+**Explanation of the Command:**
+
+- `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
+- `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
 ### Demo of the Logo Generator
 Here are a few examples of logos generated from our application:
 ![](/images/logo-generator-sample-logos.png)
