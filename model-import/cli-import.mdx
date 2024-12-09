@@ -40,6 +40,40 @@
     
 5. Hurray! You’ve successfully deployed your first model with us
 
+### Runtime
+
+Runtime in Inferless refers to the environment and configuration in which your model runs. It includes:
+
+1. System packages
+2. Python packages
+3. Custom shell commands
+
+### Create and deploy with runtime
+
+1. Create a new file called `inferless_runtime_config.yaml` with below data
+    
+    ```bash
+    build:
+  cuda_version: "12.1.1"
+  python_packages:
+    - "accelerate==0.33.0"
+    - "torch==2.4.0"
+    - "transformers==4.44.0"
+    - "diffusers==0.30.0"
+    ```
+
+2. Run the below command to create the runtime
+    
+    ```bash
+    inferless runtime create --name <runtime_name> --path ./inferless_runtime_config.yaml
+    ```
+
+3. Deploy with runtime
+    
+    ```bash
+    inferless deploy --gpu t4 --region <regionname> --runtime <runtimename> 
+    ```
+
 ### Volumes
 
 Volumes in Inferless are NFS-like writable storage spaces that can be connected to multiple replicas simultaneously. They serve several key purposes:
@@ -136,58 +170,3 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
   "text" : "a horse near a lake"
 }
 ```
-
-### Dockerfile
-
-If you’ve a dockerfile with you, we can build the image. Just make sure you’re dockerfile is stored in Github/ Gitlab for us to access it.
-
-1. Login to [Inferless.com](https://inferless.com/) and click on three dot menu near the profile picture
-2. Click on [Manage integrations](https://console.inferless.com/user/integration) and connect with your Github/ Gitlab account were the model is stored.
-3. Once you’re done with integration on console. Open CLI and run this command to initialise the model
-    
-    ```bash
-    inferless init docker --type dockerfile --name <modelname> --provider <github/gitlab> --url <repoURL> --healthapi <apiname> --inferapi <apiname> --dockerfilepath <path> --serverport <portnumber> --autobuild 
-    ```
-    
-4. Now that your model is initialised. 
-    - To do default deployment use this
-    
-    ```bash
-    inferless deploy --gpu t4 
-    ```
-    
-    - To do customised deployment use this
-    
-    ```bash
-    inferless deploy --gpu t4 --region <regionname> --runtime <runtimename> --volume <volumename> --fractional
-    ```
-    
-
-### Dockerhub/ ECR
-
-You can deploy the model with Inferless using docker image. Just make sure the image is stored either in dockerhub/ ecr
-
-1. Connect your [Dockerhub](https://hub.docker.com/) account using this command(below) and enter the username and access token
-    
-    ```bash
-    inferless integration add dockerhub --name <integrationname> --username <name> --access-token <token>
-    ```
-    
-2. Once you’re done with integration. Run this command to initialise the model
-    
-    ```bash
-    inferless init-docker --type dockerimage --name <modelname> --provider <dockerhub/ecr> --url <imageurl> --healthapi <apiname> --inferapi <apiname> --serverport <portnumber> --autobuild 
-    ```
-    
-3. Now that your model is initialised. 
-    - To do default deployment use this
-    
-    ```bash
-    inferless deploy --gpu t4 
-    ```
-    
-    - To do customised deployment use this
-    
-    ```bash
-    inferless deploy --gpu t4 --region <regionname> --runtime <runtimename> --volume <volumename> --fractional    
-    ```
