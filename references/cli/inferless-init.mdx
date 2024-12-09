@@ -96,7 +96,7 @@ inferless deploy --gpu T4
 
 ## Sub Commands 
 
-### Load a model from Hugging Face.
+### Hugging Face.
 
     We will create new files called app.py and input_schema.py at your current directory.
 
@@ -166,7 +166,7 @@ Once init is complete you will see the below files created
 
 - `inferless.yaml`This file will have all the configurations required for the deployment. Users can update this file according to their requirements.
 
-### Initialize with Docker.
+### Docker
 
 **Usage**:
 
@@ -187,7 +187,7 @@ $ inferless init docker [OPTIONS]
 - `-s, --serverport INTEGER`: Server port. [required]
 - `-a, --autobuild`: Enable autobuild for the model.
 
-### Import a PyTorch, ONNX, or TensorFlow file for inference with Triton server.
+### File ( PyTorch/ ONNX /TensorFlow ) inference with Triton server.
 
 The folder structure for the zip file should be as follows:
 
