@@ -82,4 +82,29 @@ For org repository access you have to make sure that the org Owner installs the 
    * Click on settings, available on the top, next to your Workspace Name  
    * Click on "Workspace API keys"  
    * You can view the details of your key or generate a new one  
-<Frame caption = "Sample for now">![](/images/common-workspace-api.png)</Frame>  
+<Frame caption = "Sample for now">![](/images/common-workspace-api.png)</Frame> 
+
+### Using CLI
+
+If your model is stored in Github repo. Make sure you follow [this](https://docs.inferless.com/model-import/file-structure-req/importing-from-github) folder structure.
+
+1. Login to [Inferless.com](https://inferless.com/) and click on three dot menu near the profile picture
+2. Click on [Manage integrations](https://console.inferless.com/user/integration) and connect with your Github account were the model is stored.
+3. Once you’re done with integration. Run this command to initialise the model
+    
+    ```bash
+    inferless init --name <modelname> --provider github --url <repourl> --branch <branchname> --autobuild
+    ```
+    
+4. Now that your model is initialised.
+    - To do default deployment use this
+    
+    ```bash
+    inferless deploy --gpu t4 
+    ```
+    
+    - To do customised deployment use this
+    
+    ```bash
+    inferless deploy --gpu t4 --region <regionname> --fractional --runtime <runtimename> --volume <volumename>     
+    ```
