@@ -12,6 +12,7 @@ You can use this to manage your models.
 - `info`: Get model details (min replicas, max replicas, current replicas, status).
 - `activate`: activate a model this will restore the min and max replicas to the original values.
 - `deactivate`: deactivate a model this will scale the min and max replicas to 0.
+- `patch`: patch model configuration.
 
 ### Example
 
@@ -65,3 +66,28 @@ Below command deactivates a model.
 ```bash
 inferless model deactivate --model-id <model_id>
 ```
+
+patch model configuration.
+
+**Usage**:
+
+```bash
+$ inferless model patch [OPTIONS]
+```
+
+**Options**:
+
+- `--model-id TEXT`: Model ID
+- `--gpu TEXT`: Denotes the machine type (A10/A100/T4). [required]
+- `--fractional`: Use fractional machine type (default: dedicated).
+- `--volume TEXT`: Volume name.
+- `--mount-path TEXT`: Volume Mount path for the volume.
+- `--env TEXT`: Key-value pairs for model environment variables.
+- `--inference-timeout INTEGER`: Inference timeout in seconds. [default: 180]
+- `--scale-down-timeout INTEGER`: Scale down timeout in seconds. [default: 600]
+- `--container-concurrency INTEGER`: Container concurrency level. [default: 1]
+- `--secret TEXT`: Secret names to attach to the deployment.
+- `--runtimeversion TEXT`: Runtime version (default: latest).
+- `--max-replica INTEGER`: Maximum number of replicas. [default: 1]
+- `--min-replica INTEGER`: Minimum number of replicas. [default: 0]
+- `--help`: Show this message and exit.
