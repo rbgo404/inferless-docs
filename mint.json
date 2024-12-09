@@ -260,6 +260,10 @@
 				{
 					"group": "November 2024",
 					"pages": ["changelog/november-2024/14th-november", "changelog/november-2024/20th-november"]
+				},
+				{
+					"group": "December 2024",
+					"pages": ["changelog/november-2024/9th-december", "changelog/december-2024/9th-december"]
 				}
 			]
 		},
