@@ -16,7 +16,7 @@ $ inferless runtime COMMAND [OPTIONS]  [ARGS]...
 - `list`: list all runtimes.
 - `create [options]`: create runtime on inferless with yaml.
 - `patch [options]`: Create a new version of runtime with modified packages using yaml.
-- `version-list`: use to update the runtime in inferless.
+- `version-list`: Use to list all version of the runtime in Inferless.
 
 ## Example
 
@@ -30,22 +30,16 @@ Activate you virtual environment and then run
 $ inferless runtime generate
 ```
 
+create runtime in the workspace
+
+```console
+$ inferless runtime create -p path/to/file -n name
+```
+
 list all the runtime in the workspace.
 
 ```console
 $ inferless runtime list
-```
-
-select a a different runtime.yaml for the model in the current directory.
-
-```console
-$ inferless runtime select -p path/to/file
-```
-
-create runtime in the workspace
-
-```console
-$ inferless runtime upload -p path/to/file -n name
 ```
 
 Create a new version of runtime with modified packages using yaml
