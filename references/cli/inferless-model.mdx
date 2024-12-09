@@ -8,7 +8,7 @@ You can use this to manage your models.
 
 - `list`: List all models in the current workspace
 - `delete`: delete a model from the system.
-- `rebuild`: rebuild a model.
+- `rebuild`: This deploys the new code and runtime for the model.
 - `info`: Get model details (min replicas, max replicas, current replicas, status).
 - `activate`: activate a model this will restore the min and max replicas to the original values.
 - `deactivate`: deactivate a model this will scale the min and max replicas to 0.
@@ -31,7 +31,7 @@ inferless model rebuild --model-id <model_id>
 for Local rebuild
 
 ```bash
-inferless model rebuild --model-id <model_id> --local
+inferless model rebuild --local
 ```
 
 Below command deletes a model.
@@ -82,11 +82,11 @@ $ inferless model patch [OPTIONS]
 - `--fractional`: Use fractional machine type (default: dedicated).
 - `--volume TEXT`: Volume name.
 - `--mount-path TEXT`: Volume Mount path for the volume.
-- `--env TEXT`: Key-value pairs for model environment variables.
+- `--env TEXT`: Key=value pairs for model environment variables.
 - `--inference-timeout INTEGER`: Inference timeout in seconds. [default: 180]
 - `--scale-down-timeout INTEGER`: Scale down timeout in seconds. [default: 600]
 - `--container-concurrency INTEGER`: Container concurrency level. [default: 1]
-- `--secret TEXT`: Secret names to attach to the deployment.
+- `--secret TEXT`: Secret names to attach to the deployment (--secret secret-name).
 - `--runtimeversion TEXT`: Runtime version (default: latest).
 - `--max-replica INTEGER`: Maximum number of replicas. [default: 1]
 - `--min-replica INTEGER`: Minimum number of replicas. [default: 0]

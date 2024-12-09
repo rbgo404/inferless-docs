@@ -15,7 +15,7 @@ $ inferless runtime COMMAND [OPTIONS]  [ARGS]...
 - `generate`: use to generate a new runtime from your virtual env
 - `list`: list all runtimes.
 - `create [options]`: create runtime on inferless with yaml.
-- `patch [options]`: update the runtime with the config file
+- `patch [options]`: Create a new version of runtime with modified packages using yaml.
 - `version-list`: use to update the runtime in inferless.
 
 ## Example
@@ -48,7 +48,7 @@ create runtime in the workspace
 $ inferless runtime upload -p path/to/file -n name
 ```
 
-update runtime in the workspace
+Create a new version of runtime with modified packages using yaml
 
 ```console
 $ inferless runtime patch -p path/to/file

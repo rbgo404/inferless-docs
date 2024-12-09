@@ -12,7 +12,8 @@ This command will deploy the model to the inferless server. You should have run 
 - `--fractional`: Use fractional machine type (default: dedicated).
 - `--runtime TEXT`: Runtime name or file location. if not provided default Inferless runtime will be used.
 - `--volume TEXT`: Volume name.
-- `--env TEXT`: Key-value pairs for model environment variables.
+- `--volume_mount_path TEXT`: volume mount path.
+- `--env TEXT`: Key=value pairs for model environment variables.
 - `--inference-timeout INTEGER`: Inference timeout in seconds. [default: 180]
 - `--scale-down-timeout INTEGER`: Scale down timeout in seconds. [default: 600]
 - `--container-concurrency INTEGER`: Container concurrency level. [default: 1]
@@ -31,7 +32,7 @@ $ inferless deploy [OPTIONS]
 
 Once deployed you will be able to see the model import id in the terminal. You can check the progress of the model in Dashboard
 
-To redeploy the model use the below command
+To redeploy the model with new code.
 
 ```bash
 inferless model rebuild -l
