@@ -71,6 +71,7 @@
 			"group": "Concepts",
 			"pages": [
 				"concepts/overview",
+				"model-import/cli-import",
 				"concepts/configuring-the-input-output-schema",
 				"concepts/multiple-inputs",
 				"concepts/multiple-outputs",
@@ -150,7 +151,6 @@
 		{
 			"group": "Model Import",
 			"pages": [
-				"model-import/cli-import",
 				{
 					"group": "File Structure Requirements",
 					"pages": [
