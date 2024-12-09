@@ -14,8 +14,7 @@ $ inferless runtime COMMAND [OPTIONS]  [ARGS]...
 
 - `generate`: use to generate a new runtime from your virtual env
 - `list`: list all runtimes.
-- `select [options]`: use an existing runtime with the current model
-- `upload [options]`: create or update runtime on inferless with yaml.
+- `create [options]`: create runtime on inferless with yaml.
 - `patch [options]`: update the runtime with the config file
 - `version-list`: use to update the runtime in inferless.
 
@@ -25,7 +24,7 @@ $ inferless runtime COMMAND [OPTIONS]  [ARGS]...
 
 Generate a new runtime from your local environment.
 
-Activate you virtual environment and then run 
+Activate you virtual environment and then run
 
 ```console
 $ inferless runtime generate
@@ -35,12 +34,6 @@ list all the runtime in the workspace.
 
 ```console
 $ inferless runtime list
-```
-
-select a existing runtime for the model in the current directory.
-
-```console
-$ inferless runtime select -i runtime_id
 ```
 
 select a a different runtime.yaml for the model in the current directory.

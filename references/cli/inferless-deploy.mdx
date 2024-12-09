@@ -1,22 +1,38 @@
 ---
-title: "inferless deploy"
+title: 'inferless deploy'
 ---
 
 This command will deploy the model to the inferless server. You should have run the command `inferless init` and have the inferless.yaml before running this command.
 
-### Usage
+### Options:
 
-```bash
-inferless deploy
+- `--gpu TEXT`: Denotes the machine type (A10/A100/T4). [required]
+- `--region TEXT`: Inferless region. Defaults to Inferless default region.
+- `--beta`: Deploys the model with v2 endpoints.
+- `--fractional`: Use fractional machine type (default: dedicated).
+- `--runtime TEXT`: Runtime name or file location. if not provided default Inferless runtime will be used.
+- `--volume TEXT`: Volume name.
+- `--env TEXT`: Key-value pairs for model environment variables.
+- `--inference-timeout INTEGER`: Inference timeout in seconds. [default: 180]
+- `--scale-down-timeout INTEGER`: Scale down timeout in seconds. [default: 600]
+- `--container-concurrency INTEGER`: Container concurrency level. [default: 1]
+- `--secret TEXT`: Secret names to attach to the deployment.
+- `--runtimeversion TEXT`: Runtime version (default: latest version of runtime).
+- `--max-replica INTEGER`: Maximum number of replicas. [default: 1]
+- `--min-replica INTEGER`: Minimum number of replicas. [default: 0]
+- `-c, --config TEXT`: Inferless config file path to override from inferless.yaml [default: inferless.yaml]
+- `--help`: Show this message and exit.
+
+### Usage:
+
+```console
+$ inferless deploy [OPTIONS]
 ```
 
-Once deployed you will be able to see the model import id in the terminal. You can check the progress of the model in Dashboard 
-
-
-### Options:
+Once deployed you will be able to see the model import id in the terminal. You can check the progress of the model in Dashboard
 
 To redeploy the model use the below command
 
 ```bash
-inferless model redeploy
+inferless model rebuild -l
 ```
