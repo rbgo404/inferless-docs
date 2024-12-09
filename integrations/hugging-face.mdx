@@ -104,4 +104,70 @@ You can use the imported GitHub Repo to change the pre-processing and post-proce
    * You can view the details of your key or generate a new one  
 <Frame caption = "Sample for now">![](/images/common-workspace-api.png)</Frame>  
 
-#### Here is a sample video of the whole process for a 7GB Stable diffusion Model : [Click to view](https://www.youtube.com/watch?v=5vYsmPu9pZM)
+Here is a sample video of the whole process for a 7GB Stable diffusion Model : [Click to view](https://www.youtube.com/watch?v=5vYsmPu9pZM)
+
+### Using CLI
+
+You can use any model you want from Huggingface and deploy with us
+
+1. Connect your [Huggingface](https://huggingface.co/login) account using this command(below) and enter the name and apikey. Make sure your github account is integrated with [Inferless](https://console.inferless.com/user/integration)
+    
+    ```bash
+    inferless integration add HF --name <name> --api-key <apikey>
+    ```
+    
+2. Once you’re done with integration. Run this command to initialise the model
+    
+    ```bash
+    inferless init hf --name <modelname> --hfmodelname <hfreponame> --modeltype <transfomer/diffuser> --tasktype <type> 
+    ```
+    
+
+   Transformer options:
+
+   - audio-classification
+   - automatic-speech-recognition
+   - conversational
+   - depth-estimation
+   - document-question-answering
+   - feature-extraction
+   - fill-mask
+   - image-classification
+   - image-segmentation
+   - image-to-text
+   - object-detection
+   - question-answering
+   - summarization
+   - table-question-answering
+   - text-classification
+   - text-generation
+   - text2text-generation
+   - token-classification
+   - translation
+   - video-classification
+   - visual-question-answering
+   - zero-shot-classification
+   - zero-shot-image-classification
+   - zero-shot-object-detection
+
+   Diffuser options:
+
+   - Depth-to-Image
+   - Image-Variation
+   - Image-to-Image
+   - Inpaint
+   - InstructPix2Pix
+   - Stable-Diffusion-Latent-Upscaler
+
+3. Now that your model is initialised. 
+    - To do default deployment use this command
+    
+    ```bash
+    inferless deploy --gpu t4 
+    ```
+    
+    - To do customised deployment use this command
+    
+    ```bash
+    inferless deploy --gpu t4 --region <regionname> --runtime <runtimename> --volume <volumename> --fractional  
+    ```

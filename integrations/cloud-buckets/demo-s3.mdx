@@ -80,4 +80,42 @@ title: "Demo S3"
    * Click on settings, available on the top, next to your Workspace Name  
    * Click on "Workspace API keys"  
    * You can view the details of your key or generate a new one  
-<Frame caption = "Sample for now">![](/images/common-workspace-api.png)</Frame>  
+<Frame caption = "Sample for now">![](/images/common-workspace-api.png)</Frame> 
+
+### Using CLI
+
+Make sure you follow this below folder structure in the zip file
+
+```json
+.
+|--config.pbtxt (optional)
+|--input.json
+|--output.json
+|--1/
+|--|--model.xxx ( pt/onnx/tf )
+```
+
+1. Connect your [AWS S3](https://aws.amazon.com/s3/) account using this below command and enter the name, access-key and secret-key
+    
+    ```bash
+    inferless integration add S3 --name <integrationname> --access-key <accesskey> --secret-key <secretkey> 
+    ```
+    
+2. Once your integration is done. You can initialise the model using this command
+    
+    ```bash
+    inferless init file --name <name> --provider s3 --url <url> --framework <pytorch/onnx/tensorflow> --autobuild 
+    ```
+    
+3. Now that your model is initialised. 
+    - To do default deployment use this command
+    
+    ```bash
+    inferless deploy --gpu t4 
+    ```
+    
+    - To do customised deployment use this command
+    
+    ```bash
+    inferless deploy --gpu t4 --region <regionname> --runtime <runtimename> --volume <volumename> --fractional    
+    ```
