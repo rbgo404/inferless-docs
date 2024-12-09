@@ -1,379 +1,341 @@
 {
-    "name": "Inferless",
-    "logo": "/logo.svg",
-    "favicon": "/favicon.svg",
+	"name": "Inferless",
+	"logo": "/logo.svg",
+	"favicon": "/favicon.svg",
 
-    "api": {
-      "baseUrl": "https://api.inferless.com/",
-      "auth": {
-        "method": "key",
-        "name": "Authorization"
-    }
-    },
+	"api": {
+		"baseUrl": "https://api.inferless.com/",
+		"auth": {
+			"method": "key",
+			"name": "Authorization"
+		}
+	},
 
-    "colors": {
-      "primary": "#94CF09",
-      "light": "#9FDD0C",
-      "dark": "#94CF09"
-    },
-    "topbarCtaButton": {
-      "name": "Join Private Beta",
-      "url": "https://qxhqptq7oxg.typeform.com/inferless?typeform-source=www.inferless.com"
-    },
-    "anchors": [
-      {
-        "name": "Tutorials",
-        "icon": "books",
-        "url": "how-to-guides"
-      },
-      {
-        "name": "Changelog",
-        "icon": "swap",
-        "url": "changelog"
-      },
-      {
-        "name": "Blog",
-        "icon": "newspaper",
-        "url": "https://www.inferless.com/blog"
-      }
-    ],
-    "primaryTab": {
-      "name": "Documentation"
-  },
-  "tabs": [
-
-      {
-      "name": "How to Guides",
-      "url": "how-to-guides"
-      },      
-      {
-          "name": "Cookbook",
-          "url": "cookbook"
-      },
-      {
-        "name": "Changelog",
-        "url": "changelog"
-      },
-      {
-        "name": "References",
-        "url": "references"
-      }
-  ],
-    "navigation": [
-      {
-        "group": "",
-        "pages": ["introduction/introduction"]
-      },
-      {
-        "group": "Getting Started",
-        "pages": [
-            "getting-started/deploy-ml",
-            "getting-started/deploy-containers"           
-        ]
-      },
-      {
-        "group": "Concepts",
-        "pages": [
-            "concepts/overview",
-            "concepts/configuring-the-input-output-schema",
-            "concepts/multiple-inputs",
-            "concepts/multiple-outputs",
-            "concepts/building-custom-images",
-            "concepts/working-with-files",
-            "concepts/working-with-nfs-volumes",
-            "concepts/processing-concurrent-requests",
-            "concepts/dynamic-batching",
-            "concepts/streaming-with-sse",
-            "concepts/setting-up-automatic-builds",
-            "concepts/managing-secrets-on-inferless"
-        ]
-      },
-      {
-        "group": "Integrations",
-        "pages": [
-          "integrations/hugging-face", 
-          {
-            "group": "Git (Custom Code)",
-          "pages": [
-              "integrations/git-custom-code/git--custom-code", 
-              "integrations/git-custom-code/github---demo",
-              "integrations/git-custom-code/gitlab---demo"
-          ]
-            },
-          "integrations/docker",
-          {
-            "group": "Cloud Buckets - S3/ GCS",
-          "pages": [
-              "integrations/cloud-buckets/cloud-buckets---s3--gcs", 
-              "integrations/cloud-buckets/demo-s3",
-              "integrations/cloud-buckets/demo-gcs"
-          ]
-            },
-            {
-              "group": "File Import from System",
-            "pages": [
-                "integrations/file-import-system/file-import-from-system", 
-                "integrations/file-import-system/import-from-system"
-            ]
-              }       
-        ]
-      },
-      {
-        "group": "API Reference",
-        "pages": [
-          "api-reference/aws-privatelink",
-          "api-reference/remote-run",
-          {
-            "group": "Model Endpoint",
-          "pages": [
-            "api-reference/model-endpoint/model-endpoint", 
-            "api-reference/model-endpoint/test-your-model-endpoint",
-            "api-reference/model-endpoint/configuring-the-model-settings",
-            "api-reference/model-endpoint/setting-up-webhooks",
-            "api-reference/model-endpoint/inferless-python-client"
-          ]
-            },
-            {
-              "group": "Debugging your Model with Logs",
-            "pages": [
-              "api-reference/debugging-model/debugging-your-model-with-logs", 
-              "api-reference/debugging-model/call-logs",
-              "api-reference/debugging-model/build-logs"
-            ]
-              },
-              "api-reference/version-management",
-              {
-                "group": "Model Management APIs",
-                "pages": [
-                  "api-reference/model-management-apis/model-settings-update",
-                  "api-reference/model-management-apis/model-logs-get"
-                ]
-              }           
-        ]
-      },
-      {
-        "group": "Model Import",
-        "pages": [
-            "model-import/cli-import",
-            {
-              "group": "File Structure Requirements",
-            "pages": [
-                "model-import/file-structure-req/file-structure-requirements", 
-                "model-import/file-structure-req/importing-from-github",
-                "model-import/file-structure-req/import-using-cli",
-                "model-import/file-structure-req/importing-from-cloud-buckets",
-                "model-import/file-structure-req/import-using-docker",
-                "model-import/file-structure-req/importing-your-file-from-your-system"
-            ]
-              },
-              "model-import/input-output-schema",
-              "model-import/bring-custom-packages",
-              {
-                "group": "Automatic Build via webhooks",
-              "pages": [
-                  "model-import/automatic-build/automatic-build-via-webhooks", 
-                  "model-import/automatic-build/github",
-                  "model-import/automatic-build/docker",
-                  "model-import/automatic-build/hugging-face",
-                  "model-import/automatic-build/aws-sagemaker",
-                  "model-import/automatic-build/google-vertex-ai"
-              ]
-                },
-                "model-import/configuring-the-inference-service",
-                "model-import/my-volumes",
-                "model-import/my-secrets"
-        ]
-      },
-      {
-        "group": "Cookbook",
-        "pages": [
-            "cookbook/serverless-logo-generator",         
-            "cookbook/qna-serverless-pdf-application",         
-            "cookbook/serverless-voice-chatbot",
-            "cookbook/serverless-llama3-youtube-summarizer",
-            "cookbook/serverless-customer-service-bot",
-            "cookbook/comfyui-api-inferless",
-            "cookbook/serverless-speech-book-summary"
-        ]
-      },
-      {
-        "group": "Changelog",
-        "pages": [
-            "changelog/overview",
-            {
-              "group": "October 2023",
-            "pages": [
-                "changelog/october-2023/20th-october"
-            ]
-              },  
-              {
-                "group": "November 2023",
-              "pages": [
-                  "changelog/november-2023/3rd-november", 
-                  "changelog/november-2023/10th-november",
-                  "changelog/november-2023/17th-november",
-                  "changelog/november-2023/27th-november"
-              ]
-                },  
-                {
-                  "group": "December 2023",
-                "pages": [
-                    "changelog/december-2023/4th-december", 
-                    "changelog/december-2023/18th-december",
-                    "changelog/december-2023/22nd-december"
-                ]
-                  },  
-                  {
-                    "group": "January 2024",
-                  "pages": [
-                      "changelog/january-2024/5th-january", 
-                      "changelog/january-2024/12th-january",
-                      "changelog/january-2024/29th-january"
-                  ]
-                    },  
-                    {
-                      "group": "February 2024",
-                    "pages": [
-                        "changelog/february-2024/12th-february", 
-                        "changelog/february-2024/26th-february"
-                    ]
-                      },  
-                    {
-                      "group": "March 2024",
-                    "pages": [
-                        "changelog/march-2024/11th-march",
-                        "changelog/march-2024/28-march"
-                    ]
-                      },  
-                    {
-                      "group": "April 2024",
-                    "pages": [
-                        "changelog/april-2024/8th-april",
-                        "changelog/april-2024/15th-april",
-                        "changelog/april-2024/16th-april"   
-
-                    ]
-                    },
-                   { 
-                      "group": "May 2024",
-                    "pages": [
-                        "changelog/may-2024/6th-may",
-                        "changelog/may-2024/27th-may"
-                     
-                    ]
-                      },
-                   { 
-                      "group": "June 2024",
-                    "pages": [
-                        "changelog/june-2024/10th-june",
-                        "changelog/june-2024/21st-june"
-                    ]
-                      },
-                    { 
-                      "group": "July 2024",
-                    "pages": [
-                        "changelog/july-2024/16th-july"
-                    ]
-                      },
-                    {
-                      "group": "September 2024",
-                    "pages": [
-                        "changelog/september-2024/30th-september"
-                    ]
-                     },
-                    {
-                      "group": "October 2024",
-                    "pages": [
-                        "changelog/october-2024/7th-october"
-                    ]
-                     },
-                     {
-                      "group": "November 2024",
-                    "pages": [
-                        "changelog/november-2024/14th-november",
-                        "changelog/november-2024/20th-november"
-                    ]
-                     }
-            
-        ]
-      },
-      {
-        "group": "How-to Guides",
-        "pages": [
-            "how-to-guides/deploy-a-codellama-python-34b-model-using-inferless",
-            "how-to-guides/deploy-stable-video-diffusion-using-inferless",
-            "how-to-guides/deploy-mixtral-8x7b-using-inferless",
-            "how-to-guides/deploy-starling-7b-using-inferless",
-            "how-to-guides/deploy-meditron-using-inferless",
-            "how-to-guides/deploy-openhermes-using-inferless",
-            "how-to-guides/deploy-stable-diffusion-xl-turbo-using-inferless",
-            "how-to-guides/deploy-whisper-large-v3-using-inferless",
-            "how-to-guides/deploy-deci-7b-using-inferless",
-            "how-to-guides/deploy-quantized-version-of-solar-10-7b-instruct-using-inferless",
-            "how-to-guides/deploy-mixtral-8x7b-for-52-tokens-sec-on-a-single-gpu",
-            "how-to-guides/deploy-tenyxchat-7b-using-inferless",
-            "how-to-guides/deploy-tenyxchat-8x7b-v1-using-inferless",
-            "how-to-guides/how-to-finetune--quantize-and-inference-phi-2",
-            "how-to-guides/deploy-codellama-70b-using-inferless",
-            "how-to-guides/deploy-openllm-leaderboard-topper-smaug-72b-using-inferless",
-            "how-to-guides/deploy-gemma-7b-using-vllm-on-inferless",
-            "how-to-guides/deploy-stable-cascade-using-inferless",
-            "how-to-guides/deploy-musicgen-melody-large",
-            "how-to-guides/how-to-finetune--and-inference-llama3",
-            "how-to-guides/deploy-llama-3-using-inferless",
-            "how-to-guides/deploy-tenyx-llama-3-using-inferless",
-            "how-to-guides/deploy-timesfm-using-inferless",
-            "how-to-guides/deploy-google-paligemma-3b-using-inferless",
-            "how-to-guides/deploy-phi-3-128k",
-            "how-to-guides/deploy-stable-diffusion-3-using-inferless",
-            "how-to-guides/deploy-phi-3-128k",
-            "how-to-guides/deploy-a-qwen2-72b-using-inferless",
-            "how-to-guides/deploy-text-to-speech-streaming",
-            "how-to-guides/deploy-a-Llama-3.1-8B-Instruct-using-inferless",
-            "how-to-guides/deploy-a-Llama-3.1-8B-Instruct-GGUF-using-inferless",
-            "how-to-guides/deploy-flux-schnell-using-inferless",
-            "how-to-guides/deploy-a-Llama-3.2-11B-Vision-Instruct-using-inferless",
-            "how-to-guides/deploy-a-whisper-large-v3-turbo",
-            "how-to-guides/deploy-a-Ministral-8B-Instruct",
-            "how-to-guides/deploy-Qwen2.5-Coder-32B-Instruct",
-            "how-to-guides/deploy-Qwen2-VL-7B-Instruct"
-        ]
-      },
-      {
-        "group": "References",
-        "pages": [
-            "references/overview",
-            {
-              "group": "CLI",
-            "pages": [
-                "references/cli/inferless-login",
-                "references/cli/inferless-token",
-                "references/cli/inferless-init",
-                "references/cli/inferless-run",
-                "references/cli/inferless-remote-run",
-                "references/cli/inferless-deploy",
-                "references/cli/inferless-model",
-                "references/cli/inferless-volume",
-                "references/cli/inferless-runtime",
-                "references/cli/inferless-export",
-                "references/cli/inferless-secrets",
-                "references/cli/inferless-workspace"
-                ]
-            },
-            {
-              "group": "API",
-            "pages": [
-                "references/api/inferless-input-schema",
-                "references/api/inferless-python"
-                ]
-            }
-        ]
-      }
-
-    ],
-    "footerSocials":
-      {
-          "twitter": "https://twitter.com/Inferless_",
-          "linkedin": "https://www.linkedin.com/company/inferless/"
-      }
-  }
+	"colors": {
+		"primary": "#94CF09",
+		"light": "#9FDD0C",
+		"dark": "#94CF09"
+	},
+	"topbarCtaButton": {
+		"name": "Join Private Beta",
+		"url": "https://qxhqptq7oxg.typeform.com/inferless?typeform-source=www.inferless.com"
+	},
+	"anchors": [
+		{
+			"name": "Tutorials",
+			"icon": "books",
+			"url": "how-to-guides"
+		},
+		{
+			"name": "Changelog",
+			"icon": "swap",
+			"url": "changelog"
+		},
+		{
+			"name": "Blog",
+			"icon": "newspaper",
+			"url": "https://www.inferless.com/blog"
+		}
+	],
+	"primaryTab": {
+		"name": "Documentation"
+	},
+	"tabs": [
+		{
+			"name": "How to Guides",
+			"url": "how-to-guides"
+		},
+		{
+			"name": "Cookbook",
+			"url": "cookbook"
+		},
+		{
+			"name": "Changelog",
+			"url": "changelog"
+		},
+		{
+			"name": "References",
+			"url": "references"
+		}
+	],
+	"navigation": [
+		{
+			"group": "",
+			"pages": ["introduction/introduction"]
+		},
+		{
+			"group": "Getting Started",
+			"pages": ["getting-started/deploy-ml", "getting-started/deploy-containers"]
+		},
+		{
+			"group": "Concepts",
+			"pages": [
+				"concepts/overview",
+				"concepts/configuring-the-input-output-schema",
+				"concepts/multiple-inputs",
+				"concepts/multiple-outputs",
+				"concepts/building-custom-images",
+				"concepts/working-with-files",
+				"concepts/working-with-nfs-volumes",
+				"concepts/processing-concurrent-requests",
+				"concepts/dynamic-batching",
+				"concepts/streaming-with-sse",
+				"concepts/setting-up-automatic-builds",
+				"concepts/managing-secrets-on-inferless"
+			]
+		},
+		{
+			"group": "Integrations",
+			"pages": [
+				"integrations/hugging-face",
+				{
+					"group": "Git (Custom Code)",
+					"pages": [
+						"integrations/git-custom-code/git--custom-code",
+						"integrations/git-custom-code/github---demo",
+						"integrations/git-custom-code/gitlab---demo"
+					]
+				},
+				"integrations/docker",
+				{
+					"group": "Cloud Buckets - S3/ GCS",
+					"pages": [
+						"integrations/cloud-buckets/cloud-buckets---s3--gcs",
+						"integrations/cloud-buckets/demo-s3",
+						"integrations/cloud-buckets/demo-gcs"
+					]
+				},
+				{
+					"group": "File Import from System",
+					"pages": [
+						"integrations/file-import-system/file-import-from-system",
+						"integrations/file-import-system/import-from-system"
+					]
+				}
+			]
+		},
+		{
+			"group": "API Reference",
+			"pages": [
+				"api-reference/aws-privatelink",
+				"api-reference/remote-run",
+				{
+					"group": "Model Endpoint",
+					"pages": [
+						"api-reference/model-endpoint/model-endpoint",
+						"api-reference/model-endpoint/test-your-model-endpoint",
+						"api-reference/model-endpoint/configuring-the-model-settings",
+						"api-reference/model-endpoint/setting-up-webhooks",
+						"api-reference/model-endpoint/inferless-python-client"
+					]
+				},
+				{
+					"group": "Debugging your Model with Logs",
+					"pages": [
+						"api-reference/debugging-model/debugging-your-model-with-logs",
+						"api-reference/debugging-model/call-logs",
+						"api-reference/debugging-model/build-logs"
+					]
+				},
+				"api-reference/version-management",
+				{
+					"group": "Model Management APIs",
+					"pages": [
+						"api-reference/model-management-apis/model-settings-update",
+						"api-reference/model-management-apis/model-logs-get"
+					]
+				}
+			]
+		},
+		{
+			"group": "Model Import",
+			"pages": [
+				"model-import/cli-import",
+				{
+					"group": "File Structure Requirements",
+					"pages": [
+						"model-import/file-structure-req/file-structure-requirements",
+						"model-import/file-structure-req/importing-from-github",
+						"model-import/file-structure-req/import-using-cli",
+						"model-import/file-structure-req/importing-from-cloud-buckets",
+						"model-import/file-structure-req/import-using-docker",
+						"model-import/file-structure-req/importing-your-file-from-your-system"
+					]
+				},
+				"model-import/input-output-schema",
+				"model-import/bring-custom-packages",
+				{
+					"group": "Automatic Build via webhooks",
+					"pages": [
+						"model-import/automatic-build/automatic-build-via-webhooks",
+						"model-import/automatic-build/github",
+						"model-import/automatic-build/docker",
+						"model-import/automatic-build/hugging-face",
+						"model-import/automatic-build/aws-sagemaker",
+						"model-import/automatic-build/google-vertex-ai"
+					]
+				},
+				"model-import/configuring-the-inference-service",
+				"model-import/my-volumes",
+				"model-import/my-secrets"
+			]
+		},
+		{
+			"group": "Cookbook",
+			"pages": [
+				"cookbook/serverless-logo-generator",
+				"cookbook/qna-serverless-pdf-application",
+				"cookbook/serverless-voice-chatbot",
+				"cookbook/serverless-llama3-youtube-summarizer",
+				"cookbook/serverless-customer-service-bot",
+				"cookbook/comfyui-api-inferless",
+				"cookbook/serverless-speech-book-summary"
+			]
+		},
+		{
+			"group": "Changelog",
+			"pages": [
+				"changelog/overview",
+				{
+					"group": "October 2023",
+					"pages": ["changelog/october-2023/20th-october"]
+				},
+				{
+					"group": "November 2023",
+					"pages": [
+						"changelog/november-2023/3rd-november",
+						"changelog/november-2023/10th-november",
+						"changelog/november-2023/17th-november",
+						"changelog/november-2023/27th-november"
+					]
+				},
+				{
+					"group": "December 2023",
+					"pages": [
+						"changelog/december-2023/4th-december",
+						"changelog/december-2023/18th-december",
+						"changelog/december-2023/22nd-december"
+					]
+				},
+				{
+					"group": "January 2024",
+					"pages": [
+						"changelog/january-2024/5th-january",
+						"changelog/january-2024/12th-january",
+						"changelog/january-2024/29th-january"
+					]
+				},
+				{
+					"group": "February 2024",
+					"pages": ["changelog/february-2024/12th-february", "changelog/february-2024/26th-february"]
+				},
+				{
+					"group": "March 2024",
+					"pages": ["changelog/march-2024/11th-march", "changelog/march-2024/28-march"]
+				},
+				{
+					"group": "April 2024",
+					"pages": ["changelog/april-2024/8th-april", "changelog/april-2024/15th-april", "changelog/april-2024/16th-april"]
+				},
+				{
+					"group": "May 2024",
+					"pages": ["changelog/may-2024/6th-may", "changelog/may-2024/27th-may"]
+				},
+				{
+					"group": "June 2024",
+					"pages": ["changelog/june-2024/10th-june", "changelog/june-2024/21st-june"]
+				},
+				{
+					"group": "July 2024",
+					"pages": ["changelog/july-2024/16th-july"]
+				},
+				{
+					"group": "September 2024",
+					"pages": ["changelog/september-2024/30th-september"]
+				},
+				{
+					"group": "October 2024",
+					"pages": ["changelog/october-2024/7th-october"]
+				},
+				{
+					"group": "November 2024",
+					"pages": ["changelog/november-2024/14th-november", "changelog/november-2024/20th-november"]
+				}
+			]
+		},
+		{
+			"group": "How-to Guides",
+			"pages": [
+				"how-to-guides/deploy-a-codellama-python-34b-model-using-inferless",
+				"how-to-guides/deploy-stable-video-diffusion-using-inferless",
+				"how-to-guides/deploy-mixtral-8x7b-using-inferless",
+				"how-to-guides/deploy-starling-7b-using-inferless",
+				"how-to-guides/deploy-meditron-using-inferless",
+				"how-to-guides/deploy-openhermes-using-inferless",
+				"how-to-guides/deploy-stable-diffusion-xl-turbo-using-inferless",
+				"how-to-guides/deploy-whisper-large-v3-using-inferless",
+				"how-to-guides/deploy-deci-7b-using-inferless",
+				"how-to-guides/deploy-quantized-version-of-solar-10-7b-instruct-using-inferless",
+				"how-to-guides/deploy-mixtral-8x7b-for-52-tokens-sec-on-a-single-gpu",
+				"how-to-guides/deploy-tenyxchat-7b-using-inferless",
+				"how-to-guides/deploy-tenyxchat-8x7b-v1-using-inferless",
+				"how-to-guides/how-to-finetune--quantize-and-inference-phi-2",
+				"how-to-guides/deploy-codellama-70b-using-inferless",
+				"how-to-guides/deploy-openllm-leaderboard-topper-smaug-72b-using-inferless",
+				"how-to-guides/deploy-gemma-7b-using-vllm-on-inferless",
+				"how-to-guides/deploy-stable-cascade-using-inferless",
+				"how-to-guides/deploy-musicgen-melody-large",
+				"how-to-guides/how-to-finetune--and-inference-llama3",
+				"how-to-guides/deploy-llama-3-using-inferless",
+				"how-to-guides/deploy-tenyx-llama-3-using-inferless",
+				"how-to-guides/deploy-timesfm-using-inferless",
+				"how-to-guides/deploy-google-paligemma-3b-using-inferless",
+				"how-to-guides/deploy-phi-3-128k",
+				"how-to-guides/deploy-stable-diffusion-3-using-inferless",
+				"how-to-guides/deploy-phi-3-128k",
+				"how-to-guides/deploy-a-qwen2-72b-using-inferless",
+				"how-to-guides/deploy-text-to-speech-streaming",
+				"how-to-guides/deploy-a-Llama-3.1-8B-Instruct-using-inferless",
+				"how-to-guides/deploy-a-Llama-3.1-8B-Instruct-GGUF-using-inferless",
+				"how-to-guides/deploy-flux-schnell-using-inferless",
+				"how-to-guides/deploy-a-Llama-3.2-11B-Vision-Instruct-using-inferless",
+				"how-to-guides/deploy-a-whisper-large-v3-turbo",
+				"how-to-guides/deploy-a-Ministral-8B-Instruct",
+				"how-to-guides/deploy-Qwen2.5-Coder-32B-Instruct",
+				"how-to-guides/deploy-Qwen2-VL-7B-Instruct"
+			]
+		},
+		{
+			"group": "References",
+			"pages": [
+				"references/overview",
+				{
+					"group": "CLI",
+					"pages": [
+						"references/cli/inferless-login",
+						"references/cli/inferless-token",
+						"references/cli/inferless-init",
+						"references/cli/inferless-run",
+						"references/cli/inferless-remote-run",
+						"references/cli/inferless-deploy",
+						"references/cli/inferless-integration",
+						"references/cli/inferless-model",
+						"references/cli/inferless-volume",
+						"references/cli/inferless-runtime",
+						"references/cli/inferless-export",
+						"references/cli/inferless-secrets",
+						"references/cli/inferless-workspace"
+					]
+				},
+				{
+					"group": "API",
+					"pages": ["references/api/inferless-input-schema", "references/api/inferless-python"]
+				}
+			]
+		}
+	],
+	"footerSocials": {
+		"twitter": "https://twitter.com/Inferless_",
+		"linkedin": "https://www.linkedin.com/company/inferless/"
+	}
+}

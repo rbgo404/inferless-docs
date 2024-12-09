@@ -1,0 +1,121 @@
+---
+title: 'inferless integration'
+---
+
+This command is used to integrate Providers.
+
+### Usage
+
+```bash
+inferless integration COMMAND [ARGS]...
+```
+
+### Commands
+
+- `add`: Add an integration to your workspace
+- `list`: List all integrations
+
+### Examples
+
+Below command displays all the integrations in the workspace with their details.
+
+```bash
+inferless integration list
+```
+
+Below command allows you to integrate with Providers
+
+```bash
+inferless integration add COMMAND [ARGS]...
+```
+
+#### Commands
+
+- `DOCKERHUB`: Add Dockerhub integration to your workspace
+- `ECR`: Add ECR integration to your workspace
+- `GCS`: Add Google cloud storage integration to...
+- `HF`: Add Huggingface integration to your workspace
+- `S3`: Add S3/ECR Integration to your workspace
+
+#### `inferless integration add DOCKERHUB`
+
+Add Dockerhub integration to your workspace
+
+**Usage**:
+
+```bash
+$ inferless integration add DOCKERHUB [OPTIONS]
+```
+
+**Options**:
+
+- `-n, --name TEXT`: Integration name [required]
+- `--username TEXT`: Username for dockerhub integration [required]
+- `--access-token TEXT`: Access token for dockerhub integration [required]
+- `--help`: Show this message and exit.
+
+#### `inferless integration add ECR`
+
+Add ECR integration to your workspace
+
+**Usage**:
+
+```console
+$ inferless integration add ECR [OPTIONS]
+```
+
+**Options**:
+
+- `-n, --name TEXT`: Integration name [required]
+- `--access-key TEXT`: Access key for aws integration. [required]
+- `--secret-key TEXT`: Access key for aws integration. [required]
+- `--help`: Show this message and exit.
+
+#### `inferless integration add GCS`
+
+Add Google cloud storage integration to your workspace
+
+**Usage**:
+
+```console
+$ inferless integration add GCS [OPTIONS]
+```
+
+**Options**:
+
+- `-n, --name TEXT`: Integration name [required]
+- `--gcp-json-path TEXT`: Path to the GCP JSON key file [required]
+- `--help`: Show this message and exit.
+
+#### `inferless integration add HF`
+
+Add Huggingface integration to your workspace
+
+**Usage**:
+
+```console
+$ inferless integration add HF [OPTIONS]
+```
+
+**Options**:
+
+- `-n, --name TEXT`: Integration name [required]
+- `--api-key TEXT`: API key for huggingface integration [required]
+- `--help`: Show this message and exit.
+
+#### `inferless integration add S3`
+
+Add S3/ECR Integration to your workspace
+
+**Usage**:
+
+```console
+$ inferless integration add S3 [OPTIONS]
+```
+
+**Options**:
+
+- `-n, --name TEXT`: Integration name [required]
+- `--access-key TEXT`: Access key for aws integration. [required]
+- `--secret-key TEXT`: Access key for aws integration. [required]
+- `--help`: Show this message and exit.

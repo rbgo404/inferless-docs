@@ -1,73 +1,178 @@
 ---
-title: "inferless init"
+title: 'inferless init'
 ---
 
 Use this command to initialize a new model import.
 
-### Usage
+**Usage**:
 
-```bash
-inferless init
+```console
+$ inferless init [OPTIONS] COMMAND [ARGS]...
 ```
 
-You will be basked for the follwing information:
+**Options**:
 
-### Prompts 
+- `-n, --name TEXT`: Denotes the name of the model.
+- `-s, --source TEXT`: Not needed if local, else provide Github/Gitlab. [default: local]
+- `-u, --url TEXT`: Denotes the URL of the repo. required if source is not local.
+- `-b, --branch TEXT`: Denotes the branch where the model is located. required if source is not local.
+- `-a, --autobuild`: Enable autobuild for the model. will be False for local source.
 
-Enter the model configuration file name (default: inferless.yaml): 
+**Commands**:
 
-How do you want to import the model? (default: Local) [Local, Git]:
+- `docker`: Initialize with Docker.
+- `file`: Import a PyTorch, ONNX, or TensorFlow file...
+- `hf`: Load a model from Hugging Face.
+- `pythonic`: (Default) Deploy a Python workflow.
 
-Enter the model name:
+### `inferless init`
 
-Enter the region where you want to deploy the model (region-1, region-2) :
+(Default) Deploy a Python workflow.
 
-GPU Type ( A100 / A10 / T4 )  : 
+**Usage**:
 
-Do you want to use Dedicated/Shared GPU? (default: Dedicated) [Dedicated, Shared]:
+```console
+$ inferless init [OPTIONS]
+```
 
-Do you have a custom runtime ? : (default: No) [Yes, No]:
+**Options**:
 
-Do you want to use previously created custom runtime ? : (default: No) [yes, No]:
+- `-n, --name TEXT`: Denotes the name of the model. [required]
+- `-s, --source TEXT`: Not needed if local, else provide Github/Gitlab. [default: local]
+- `-u, --url TEXT`: Denotes the URL of the repo. required if source is not local.
+- `-b, --branch TEXT`: Denotes the branch where the model is located. required if source is not local.
+- `-a, --autobuild`: Enable autobuild for the model. will be False for local source.
 
-(If no is selected) Generate the runtime with requirements.txt? (default: No) [Yes, No]:
+### Load a model from Hugging Face.
 
-(If yes is selected) Select the custom runtime from the list:
+    We will create new files called app.py and input_schema.py at your current directory.
 
-(If yes is selected) Select the custom runtime version: (default: Latest version ie. 0)
+**Transformers options:**
 
+- audio-classification
+- automatic-speech-recognition
+- conversational
+- depth-estimation
+- document-question-answering
+- feature-extraction
+- fill-mask
+- image-classification
+- image-segmentation
+- image-to-text
+- object-detection
+- question-answering
+- summarization
+- table-question-answering
+- text-classification
+- text-generation
+- text2text-generation
+- token-classification
+- translation
+- video-classification
+- visual-question-answering
+- zero-shot-classification
+- zero-shot-image-classification
+- zero-shot-object-detection
 
-### Output
+**Diffusers options:**
 
+- Depth-to-Image
+- Image-Variation
+- Image-to-Image
+- Inpaint
+- InstructPix2Pix
+- Stable-Diffusion-Latent-Upscaler
+
+**Usage**:
+
+```console
+$ inferless init hf [OPTIONS]
+```
+
+**Options**:
+
+- `-n, --name TEXT`: Denotes the name of the model. [required]
+- `-m, --hfmodelname TEXT`: Name of the Hugging Face repo. [required]
+- `-t, --modeltype TEXT`: Type of the model (transformer/diffuser). [required]
+- `-k, --tasktype TEXT`: Task type of the model (text-generation). [required]
 
 Once init is complete you will see the below files created
-
 
 ```bash
 ./
 ├── app.py
-├── input_schema.py 
+├── input_schema.py
 ├── inferless-runtime-config.yaml
 └── inferless.yaml
-
-
 ```
 
-* `input_schema.py `This file defines the structure and validation rules for the input data that a model expects. This file is crucial for ensuring that the data fed into the model is in the correct format and meets all necessary requirements.
+- `input_schema.py `This file defines the structure and validation rules for the input data that a model expects. This file is crucial for ensuring that the data fed into the model is in the correct format and meets all necessary requirements.
 
-* `inferless-runtime-config.yaml`This file will have all the software packages and the Python packages required for the model inferencing.
+- `inferless-runtime-config.yaml`This file will have all the software packages and the Python packages required for the model inferencing.
 
-* `inferless.yaml`This file will have all the configurations required for the deployment. Users can update this file according to their requirements.
+- `inferless.yaml`This file will have all the configurations required for the deployment. Users can update this file according to their requirements.
 
+### Initialize with Docker.
 
+**Usage**:
+
+```console
+$ inferless init docker [OPTIONS]
+```
+
+**Options**:
+
+- `-n, --name TEXT`: Denotes the name of the model. [required]
+- `-t, --type TEXT`: Type for import: dockerimage/dockerfile. [required]
+- `-p, --provider TEXT`: Provider for the model dockerimage = (dockerhub/ecr) dockerfile = (github/gitlab). [required]
+- `-u, --url TEXT`: Docker image URL or GitHub/GitLab URL. [required]
+- `-b, --branch TEXT`: Branch for Dockerfile import (GitHub/GitLab). required if type is dockerfile.
+- `-d, --dockerfilepath TEXT`: Path to the Dockerfile. required if type is dockerfile.
+- `-h, --healthapi TEXT`: Health check API endpoint. [required]
+- `-i, --inferapi TEXT`: Inference API endpoint. [required]
+- `-s, --serverport INTEGER`: Server port. [required]
+- `-a, --autobuild`: Enable autobuild for the model.
+
+### Import a PyTorch, ONNX, or TensorFlow file for inference with Triton server.
+
+The folder structure for the zip file should be as follows:
+
+.
+
+├── config.pbtxt (optional)
+
+├── input.json
+
+├── output.json
+
+├── 1/
+
+│ ├── model.xxx (pt/onnx/savedmodel)
+
+**Usage**:
+
+```console
+$ inferless init file [OPTIONS]
+```
+
+**Options**:
+
+- `-n, --name TEXT`: Denotes the name of the model. [required]
+- `-f, --framework TEXT`: Framework of the model. [pytorch, onnx, tensorflow] [default: pytorch]
+- `-p, --provider TEXT`: Provider for the model (local/gcs/s3). [default: local]
+- `--url TEXT`: Provider URL. required if provider is not local.
 
 ### Example usage
 
 You can create the below files and then run the command
 
-app.py 
+```bash
+inferless init -n inferless-onboarding
+```
 
-``` python
+app.py
+
+```python
 
 from diffusers import StableDiffusionPipeline
 import torch
@@ -90,13 +195,10 @@ class InferlessPythonModel:
         image.save(buff, format="JPEG")
         img_str = base64.b64encode(buff.getvalue()).decode()
         return { "generated_image_base64" : img_str }
-        
+
     def finalize(self):
         self.pipe = None
 ```
-
-
-
 
 ### Example input_schema.py
 
@@ -110,4 +212,8 @@ INPUT_SCHEMA = {
         'example': ["There is a fine house in the forest"]
     }
 }
+```
+
+```bash
+inferless deploy --gpu T4
 ```

@@ -1,5 +1,5 @@
 ---
-title: "inferless model"
+title: 'inferless model'
 ---
 
 You can use this to manage your models.
@@ -8,35 +8,42 @@ You can use this to manage your models.
 
 - `list`: List all models in the current workspace
 - `delete`: delete a model from the system.
-- `rebuild`: rebuild a model.
-- `info`: Get model details  (min replicas, max replicas, current replicas, status).
+- `rebuild`: This deploys the new code and runtime for the model.
+- `info`: Get model details (min replicas, max replicas, current replicas, status).
 - `activate`: activate a model this will restore the min and max replicas to the original values.
-- `deactivate`: deactivate a model this will scale the min and max replicas to 0. 
+- `deactivate`: deactivate a model this will scale the min and max replicas to 0.
+- `patch`: patch model configuration.
 
 ### Example
 
 Below command displays all the models in the workspace with their details.
 
 ```bash
-inferless model list 
+inferless model list
 ```
 
 Below command rebuilds a model.
 
 ```bash
-inferless model rebuild --model-id <model_id> 
+inferless model rebuild --model-id <model_id>
+```
+
+for Local rebuild
+
+```bash
+inferless model rebuild --local
 ```
 
 Below command deletes a model.
 
 ```bash
-inferless model delete --model-id <model_id> 
+inferless model delete --model-id <model_id>
 ```
 
 Below command displays the details of a specific model.
 
 ```bash
-inferless model info 
+inferless model info
 ```
 
 Select the model you want to get details for: 'type the name'
@@ -45,20 +52,42 @@ Output: you will get the 'Name', 'ID' and 'URL'
 
 **Options**:
 
-* `--model-id <id>`: Model ID
-* `--help`: Show this message and exit.
-
+- `--model-id <id>`: Model ID
+- `--help`: Show this message and exit.
 
 Below command activates a model.
 
 ```bash
-inferless model activate --model-id <model_id> 
+inferless model activate --model-id <model_id>
 ```
 
 Below command deactivates a model.
 
 ```bash
-inferless model deactivate --model-id <model_id> 
+inferless model deactivate --model-id <model_id>
 ```
 
+patch model configuration.
 
+**Usage**:
+
+```bash
+$ inferless model patch [OPTIONS]
+```
+
+**Options**:
+
+- `--model-id TEXT`: Model ID
+- `--gpu TEXT`: Denotes the machine type (A10/A100/T4). [required]
+- `--fractional`: Use fractional machine type (default: dedicated).
+- `--volume TEXT`: Volume name.
+- `--mount-path TEXT`: Volume Mount path for the volume.
+- `--env TEXT`: Key=value pairs for model environment variables.
+- `--inference-timeout INTEGER`: Inference timeout in seconds. [default: 180]
+- `--scale-down-timeout INTEGER`: Scale down timeout in seconds. [default: 600]
+- `--container-concurrency INTEGER`: Container concurrency level. [default: 1]
+- `--secret TEXT`: Secret names to attach to the deployment (--secret secret-name).
+- `--runtimeversion TEXT`: Runtime version (default: latest).
+- `--max-replica INTEGER`: Maximum number of replicas. [default: 1]
+- `--min-replica INTEGER`: Minimum number of replicas. [default: 0]
+- `--help`: Show this message and exit.

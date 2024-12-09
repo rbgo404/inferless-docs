@@ -1,9 +1,8 @@
 ---
-title: "inferless volumes"
+title: 'inferless volumes'
 ---
 
-
-Manage Inferless volumes 
+Manage Inferless volumes
 
 ```console
 $ inferless volume COMMAND [OPTIONS] [ARGS]...
@@ -11,13 +10,11 @@ $ inferless volume COMMAND [OPTIONS] [ARGS]...
 
 **Commands**:
 
-* `create`: Create a new volume.
-* `cp`: Add a file or directory to a volume.
-* `ls`: List files and directories within a volume.
-* `rm`: Specify the Inferless path to the file.
-* `list`: List all existing volumes.
-* `select`: Select a volume for the current Inferless configuration file.
-
+- `create`: Create a new volume.
+- `cp`: Add a file or directory to a volume.
+- `ls`: List files and directories within a volume.
+- `rm`: Specify the Inferless path to the file.
+- `list`: List all existing volumes.
 
 **Usage**:
 
@@ -29,20 +26,19 @@ $ inferless volume create [OPTIONS]
 
 **Options**:
 
-* `-n, --name TEXT`: Assign a name to the new volume.
-
+- `-n, --name TEXT`: Assign a name to the new volume.
 
 **Examples**:
+
 ```console
-$ inferless volume create -n my-volume 
+$ inferless volume create -n my-volume
 ```
 
-You will be asked for the prompt 
+You will be asked for the prompt
 
 Prompt : 'Region'
 
-
-List all the volumes 
+List all the volumes
 
 ```console
 $ inferless volume list [OPTIONS]
@@ -50,15 +46,15 @@ $ inferless volume list [OPTIONS]
 
 **Options**:
 
-* `-r, --region TEXT`: specify the region where you want to create the runtime.
-
+- `-r, --region TEXT`: specify the region where you want to create the runtime.
 
 **Examples**:
+
 ```console
 $ inferless volume list -r region-1
 ```
 
-Copy files to a volume 
+Copy files to a volume
 
 ```console
 $ inferless volume cp [OPTIONS]
@@ -66,10 +62,10 @@ $ inferless volume cp [OPTIONS]
 
 **Options**:
 
-* `-s, --source TEXT`: Specify the source path (either a local directory/file path or an Inferless path)
-* `-d, --destination TEXT`: Specify the destination path (either a local directory/file path or an Inferless path)
-* `-r, --recursive`: Recursively copy the contents of a directory to the destination.
-* `--help`: Show this message and exit.
+- `-s, --source TEXT`: Specify the source path (either a local directory/file path or an Inferless path)
+- `-d, --destination TEXT`: Specify the destination path (either a local directory/file path or an Inferless path)
+- `-r, --recursive`: Recursively copy the contents of a directory to the destination.
+- `--help`: Show this message and exit.
 
 **Examples**:
 
@@ -85,7 +81,6 @@ To copy from remote to local volume
 $ inferless volume cp -s infer://volume/region/<volume_name>/path/file -d /path/to/local/file
 ```
 
-
 List files and directories within a volume
 
 ```console
@@ -94,18 +89,19 @@ $ inferless volume ls [OPTIONS]
 
 **Options**:
 
-* `-i, --id TEXT`: Specify the ID of the volume to list.
-* `-p, --path TEXT`: Define a specific directory path within the volume. Defaults to the root directory if not specified.
-* `-d, --directory`: List only directories.
-* `-f, --files`: List only files.
-* `-r, --recursive`: Recursively list contents of directories.
-* `--help`: Show this message and exit.
+- `PATH`: Specify the infer path to the directory [required]
 
+**Options**:
+
+- `-d, --directory`: List only directories.
+- `-f, --files`: List only files.
+- `-r, --recursive`: Recursively list contents of directories.
+- `--help`: Show this message and exit.
 
 **Examples**:
 
 ```console
-$ inferless volume ls -i volume-id -p /path/to/directory
+$ inferless volume ls [PATH] [OPTIONS]
 ```
 
 Remove a file or directory from a volume
@@ -115,31 +111,11 @@ $ inferless volume rm [OPTIONS]
 ```
 
 **Options**:
-* `-p, --path TEXT`: Infer Path to the file/dir your want to delete
+
+- `-p, --path TEXT`: Infer Path to the file/dir your want to delete
 
 **Examples**:
 
 ```console
 $ inferless volume rm -p infer://volume/region/<volume_name>/path/file
 ```
-
-Upate the inferless.yaml configuration file with the volume
-
-**Usage**:
-
-```console
-$ inferless volume select [OPTIONS]
-```
-
-**Options**:
-
-* `-p, --path TEXT`: Path to the Inferless configuration file (typically inferless.yaml)
-* `-i, --id TEXT`: The ID of the volume to select.
-
-
-**Examples**:
-
-```console
-$ inferless volume select -p inferless.yaml -i volume-id
-```
-
