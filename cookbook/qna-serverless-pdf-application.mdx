@@ -128,84 +128,40 @@ This command ensures that your environment is equipped with all the tools requir
 
 ### Deploying Your Model with Inferless CLI
 #### PDF Upload Deployment:
-1. __Run the following command to initialize your model:__
-```bash
-inferless init
-```
-2. __Upload Custom Runtime:__ Use the following command to upload your [custom runtime](https://github.com/inferless/Document-RAG-Upload/blob/main/inferless-runtime-config.yaml).
-```bash
-inferless runtime upload
-```
-Here's the custom runtime for the application:
-```yaml
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
 
-build:
-  cuda_version: "12.1.1"
-  system_packages:
-    - "libssl-dev"
-    - "libsm6"
-    - "libxext6"
-    - "libxrender-dev"
-  python_packages:
-    - "langchain==0.1.7"
-    - "langchain-pinecone==0.0.2"
-    - "pypdf==4.0.1"
-    - "unstructured==0.12.4"
-    - "sentence-transformers==2.3.1"
-    - "pinecone-client==3.0.3"
-    - "huggingface-hub==0.20.3"
-    - "pdf2image==1.17.0"
-    - "pdfminer==20191125"
-    - "pdfminer.six==20221105"
-    - "pillow_heif==0.15.0"
-    - "unstructured-inference==0.7.24"
-    - "pikepdf==8.12.0"
-    - "transformers==4.37.2"
-    - "accelerate==0.27.2"
-```
-3. __Deploy Model:__ Execute the following command to deploy and monitor the build logs on Inferless.
+#### Clone the repository of the model
+Let's begin by cloning the model repository:
 ```bash
-inferless deploy
+git clone https://github.com/inferless/Document-RAG-Upload.git
 ```
+
+#### Deploy the Model
+To deploy the model using Inferless CLI, execute the following command:
+```bash
+inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
+```
+
 #### PDF Q&A Deployment:
-1. __Run the following command to initialize your model:__
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+#### Clone the repository of the model
+Let's begin by cloning the model repository:
 ```bash
-inferless init
+git clone https://github.com/inferless/Document-RAG-QnA.git
 ```
-2. __Upload Custom Runtime:__ Use the following command to upload your [custom runtime](https://github.com/inferless/Document-RAG-QnA/blob/main/inferless-runtime-config.yaml).
+
+#### Deploy the Model
+To deploy the model using Inferless CLI, execute the following command:
 ```bash
-inferless runtime upload
+inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
 ```
-Here's the custom runtime for the application:
-```yaml
-build:
-  cuda_version: "12.1.1"
-  system_packages:
-    - "libssl-dev"
-    - "libsm6"
-    - "libxext6"
-    - "libxrender-dev"
-  python_packages:
-    - "langchain==0.1.7"
-    - "langchain-pinecone==0.0.2"
-    - "pypdf==4.0.1"
-    - "unstructured==0.12.4"
-    - "sentence-transformers==2.3.1"
-    - "pinecone-client==3.0.3"
-    - "huggingface-hub==0.20.3"
-    - "pdf2image==1.17.0"
-    - "pdfminer==20191125"
-    - "pdfminer.six==20221105"
-    - "pillow_heif==0.15.0"
-    - "unstructured-inference==0.7.24"
-    - "pikepdf==8.12.0"
-    - "transformers==4.37.2"
-    - "accelerate==0.27.2"
-```
-3. __Deploy Model:__ Execute `inferless deploy` to deploy and monitor the build logs on Inferless.
-```bash
-inferless deploy
-```
+
+**Explanation of the Command:**
+
+- `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
+- `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
+
 ### Alternative Deployment Method
 Inferless also supports a user-friendly UI for model deployment, catering to users at all skill levels. Refer to Inferless's documentation for guidance on UI-based deployment.
 ## Choosing Inferless for Deployment

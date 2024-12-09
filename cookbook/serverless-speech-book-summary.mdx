@@ -145,27 +145,24 @@ pip install vllm==0.6.2 coqui-tts==0.24.3 pypdf==4.3.1
 ```
 This command ensures your environment has all the tools required for the application.
 ### Deploying Your Model with Inferless CLI
-1. __Run the following command to initialize your model:__
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+#### Clone the repository of the model
+Let's begin by cloning the model repository:
 ```bash
-inferless init
+git clone https://github.com/inferless/Book-Audio-Summary-Generator.git
 ```
-2. __Upload Custom Runtime:__ Use the following command to upload your [custom runtime](https://github.com/inferless/Book-Audio-Summary-Generator/blob/main/inferless-runtime-config.yaml).
+
+#### Deploy the Model
+To deploy the model using Inferless CLI, execute the following command:
 ```bash
-inferless runtime upload
+inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
 ```
-Here's the custom runtime for the application:
-```yaml
-build:
-  cuda_version: "12.1.1"
-  python_packages:
-    - vllm==0.6.2
-    - coqui-tts==0.24.3
-    - pypdf==4.3.1
-```
-3. __Deploy Model:__ Execute `inferless deploy` to deploy and monitor the build logs on Inferless.
-```bash
-inferless deploy
-```
+
+**Explanation of the Command:**
+
+- `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
+- `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
 
 ### Demo of the Book Audio Summary Generator.
 <video width="640" height="360" controls>

@@ -123,30 +123,20 @@ Once the model is in 'Active' status you can click on the 'API' page to call the
 
 Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
 
-### Initialization of the model
-
-Create the app.py and inferless-runtime-config.yaml, move the files to the working directory. Run the following command to initialize your model:
-
+### Clone the repository of the model
+Let's begin by cloning the model repository:
+```bash
+git clone https://github.com/inferless/CodeLlama-70B.git
 ```
-inferless init
-```
-
-### Upload the custom runtime
-
-Once you have created the inferless-runtime-config.yaml file, you can run the following command:
-
-```
-inferless runtime upload
-```
-
-Upon entering this command, you will be prompted to provide the configuration file name. Enter the name and ensure to update it in the inferless.yaml file. Now you are ready for the deployment.
-
-![](/images/llama70b-6.png)
 
 ### Deploy the Model
-
-Execute the following command to deploy your model. Once deployed, you can track the build logs on the Inferless platform:
-
+To deploy the model using Inferless CLI, execute the following command:
+```bash
+inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
 ```
-inferless deploy
-```
+
+**Explanation of the Command:**
+
+- `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
+- `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
+![](/images/cli-image.png)
