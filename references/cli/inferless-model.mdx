@@ -24,6 +24,12 @@ inferless model list
 
 Below command rebuilds a model.
 
+**Options**:
+
+- `--model-id`: Model ID
+- `--runtime-path (optional)` : Runtime file path which will be created as new version for your current runtime.
+- `--runtime-version`: new runtime version
+
 ```bash
 inferless model rebuild --model-id <model_id>
 ```
@@ -31,7 +37,7 @@ inferless model rebuild --model-id <model_id>
 for Local rebuild
 
 ```bash
-inferless model rebuild --local
+inferless model rebuild --model-id <model_id> --local
 ```
 
 Below command deletes a model.

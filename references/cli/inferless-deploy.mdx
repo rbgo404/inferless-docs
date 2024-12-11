@@ -35,11 +35,11 @@ Once deployed you will be able to see the model import id in the terminal. You c
 ### Example:
 
 ```console
-$ inferless deploy --gpu T4 --runtime ./inferless-runtime-config.yaml 
+$ inferless deploy --gpu T4 --runtime ./inferless-runtime-config.yaml
 ```
 
 To redeploy the model with new code.
 
 ```bash
-inferless model rebuild -l
+inferless model rebuild --model-id <model_id> -l
 ```
