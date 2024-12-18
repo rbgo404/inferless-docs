@@ -56,12 +56,22 @@
 		{
 			"name": "References",
 			"url": "references"
+		},
+		{
+			"name": "OSS Cheatsheet",
+			"url": "cheatsheet"
 		}
 	],
 	"navigation": [
 		{
 			"group": "",
 			"pages": ["introduction/introduction"]
+		},
+		{
+			"group":"CheatSheet",
+			"pages":[
+				"cheatsheet/tts-cheatsheet"
+			]
 		},
 		{
 			"group": "Getting Started",
