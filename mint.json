@@ -68,7 +68,7 @@
 			"pages": ["introduction/introduction"]
 		},
 		{
-			"group":"CheatSheet",
+			"group":"Cheatsheet",
 			"pages":[
 				"cheatsheet/tts-cheatsheet"
 			]
