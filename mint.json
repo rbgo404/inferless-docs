@@ -70,7 +70,8 @@
 		{
 			"group":"Cheatsheet",
 			"pages":[
-				"cheatsheet/tts-cheatsheet"
+				"cheatsheet/tts-cheatsheet",
+				"cheatsheet/code-cheatsheet"
 			]
 		},
 		{
