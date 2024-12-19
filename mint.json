@@ -56,12 +56,22 @@
 		{
 			"name": "References",
 			"url": "references"
+		},
+		{
+			"name": "OSS Cheatsheet",
+			"url": "cheatsheet"
 		}
 	],
 	"navigation": [
 		{
 			"group": "",
 			"pages": ["introduction/introduction"]
+		},
+		{
+			"group":"Cheatsheet",
+			"pages":[
+				"cheatsheet/tts-cheatsheet"
+			]
 		},
 		{
 			"group": "Getting Started",
@@ -343,3 +353,6 @@
 		"linkedin": "https://www.linkedin.com/company/inferless/"
 	}
 }
+
+
+
