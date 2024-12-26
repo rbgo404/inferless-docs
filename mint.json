@@ -72,7 +72,8 @@
 			"pages":[
 				"cheatsheet/tts-cheatsheet",
 				"cheatsheet/code-cheatsheet",
-				"cheatsheet/text-to-image-cheatsheet"
+				"cheatsheet/text-to-image-cheatsheet",
+				"cheatsheet/vision-llm-cheatsheet"
 			]
 		},
 		{
