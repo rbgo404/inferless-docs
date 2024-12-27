@@ -319,7 +319,8 @@
 				"how-to-guides/deploy-a-whisper-large-v3-turbo",
 				"how-to-guides/deploy-a-Ministral-8B-Instruct",
 				"how-to-guides/deploy-Qwen2.5-Coder-32B-Instruct",
-				"how-to-guides/deploy-Qwen2-VL-7B-Instruct"
+				"how-to-guides/deploy-Qwen2-VL-7B-Instruct",
+				"how-to-guides/deploy-a-Qwen-QwQ-32B-preview"
 			]
 		},
 		{
