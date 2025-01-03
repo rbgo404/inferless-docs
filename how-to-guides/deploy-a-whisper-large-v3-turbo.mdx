@@ -37,7 +37,7 @@ You can also add other files to this directory.
 
 ## Create the class for inference
 
-In the [app.py](https://github.com/inferless/Whisper-large-v3-turbo/blob/main/app.py) we will define the class and import all the required functions
+In the [app.py](https://github.com/inferless/Whisper-large-v3-turbo/blob/main/app.py) we will define the class and import all the required functions.
 
 1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
 
@@ -48,7 +48,6 @@ In the [app.py](https://github.com/inferless/Whisper-large-v3-turbo/blob/main/ap
 ```python
 import torch
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
-import json
 
 class InferlessPythonModel:
         
@@ -183,10 +182,10 @@ build:
 
 You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
 
-### Step 1: Add the Inferless Class and Decorators
+### Step 1: Add the Decorators
 To enable **Remote Run**, simply do the following:
 1. Import the `inferless` library and initialized `Cls(gpu="A10")`.
-2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer`, respectively.
+2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
 
 
 ```python
