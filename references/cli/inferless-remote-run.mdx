@@ -4,6 +4,12 @@ title: "inferless remote run"
 Use the command `inferless remote-run` to run model inference on remote GPU from your local machine.
 This command will execute a particular function or class in the cloud environment.
 
+### Pre Requisites 
+
+- You need to have python 3.10 
+- You need to have inferless-cli and inferless installed in the python env 
+- Max time 10 mins is allowed for remote run ( For your python code )
+
 ### Getting Started 
 
 Let's assume you have an app.py with 2 functions init and load, You need to 4 lines of code to your app.py to make it run with remote run by initialising the inferless cls and adding functional annotations 
