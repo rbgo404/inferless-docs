@@ -279,6 +279,10 @@
 				{
 					"group": "December 2024",
 					"pages": ["changelog/november-2024/9th-december", "changelog/december-2024/9th-december"]
+				},
+				{
+					"group": "January 2025",
+					"pages": ["changelog/january-2025/9th-january", "changelog/january-2025/9th-january"]
 				}
 			]
 		},
