@@ -122,6 +122,73 @@ build:
   - accelerate==0.30.1
   - transformers==4.41.1
 ```
+
+## Test your model with Remote Run
+
+You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
+
+### Step 1: Add the Decorators
+To enable **Remote Run**, simply do the following:
+1. Import the `inferless` library and initialized `Cls(gpu="A10")`.
+2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+
+
+```python
+import inferless
+
+app = inferless.Cls(gpu="A10")
+
+class InferlessPythonModel:
+    @app.load
+    def initialize(self):
+        from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
+        self.model = AutoModelForCausalLM.from_pretrained(
+            "microsoft/Phi-3-mini-128k-instruct",
+            device_map="cuda",
+            torch_dtype="auto",
+            trust_remote_code=True,
+        )
+        self.tokenizer = AutoTokenizer.from_pretrained("microsoft/Phi-3-mini-128k-instruct")
+        self.pipe = pipeline(
+            "text-generation",
+            model=self.model,
+            tokenizer=self.tokenizer,
+        )
+
+    @app.infer
+    def infer(self, input_data):
+        prompt = input_data['prompt']
+        roles = input_data['roles']
+
+        generation_args = {
+            "max_new_tokens": 500,
+            "return_full_text": False,
+            "temperature": 0.0,
+            "do_sample": False,
+        }
+
+        messages = []
+        messages.append({ "role": roles , "content" : prompt })
+        output = self.pipe(messages, **generation_args)
+        return {"result": output[0]['generated_text'] }
+
+
+if __name__ == "__main__":
+    model = InferlessPythonModel()
+    output = model.infer({"prompt": "What is deep learning?","roles":"user"})
+    print(output)
+```
+
+### Step 2: Run with Remote GPU
+
+From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
+
+```bash
+inferless remote-run app.py -c inferless-runtime-config.yaml
+```
+
+If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
+
 ## Method A: Deploying the model on Inferless Platform
 Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.
 
