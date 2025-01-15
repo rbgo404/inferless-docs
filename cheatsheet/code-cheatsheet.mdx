@@ -1,0 +1,97 @@
+---
+title: "Code LLMs CheatSheet"
+description: "A comprehensive cheatsheet covering open-source code generation models, inference libraries, datasets, deployment strategies, and ethical considerations for developers and organizations."
+--- 
+
+## 1. Models (Open-Source)
+
+- **[Qwen2.5-Coder-32B](https://huggingface.co/Qwen/Qwen2.5-Coder-32B-Instruct):** A state-of-the-art large language model developed by Alibaba Cloud, designed specifically for coding tasks.
+- **[DeepSeek-Coder-33b-base](https://huggingface.co/deepseek-ai/deepseek-coder-33b-base):** A powerful 33 billion parameter AI model designed for code generation and completion, trained on 2 trillion tokens.
+- **[StarCoder2-15B](https://huggingface.co/bigcode/starcoder2-15b):** A state-of-the-art code generation model optimized for multilingual programming tasks.
+- **[Codestral 22B](https://huggingface.co/mistralai/Codestral-22B-v0.1):** Capable of generating, explaining, and refactoring code across over 80 programming languages, including Python, Java, and C++.
+- **[Llama-3.3 70B Instruct](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct):** A cutting-edge multilingual language model optimized for text-based interactions, featuring 70 billion parameters and advanced capabilities in reasoning and coding.
+
+## 2. Inference Libraries / Toolkits
+
+- **[vLLM](https://github.com/vllm-project):** A library optimized for high-throughput LLM inference.
+- **[Text Generation Inference(TGI)](https://github.com/huggingface/text-generation-inference):**  A platform designed for efficiently deploying LLMs in production environments, facilitating scalable and user-friendly text generation applications.
+- **[LMDeploy](https://github.com/InternLM/lmdeploy):** A toolkit designed for efficiently compressing, deploying, and serving LLMs.
+- **[TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM):** Accelerated inference on NVIDIA GPUs.
+- **[LitServe](https://github.com/Lightning-AI/LitServe):** Lightning-fast inference serving library for quick deployments.
+
+## 3. Datasets
+
+- **[Magicoder-OSS-Instruct-75K](https://huggingface.co/datasets/ise-uiuc/Magicoder-OSS-Instruct-75K):** A dataset with diverse instructions for code generation.
+- **[The Stack v2](https://huggingface.co/datasets/bigcode/the-stack-v2):** Comprehensive source code collection.
+- **[Code Parrot GitHub Code](https://huggingface.co/datasets/macrocosm-os/code-parrot-github-code):** GitHub code dataset for language models.
+- **[Synthetic Text-to-SQL](https://huggingface.co/datasets/gretelai/synthetic_text_to_sql):** Dataset for generating SQL queries from text prompts.
+- **[Opc-sft-stage2](https://huggingface.co/datasets/OpenCoder-LLM/opc-sft-stage2):** Dataset optimized for open-source code LLMs.
+
+## 4. Use Cases
+
+- **Automated Code Completion:** Enhancing developer productivity by predicting and suggesting code snippets.
+- **Code Translation:** Converting code from one programming language to another.
+- **Documentation Generation:** Creating documentation for codebases automatically.
+- **Bug Detection and Fixing:** Identifying and suggesting fixes for bugs in code.
+- **Educational Tools:** Assisting in teaching programming by providing code examples and explanations.
+
+## 5. Deployment Options
+
+- **[On-Premises Deployment](https://medium.com/@cprasenjit32/deployment-of-machine-learning-models-on-premises-and-in-the-cloud-39b021efba97):** Running models on local servers for full control and data privacy.
+- **[Cloud Services](https://www.analyticsvidhya.com/blog/2022/09/how-to-deploy-a-machine-learning-model-on-aws-ec2/):** Utilizing cloud providers like AWS, Azure, or Google Cloud for scalable deployment.
+- **[Serverless GPU Platforms](https://docs.inferless.com/how-to-guides/deploy-a-codellama-python-34b-model-using-inferless):** Serverless GPU platforms like [Inferless](https://www.inferless.com/) provide on-demand, scalable GPU resources for machine learning workloads, eliminating the need for infrastructure management and offering cost efficiency.
+- **[Edge Deployment](https://www.hackster.io/shahizat/running-llms-with-tensorrt-llm-on-nvidia-jetson-agx-orin-34372f):** Deploying models on edge devices for low-latency applications.
+- **[Containerization](https://www.datacamp.com/tutorial/containerization-docker-and-kubernetes-for-machine-learning):** Using Docker or Kubernetes to manage and scale deployments efficiently.
+
+## 6. Training & Fine-Tuning Resources
+
+- **[OpenCoder LLM](https://github.com/OpenCoder-llm/OpenCoder-llm/):** Comprehensive resources for open-code LLMs.
+- **[Awesome Code LLM](https://github.com/codefuse-ai/Awesome-Code-LLM):** A curated list of resources for code generation models.
+- **[Fine-tuning on a Single GPU](https://huggingface.co/learn/cookbook/fine_tuning_code_llm_on_single_gpu):** Practical guide to fine-tuning code LLMs.
+- **[StarCoder](https://github.com/bigcode-project/starcoder/):** GitHub repository for fine-tuning & inference of StarCoder models.
+- **[DeepSeek-Coder](https://github.com/deepseek-ai/DeepSeek-Coder/):** Resources for training and deploying DeepSeek models.
+
+## 7. Evaluation & Benchmarking
+
+- **HumanEval:** A benchmark for evaluating the functional correctness of code generated by language models.
+- **MBPP:** The **Mostly Basic Python Problems (MBPP)** dataset includes ~1,000 crowd-sourced Python challenges.
+- **BigCodeBench:** Evaluates models on practical programming tasks.
+- **LiveCodeBench:** Holistic and contamination-free evaluation for LLMs in coding.
+- **MultiPL-E:** Benchmarks designed for multiple programming languages.
+
+## 8. Model Optimization & Compression
+
+- **[Pruning](https://developer.nvidia.com/blog/how-to-prune-and-distill-llama-3-1-8b-to-an-nvidia-llama-3-1-minitron-4b-model/):** Reduces less significant weights to create sparser and faster models.
+- **[Knowledge Distillation](https://www.datacamp.com/blog/distillation-llm):** Transfers knowledge from large teacher models to smaller students.
+- **[Quantization](https://huggingface.co/docs/optimum/en/concept_guides/quantization):** Converts model weights to lower-bit precision to reduce memory usage and accelerate inference.
+- **Optimized Hardware Deployment:** Involves utilizing specialized hardware designed for efficient model inference. Libraries like TensorRT-LLM improve performance on NVIDIA GPUs.
+- **[Batch Inference](https://medium.com/@yohoso/llm-inference-optimisation-continuous-batching-2d66844c19e9):** Processes multiple inputs simultaneously for efficient resource utilization.
+
+## 9. Integration & Workflow Tools
+
+- **[LlamaIndex](https://github.com/jerryjliu/llama_index):** Simplifies building RAG applications with minimal code.
+- **[ZenML](https://github.com/zenml-io/zenml):** Open-source MLOps framework for reproducible ML pipelines.
+- **[Ollama](https://ollama.com/):** Tool for running and customizing LLMs locally.
+- **[Evidently](https://github.com/evidentlyai/evidently):** Open-source framework for MLOps observability.
+- **[llamafile](https://github.com/Mozilla-Ocho/llamafile):** Packages LLMs and dependencies into executable files for local execution.
+
+## 10. Common Challenges & Troubleshooting
+
+- **Model Transparency**: Generative Models function as "black boxes," making it difficult to understand their decision-making processes, which can hinder debugging and trust.
+- **Computational Resources**: Inferencing large models demands significant computational power, posing accessibility challenges for some organizations.
+- **Security and Ethical Concerns**: There's a risk of models being misused to generate malicious code, necessitating the implementation of safeguards.
+- **Integration Challenges**: Incorporating these models into existing development workflows requires ensuring compatibility with current tools and practices.
+
+## 11. Ethical Considerations
+
+- **Code Attribution and Licensing**: Ensure proper attribution of generated code and respect for existing software licenses and intellectual property rights.
+- **Bias and Fairness**: Address potential biases in code generation that might create discriminatory outcomes.
+- **Developer Dependency**: Consider the impact on developer skills and ensure the tool enhances rather than replaces human programming capabilities.
+- **Data Privacy**: Protect sensitive information in code repositories and ensure compliance with data protection regulations when training or using these models.
+- **Quality Assurance**: Establish guidelines for reviewing and validating AI-generated code to maintain code quality and security standards.
+
+## 12. Licensing & Governance
+
+- **Check Licenses:** (MIT, Apache 2.0, GPL) before commercial use.
+- **Hugging Face Model Cards:** Follow best practices for transparency.
+- **Data Usage Agreements:** Ensure compliance with dataset terms.

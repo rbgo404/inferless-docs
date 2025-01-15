@@ -1,0 +1,112 @@
+---
+title: "Text-To-Speech (TTS) Cheatsheet"
+description: "A comprehensive cheatsheet, provides an overview of the top open-source TTS models, inference libraries, training resources, and more to help you get started with or enhance your TTS projects."
+--- 
+
+## 1. Models (Open-Source)
+
+- **[XTTS-v2](https://huggingface.co/coqui/XTTS-v2):** High-quality TTS model with robust voice quality.
+- **[MeloTTS-English](https://huggingface.co/myshell-ai/MeloTTS-English):** Specialized English voice synthesis with melodic intonation.
+- **[F5-TTS](https://huggingface.co/SWivid/F5-TTS):** Produces high-quality speech with voice cloning and customization.
+- **[Bark](https://huggingface.co/suno/bark):** High-quality multilingual model supporting varied accents and prosody.
+- **[Parler-tts-mini-v1](https://huggingface.co/parler-tts/parler-tts-mini-v1):** Compact model optimized for quick demos and limited resource environments.
+
+### Additional Notable Models
+
+- **[FastSpeech2](https://huggingface.co/facebook/fastspeech2-en-ljspeech):** Speed-focused, decent quality trade-off.
+- **[VITS](https://github.com/jaywalnut310/vits):** End-to-end TTS offering high fidelity and voice controllability.
+- **[SpeechT5](https://huggingface.co/microsoft/speecht5_tts):** Unified-modal SpeechT5 framework that explores encoder-decoder pre-training for self-supervised speech/text representation learning.
+
+## 2. Inference Libraries / Toolkits
+
+- **[Coqui TTS](https://github.com/coqui-ai/TTS):** Easy-to-use, community-driven TTS toolkit.
+- **[Parler TTS](https://github.com/huggingface/parler-tts):** Inference and training library for high-quality TTS models.
+- **[LitServe](https://github.com/Lightning-AI/LitServe):** Lightning-fast inference serving library for quick deployments.
+- **[Mozilla TTS](https://github.com/mozilla/TTS):** Well-known toolkit with extensive model support and large community.
+- **[Tortoise TTS](https://github.com/neonbjb/tortoise-tts):** High-quality synthesis; slower but excellent results.
+
+### Additional Toolkits
+
+- **[ESPnet TTS](https://github.com/espnet/espnet):** Unified end-to-end speech processing (ASR + TTS).
+- **[NVIDIA NeMo](https://github.com/NVIDIA/NeMo):** State-of-the-art models + easy fine-tuning on NVIDIA GPUs.
+
+## 3. Use Cases
+
+- **Voice Assistants & Virtual Agents**
+- **Audiobooks & Podcast Generation**
+- **Accessibility Tools (for visually impaired users)**
+- **Interactive Learning & E-Learning Content**
+- **Customer Support Bots & IVR Systems**
+- **Content Localization & Dubbing for Media**
+
+## 4. Deployment Options
+
+
+- **[On-Premises Deployment](https://medium.com/@cprasenjit32/deployment-of-machine-learning-models-on-premises-and-in-the-cloud-39b021efba97):** Running models on local servers for full control and data privacy.
+- **[Cloud Services](https://www.analyticsvidhya.com/blog/2022/09/how-to-deploy-a-machine-learning-model-on-aws-ec2/):** Utilizing cloud providers like AWS, Azure, or Google Cloud for scalable deployment.
+- **[Serverless GPU Platforms](https://docs.inferless.com/how-to-guides/deploy-a-codellama-python-34b-model-using-inferless):** Serverless GPU platforms like [Inferless](https://www.inferless.com/) provide on-demand, scalable GPU resources for machine learning workloads, eliminating the need for infrastructure management and offering cost efficiency.
+- **[Edge Deployment](https://www.hackster.io/shahizat/running-llms-with-tensorrt-llm-on-nvidia-jetson-agx-orin-34372f):** Deploying models on edge devices for low-latency applications.
+- **[Containerization](https://www.datacamp.com/tutorial/containerization-docker-and-kubernetes-for-machine-learning):** Using Docker or Kubernetes to manage and scale deployments efficiently.
+
+## 5. Datasets
+
+- **[keithito/lj_speech](https://huggingface.co/datasets/keithito/LJ-Speech-Dataset):** Popular single-speaker dataset for English TTS.
+- **[facebook/multilingual_librispeech](https://huggingface.co/datasets/facebook/multilingual_librispeech):** Multilingual speech corpus for polyglot models.
+- **[amphion/Emilia-Dataset](https://huggingface.co/datasets/amphion/Emilia-Dataset):** Specialized dataset for unique voice profiles.
+- **[speechcolab/gigaspeech](https://huggingface.co/datasets/speechcolab/gigaspeech):** Large-scale English speech corpus.
+- **[parler-tts/mls_eng](https://huggingface.co/datasets/parler-tts/mls_eng):** English subset of the Multilingual LibriSpeech dataset.
+
+### More Datasets
+
+- **[VCTK](https://huggingface.co/datasets/CSTR-Edinburgh/vctk):** High-quality, multi-speaker dataset for diverse accents.
+- **[Common Voice](https://huggingface.co/datasets/legacy-datasets/common_voice):** Crowdsourced multilingual dataset.
+- **[LibriTTS](https://huggingface.co/datasets/mythicinfinity/libritts):** Enhanced LibriSpeech variant for better TTS results.
+
+## 6. Training & Fine-Tuning Resources
+
+- **[GitHub TTS Notebooks & Tutorials](https://github.com/mozilla/TTS/wiki/TTS-Notebooks-and-Tutorials):** Community-driven code examples and scripts.
+- **[Hugging Face Audio Course, Unit 6 (From Text to Speech)](https://huggingface.co/learn/audio-course/en/chapter6/introduction):** Hands-on tutorials.
+- **[Fine-Tuning a 🐸 TTS Model (Coqui TTS docs)](https://docs.coqui.ai/en/latest/finetuning.html):** Step-by-step instructions.
+- **[NVIDIA NeMo TTS Guides](https://github.com/NVIDIA/NeMo/tree/stable/tutorials/tts):** Hands-on TTS tutorial notebooks.
+- **[VITS Fast Fine-tuning](https://github.com/Plachtaa/VITS-fast-fine-tuning):** Guide you to add your own character voices, or even your own voice, into existing VITS TTS model.
+
+## 7. Evaluation & Benchmarking
+
+- **[Mean Opinion Score (MOS)](https://en.wikipedia.org/wiki/Mean_opinion_score), [Comparative MOS (CMOS)](https://techcommunity.microsoft.com/blog/azure-ai-services-blog/new-technical-research-is-advancing-azure%E2%80%99s-neural-text-to-speech-service/3499414#:~:text=Comparative%20MOS%20(CMOS)):** Subjective quality assessment.
+- **[PESQ, POLQA, NISQA](https://picovoice.ai/blog/speech-quality/):** Objective speech quality metrics.
+
+## 8. Model Optimization & Compression
+
+- **Quantization:** Reduce model size & inference time (ONNX).
+- **Pruning & Distillation:** Tailor models to resource constraints.
+- **Hardware Acceleration:** GPUs, TPUs, or specialized inference chips.
+- **[ONNX](https://onnx.ai/) / [TensorRT](https://docs.nvidia.com/deeplearning/tensorrt/quick-start-guide/index.html):** Optimize models for low-latency, high-throughput inference.
+## 9. Integration & Workflow Tools
+
+- **[Gradio](https://www.gradio.app/) / [Streamlit](https://streamlit.io/):** Rapid prototyping with web UIs.
+- **[Airflow](https://airflow.apache.org/) / [Prefect](https://www.prefect.io/):** Automate data and training pipelines.
+- **[CI/CD (GitHub Actions)](https://docs.github.com/en/actions/about-github-actions/understanding-github-actions):** Continuous integration for model updates.
+- **[Hugging Face Spaces](https://huggingface.co/spaces):** Share and demo TTS models easily.
+
+## 10. Common Challenges & Troubleshooting
+
+- **Accents & Dialects:** Use multilingual models or phoneme-based TTS.
+- **Latency Reduction:** Optimize models, batch inference, use GPU acceleration.
+- **Pronunciation Issues:** Text normalization and grapheme-to-phoneme conversion.
+- **Memory Constraints:** Use smaller models or pruning/quantization techniques.
+
+## 11. Ethical Considerations
+
+- **Voice Consent & Licensing:** Respect dataset/model licenses.
+- **Disclosure of Synthetic Speech:** Inform users when speech is synthesized.
+- **Bias & Fairness:** Be aware of biases in training data and model outputs.
+- **Deepfake Risks:** Implement safeguards and watermarking.
+
+## 12. Licensing & Governance
+
+- **Check Licenses:** (MIT, Apache 2.0, GPL) before commercial use.
+- **Hugging Face Model Cards:** Follow best practices for transparency.
+- **Data Usage Agreements:** Ensure compliance with dataset terms.
+
+
+

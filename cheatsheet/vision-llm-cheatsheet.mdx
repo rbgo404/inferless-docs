@@ -1,0 +1,86 @@
+---
+title: "Vision-Language Models CheatSheet"
+description: "An all-in-one cheatsheet for vision-language models, including open-source models, inference toolkits, datasets, use cases, deployment strategies, optimization techniques, and ethical considerations for developers and organizations."
+---
+
+## 1. Models (Open-Source)
+
+- **[Qwen/Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B)**: A state-of-the-art multimodal model by Qwen, designed for instruction-based tasks, excelling in visual understanding and multilingual processing with 7 billion parameters.
+- **[meta-llama/Llama-3.2-11B-Vision-Instruct](https://huggingface.co/meta-llama/Llama-3.2-11B-Vision-Instruct)**: An advanced vision-language model that integrates visual and textual inputs, enhancing performance in multimodal tasks with 11 billion parameters.
+- **[google/paligemma2-3b-pt-224](https://huggingface.co/google/paligemma2-3b-pt-224)**: A compact multimodal optimized for efficient processing of images and text, featuring 3 billion parameters and tailored for practical applications in various domains.
+- **[microsoft/Phi-3.5-vision-instruct](https://huggingface.co/microsoft/Phi-3.5-vision-instruct)**: A versatile vision-language model developed by Microsoft, focused on instruction-following capabilities and designed to handle complex visual and textual interactions.
+- **[mistralai/Pixtral-12B-2409](https://huggingface.co/mistralai/Pixtral-12B-2409)**: A powerful 12 billion parameter model that excels in visual understanding and generation tasks, offering robust performance across a range of multimodal applications.
+
+## 2. Inference Libraries / Toolkits
+
+- **[vLLM](https://github.com/vllm-project)**: A library optimized for high-throughput LLM inference.
+- **[Text Generation Inference (TGI)](https://github.com/huggingface/text-generation-inference)**: A platform designed for efficiently deploying LLMs in production environments, facilitating scalable and user-friendly text generation applications.
+- **[LMDeploy](https://github.com/InternLM/lmdeploy)**: A toolkit designed for efficiently compressing, deploying, and serving LLMs.
+- **[TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM)**: Accelerated inference on NVIDIA GPUs.
+- **[LitServe](https://github.com/Lightning-AI/LitServe)**: Lightning-fast inference serving library for quick deployments.
+
+## 3. Datasets
+
+- **[OpenGVLab/MMPR-v1.1](https://huggingface.co/datasets/OpenGVLab/MMPR-v1.1)**: A large-scale and high-quality multimodal reasoning preference dataset.
+- **[HuggingFaceM4/the_cauldron](https://huggingface.co/datasets/HuggingFaceM4/the_cauldron)**: A  massive collection of 50 vision-language datasets.
+- **[HuggingFaceM4/Docmatix](https://huggingface.co/datasets/HuggingFaceM4/Docmatix)**: A massive dataset for Document Visual Question Answering that was used for the fine-tuning of the vision-language model Idefics3.
+
+## 4. Use Cases
+
+- **Image Captioning & Description**: Generate descriptive captions for images, useful in social media, digital asset management, and accessibility solutions for visually impaired users.  
+- **Visual Question Answering (VQA)**: Answer queries about images, enabling automated customer support or interactive learning environments.  
+- **Image-Based Document Analysis**: Extract text or metadata from scanned documents, forms, or receipts, streamlining business workflows that require automated data entry or record-keeping.  
+- **Content Moderation & Safety**: Detect inappropriate or harmful content in images for social media platforms, ensuring compliance with community guidelines.  
+- **Creative Storytelling & Illustration**: Combine vision inputs with textual generation for creative tasks, such as interactive comic creation or illustrated story generation.
+
+## 5. Deployment Options
+
+- **[On-Premises Deployment](https://medium.com/@cprasenjit32/deployment-of-machine-learning-models-on-premises-and-in-the-cloud-39b021efba97)**: Running models on local servers for full control and data privacy.
+- **[Cloud Services](https://www.analyticsvidhya.com/blog/2022/09/how-to-deploy-a-machine-learning-model-on-aws-ec2/)**: Utilizing cloud providers like AWS, Azure, or Google Cloud for scalable deployment.
+- **[Serverless GPU Platforms](https://docs.inferless.com/how-to-guides/deploy-Qwen2-VL-7B-Instruct)**: Serverless GPU platforms like [Inferless](https://www.inferless.com/) provide on-demand, scalable GPU resources for machine learning workloads, eliminating the need for infrastructure management and offering cost efficiency.
+- **[Edge Deployment](https://www.jetson-ai-lab.com/tutorial_llava.html)**: Deploying models on edge devices for low-latency applications.
+- **[Containerization](https://www.datacamp.com/tutorial/containerization-docker-and-kubernetes-for-machine-learning)**: Using Docker or Kubernetes to manage and scale deployments efficiently.
+
+## 6. Training & Fine-Tuning Resources
+
+- **[Hugging Face Computer Vision Course](https://huggingface.co/learn/computer-vision-course/en/unit4/multimodal-models/pre-intro)**: Provides comprehensive tutorials on training and fine-tuning multimodal models, including best practices for data handling, hyperparameter tuning, and evaluation.
+- **[Multimodal Inference Papers](https://arxiv.org/html/2405.17247v1)**: Recent research insights into designing and optimizing vision-language models, covering advanced transformers, cross-modal attention, and domain-specific tasks.
+- **[Smol-Vision](https://github.com/merveenoyan/smol-vision/tree/main)**: An open-source project offering example scripts, smaller models, and best practices for fine-tuning or customizing vision-language architectures on limited hardware.
+
+## 7. Evaluation & Benchmarking
+
+- **MMMU:** A benchmark suite designed to evaluate multimodal models on massive multi-discipline tasks demanding college-level subject knowledge and deliberate reasoning.
+- **MMBench:** A systematically designed objective benchmark for robustly evaluating the various abilities of vision-language models.
+- **VQAScore:** A novel metric designed for evaluating text-to-visual generation, particularly in the context of complex prompts that require understanding of compositional structures.
+- **OCRBench:** A comprehensive evaluation benchmark aimed at assessing the Optical Character Recognition (OCR) capabilities of large multimodal models.
+
+## 8. Model Optimization & Compression
+
+- **[Knowledge Distillation](https://www.amazon.science/blog/knowledge-distillation-method-for-better-vision-language-models#:~:text=Attention%2Dbased%20representation%20of%20multi,%E2%80%9D%20versions%20%E2%80%94%20of%20attention%20maps.)**: Transfer knowledge from a larger “teacher” model to a smaller “student” model.
+- **[Quantization](https://www.reddit.com/r/LocalLLaMA/comments/1d6vhx2/vision_language_model_quantization_and/)**: Reduce the numerical precision of weights and activations (e.g., from FP32 to INT8). This can lead to significantly faster inference with minimal drops in accuracy, making it ideal for edge or latency-sensitive applications.
+- **[Optimized Hardware Deployment](https://rocm.blogs.amd.com/artificial-intelligence/llava-next/README.html)**: Leverage specialized libraries and GPUs to accelerate multimodal inference. NVIDIA’s [TensorRT-LLM](https://github.com/NVIDIA/TensorRT-LLM/blob/main/examples/multimodal/README.md) and AMD ROCm stack provide hardware-optimized kernels, enabling high throughput and efficiency for VLMs.
+
+## 9. Integration & Workflow Tools
+
+- **[LlamaIndex](https://github.com/jerryjliu/llama_index)**: Simplifies the creation of Retrieval-Augmented Generation (RAG) applications by abstracting away complex indexing processes. Helpful when combining visual embedding searches with textual retrieval for chatbots or Q&A systems.
+- **[ZenML](https://github.com/zenml-io/zenml)**: An open-source MLOps framework that helps build and deploy reproducible machine learning pipelines. Useful for orchestrating data processing, model training, and model deployment steps in a unified workflow.
+- **[Ollama](https://ollama.com/)**: Lets users run and interact with large language models on their own hardware without heavy installation overhead. Offers customization hooks for integrating vision-language encoders or external tools.
+- **[llamafile](https://github.com/Mozilla-Ocho/llamafile)**: Packages large language models and dependencies into a single executable. Useful for distributing VLMs across different operating systems and environments, ensuring consistent behavior without complicated setup.
+
+## 10. Common Challenges & Troubleshooting
+
+- **Data Quality & Domain Gaps:** Real-world images may differ from training data (e.g., poor lighting, different angles). Poor performance often stems from domain mismatch. Fine-tuning on in-domain examples can help bridge these gaps.
+- **Computational Complexity:** Vision-language models can be large and computationally expensive. Optimizing memory usage and inference speed is crucial to avoid latency bottlenecks in production.
+- **Debugging Multimodal Outputs:** Understanding why a model produces certain visual or textual outputs can be more complex compared to text-only models. Tools that visualize attention maps or produce intermediate embeddings can aid troubleshooting.
+
+## 11. Ethical Considerations
+
+- **Privacy & Consent:** Models trained on large-scale image data might inadvertently include personal images or metadata. Mechanisms for data filtering and compliance with privacy regulations are essential.
+- **Biases in Visual Recognition:** Unbalanced or unrepresentative training data can lead to inaccurate or biased outcomes, potentially marginalizing certain demographic groups or cultural contexts.
+- **Intellectual Property Rights:** Ensure that images used for training or inference do not infringe upon copyright or licensing agreements. Properly attribute and respect usage limitations for externally sourced visual data.
+
+## 12. Licensing & Governance
+
+- **Check Licenses:** As with any open-source software, verify the license of each model or dataset (e.g., MIT, Apache 2.0, GPL) to ensure compatibility with commercial or proprietary products.
+- **Hugging Face Model Cards:** Model cards provide transparency around training data, intended use, and limitations. Reviewing these is critical when deciding how to integrate or modify a model.
+- **Data Usage Agreements:** Confirm that your usage adheres to dataset terms and conditions. Some datasets prohibit certain commercial applications or require explicit attribution to the data source.

@@ -1,0 +1,113 @@
+---
+title: "AI Agents CheatSheet"
+description: "A comprehensive cheatsheet covering the types of AI agents, their use cases, popular frameworks, LLMs, deployment options, essential tools, optimization techniques, common challenges, and ethical considerations."
+---
+
+
+## 1. Types of AI Agents
+
+-  **Simple Reflex Agents**: These agents operate based solely on the current percept, ignoring the rest of the percept history. They function by implementing condition-action rules, making them suitable for fully observable environments.
+-  **Model-Based Reflex Agents**: These agents maintain an internal state that depends on the percept history, allowing them to handle partially observable environments by keeping track of aspects unobservable at any given moment.
+-  **Goal-Based Agents**: Beyond current perceptions, these agents act to achieve specific goals, requiring them to consider future actions and outcomes to make decisions that lead them toward their objectives.
+-  **Utility-Based Agents**: These agents assess different possible actions based on a utility function, aiming to maximize overall satisfaction or "happiness," which allows them to handle trade-offs among different goals.
+-  **Learning Agents**: Equipped with the ability to learn from experiences, these agents can adapt their behavior over time, improving their performance in dynamic and unknown environments.
+-  **Hierarchical Agents**: These agents operate at multiple levels of abstraction, breaking down complex tasks into simpler sub-tasks, which allows for more efficient problem-solving and decision-making processes.
+-  **Multi-Agent Systems (MAS)**: Involving multiple interacting agents, these systems can work collaboratively or competitively to achieve individual or shared goals.
+
+
+## 2. Use Cases
+
+- **Personal Assistance**: AI agents can function as virtual assistants, managing daily tasks like scheduling appointments, filtering emails, organizing documents, and setting reminders.
+- **Business Process Automation**: These agents transform business operations by handling customer service inquiries, managing document workflows, automating inventory systems, and monitoring business metrics..
+- **Research and Analysis**: In research contexts, AI agents excel at processing vast amounts of data, identifying patterns, generating comprehensive summaries, and conducting literature reviews. They can analyze multiple sources simultaneously and present findings in structured formats.
+- **Software Development**: AI agents serve as coding companions, offering real-time suggestions, debugging assistance, and automated testing capabilities. They can review code for potential issues, generate documentation, and help optimize system performance.
+- **Healthcare**: In medical settings, AI agents monitor patient vital signs, analyze medical imaging, assist with preliminary diagnoses, and manage patient records. They can also aid in drug discovery by analyzing molecular data and predicting potential therapeutic compounds.
+- **Financial Services**: These agents enhance financial operations through real-time fraud detection, risk assessment, and automated trading strategies.
+
+
+## 3. Popular Frameworks for Building AI Agents
+
+- **[LlamaIndex](https://github.com/run-llama/llama_index)**: An open-source framework that facilitates the integration of large language models (LLMs) with external data sources, enabling developers to build AI agents capable of complex reasoning and data retrieval.
+- **[LangGraph](https://langchain-ai.github.io/langgraph/tutorials/introduction/)**: A graph-based approach to orchestrating AI agents, LangGraph excels in managing intricate, multi-step workflows where the sequence and flow of agent interactions are critical.
+- **[Microsoft AutoGen](https://github.com/microsoft/autogen)**: An open-source framework from Microsoft Research that streamlines the creation of complex and specialized AI agents, particularly for multi-agent systems.
+- **[Haystack](https://github.com/deepset-ai/haystack)**: A robust framework for building search systems, Haystack allows developers to create AI agents capable of performing semantic search, question answering, and other NLP tasks.
+- **[Phidata](https://github.com/phidatahq/phidata)**: A platform that transforms large language models into AI agents, Phidata focuses on enabling developers to build intelligent systems with ease.
+- **[CrewAI](https://github.com/crewAIInc/crewAI)**: A framework designed for orchestrating collaboration among AI agents, CrewAI allows developers to create a "crew" of AI agents that can work together on complex tasks, each with specific roles and responsibilities.
+
+
+## 4. Large Language Models (LLMs) for AI Agents
+
+- **[DeepSeek-V3](https://huggingface.co/deepseek-ai/DeepSeek-V3)**: A powerful Mixture-of-Experts (MoE) language model with 671B total parameters, activating 37B per token. It achieves efficient inference and cost-effective training using Multi-head Latent Attention (MLA) and DeepSeekMoE architectures, proven in DeepSeek-V2.
+- **[Qwen2.5-72B-Instruct](https://huggingface.co/Qwen/Qwen2.5-72B-Instruct-AWQ)**: A 72 billion-parameter model that excels in instruction following, long text generation, and multilingual support, significantly improving coding and mathematical capabilities compared to its predecessor, Qwen2.
+- **[Llama-3.3-70B-Instruct](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct)**: Llama 3.3 is a 70B multilingual LLM optimized for dialogue, excelling in benchmarks against many open and closed models.
+- **[Ministral-8B-Instruct](https://huggingface.co/mistralai/Ministral-8B-Instruct-2410)**: With 8B parameters, this model is tailored for efficient instruction-following tasks, providing robust performance in generating responses.
+- **[Llama-3.1-8B-Instruct](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct)**: This is a 8B parameters model, focuses on instruction adherence and is optimized for generating concise and relevant outputs in response to user prompts.
+
+
+## 5. Deployment Options
+
+- **[On-Premises Deployment](https://medium.com/@cprasenjit32/deployment-of-machine-learning-models-on-premises-and-in-the-cloud-39b021efba97)**: Running models on local servers for full control and data privacy.
+- **[Cloud Services](https://www.analyticsvidhya.com/blog/2022/09/how-to-deploy-a-machine-learning-model-on-aws-ec2/)**: Utilizing cloud providers like AWS, Azure, or Google Cloud for scalable deployment.
+- **[Serverless GPU Platforms](https://docs.inferless.com/how-to-guides/deploy-a-codellama-python-34b-model-using-inferless)**: Serverless GPU platforms like [Inferless](https://www.inferless.com/) provide on-demand, scalable GPU resources for machine learning workloads, eliminating the need for infrastructure management and offering cost efficiency.
+- **[Edge Deployment](https://www.hackster.io/shahizat/running-llms-with-tensorrt-llm-on-nvidia-jetson-agx-orin-34372f)**: Deploying models on edge devices for low-latency applications.
+- **[Containerization](https://www.datacamp.com/tutorial/containerization-docker-and-kubernetes-for-machine-learning)**: Using Docker or Kubernetes to manage and scale deployments efficiently.
+
+## 6. Inferece Library/Engine for LLMs
+- **[vLLM](https://github.com/vllm-project):** A library optimized for high-throughput LLM inference.
+- **[Text Generation Inference(TGI)](https://github.com/huggingface/text-generation-inference):**  A platform designed for efficiently deploying LLMs in production environments, facilitating scalable and user-friendly text generation applications.
+- **[LMDeploy](https://github.com/InternLM/lmdeploy):** A toolkit designed for efficiently compressing, deploying, and serving LLMs.
+- **[LitServe](https://github.com/Lightning-AI/LitServe):** Lightning-fast inference serving library for quick deployments.
+
+## 7. Essential Tools for AI Agents
+
+- **[Guardrails](https://github.com/guardrails-ai/guardrails)**: A Python framework that helps build reliable AI applications by detecting, quantifying, and mitigating risks in large language model outputs.
+- **[Vector Databases](https://www.pinecone.io/)**:  AI agents can utilize vector databases to efficiently search through and retrieve relevant information from large collections of embedded data. 
+- **[ScrapeGraph AI](https://github.com/ScrapeGraphAI/Scrapegraph-ai)**: A Python-based AI scraper designed for efficient data extraction and web scraping tasks.
+- **[GPT Researcher](https://github.com/assafelovic/gpt-researcher)**: An autonomous local and web researcher on any topic, generating comprehensive reports with citations.
+- **[AutoGPT](https://github.com/Significant-Gravitas/AutoGPT)**: A platform that allows you to create, deploy, and manage continuous AI agents.
+- **[Serper](https://serper.dev/)**: A fast and cost-effective Google Search API that provides access to structured data from Google search results.
+
+
+## 8. Learning Materials
+
+- **[Multi AI Agent Systems with crewAI](https://www.deeplearning.ai/short-courses/multi-ai-agent-systems-with-crewai/)**: Learn key principles of designing effective AI agents and organizing a team of AI agents to perform complex, multi-step tasks.
+- **[AI Agents in LangGraph](https://www.deeplearning.ai/short-courses/ai-agents-in-langgraph/)**: Build agentic AI workflows using LangChain's LangGraph.
+- **[Mistral AI Cookbook](https://github.com/mistralai/cookbook)**: A collection of examples showcasing Mistral models, contributed by the Mistral community and partners.
+- **[OpenAI Cookbook](https://github.com/openai/openai-cookbook)**: Community-driven resource of comprehensive guides and examples, including code snippets and best practices.
+- **[LlamaIndex Cookbook](https://docs.llamaindex.ai/en/stable/examples/cookbooks/GraphRAG_v1/)**: A collection of cookbook examples showcasing various use-cases of AI agents built with LlamaIndex.
+
+
+## 9. Optimization & Compression
+
+- **[Pruning](https://developer.nvidia.com/blog/how-to-prune-and-distill-llama-3-1-8b-to-an-nvidia-llama-3-1-minitron-4b-model/)**: Reduces less significant weights to create sparser and faster models.
+- **[Knowledge Distillation](https://www.datacamp.com/blog/distillation-llm)**: Transfers knowledge from large teacher models to smaller students.
+- **[Quantization](https://huggingface.co/docs/optimum/en/concept_guides/quantization)**: Converts model weights to lower-bit precision to reduce memory usage and accelerate inference.
+- **Optimized Hardware Deployment**: Involves utilizing specialized hardware designed for efficient model inference. Libraries like TensorRT-LLM improve performance on NVIDIA GPUs.
+
+
+## 10. Common Challenges & Troubleshooting
+
+- **Performance Issues**: Issues related to system efficiency, speed, and resource utilization including memory management, processing speed, GPU usage, and overall system responsiveness. These directly impact the agent's ability to handle tasks effectively and respond in a timely manner.
+- **Integration Problems**: Challenges that arise when connecting AI agents with other systems, services, or components. This includes API management, version compatibility, dependency conflicts, and ensuring smooth communication between different parts of the system.
+- **Data Handling**: Issues surrounding the management, validation, and processing of data flowing through AI agents. This covers input/output validation, data quality assurance, and handling edge cases that could affect the agent's performance.
+- **Deployment Challenges**: Problems encountered when moving AI agents from development to production environments. This includes environment configuration, scaling issues, container management, and ensuring consistent performance across different deployment scenarios.
+- **Monitoring & Debugging**: Challenges related to tracking, understanding, and fixing issues in AI agent systems. This encompasses log management, performance tracking, error handling, and maintaining system health checks.
+
+
+## 11. Ethical Considerations
+
+- **Fairness & Bias**: Managing discriminatory patterns in AI systems through unbiased training data, equal treatment across demographics, and regular fairness testing.
+- **Transparency & Explainability**: Making AI decision-making processes clear and understandable, with documented capabilities and limitations.
+- **Privacy & Security**: Protecting user data through robust security measures, proper consent management, and minimal data collection practices.
+- **Accountability & Governance**: Establishing clear responsibility chains and compliance measures for AI system actions and outcomes.
+- **Human Oversight**: Maintaining appropriate human control through monitoring, override capabilities, and expert supervision.
+- **User Rights & Empowerment**: Ensuring users have control over their data, with clear opt-out options and feedback channels.
+- **Development Standards**: Following ethical guidelines and best practices in AI development, with proper documentation and testing.
+- **Inclusivity & Accessibility**: Creating AI systems usable by all, regardless of language, ability, or cultural background.
+
+
+## 12. Licensing & Governance
+
+- **Check Licenses** (MIT, Apache 2.0, GPL) before commercial use.
+- **Hugging Face Model Cards**: Follow best practices for transparency.
+- **Data Usage Agreements**: Ensure compliance with dataset terms.
