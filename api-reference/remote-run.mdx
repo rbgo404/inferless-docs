@@ -1,5 +1,5 @@
 ---
-title: "Remote Run: Run your code remotely"
+title: 'Remote Run: Run your code remotely'
 ---
 
 It is now possible to run your code remotely using Inferless. This feature is extremely useful when you want to run your code partly or entirely on a remote server. By introducing a few annotations in your code, you can run your code on a remote server with the command <strong>inferless remote-run app.py -c config.yaml</strong>.
@@ -21,20 +21,20 @@ You can specify <b>system packages</b> (packages installed using `apt-get`) <b>p
 ```yaml
 # runtime.yaml
 build:
-    system_packages:
-        - libssl-dev
-    python_packages:
-        - accelerate==0.27.2
-        - torch==2.1.1
-    run_commands:
-        - wget https://example.com/model.pth
+  system_packages:
+    - libssl-dev
+  python_packages:
+    - accelerate==0.27.2
+    - torch==2.1.1
+  run_commands:
+    - wget https://example.com/model.pth
 ```
 
 ## Annotations
 
 You can use the following annotations to specify the code that you want to run on the remote server.
 The annotations accept a `gpu` parameter which specifies the GPU that you want to use on the remote server.
-Currently, the supported GPUs are `T4` & `A10`
+Currently, the supported GPUs are `T4` & `A10` & `A100`
 
 ### <i>@inferless.method</i>
 
@@ -71,7 +71,7 @@ This section contains working examples of how to use the `remote-run` command.
 
 ### Example 1 - Run a function on a remote server
 
-```python 
+```python
 # app.py
 import inferless
 
@@ -95,27 +95,26 @@ output = test_gpt_neo(prompt)
 processed_output = post_process(output)
 print(processed_output)
 ```
-    
+
 ```yaml
 # runtime.yaml
 build:
-    python_packages:
-        - transformers
-        - torch
-        - accelerate
+  python_packages:
+    - transformers
+    - torch
+    - accelerate
 ```
-run command `inferless remote-run app.py -c runtime.yaml`
+
+run command `inferless remote-run app.py -c runtime.yaml -g T4`
 
 In this example, only the `test_gpt_neo` function will run on the remote server. The `post_process` function will run on the local machine.
 
 As you can see, the `transformers` is imported inside the function which means it is not required to install the transformers package on the local machine.
 
-
 <Note> For the first call, the command may take some time as it will setup the required packages on the remote server. </Note>
 
-
 ### Example 2 - Run a class on a remote
-    
+
 ```python
 # app.py
 
@@ -152,50 +151,40 @@ class InferlessPythonModel:
         result_output = [output.outputs[0].text for output in result]
         return {"generated_result": result_output[0]}
 
-
-model = InferlessPythonModel()
-print(model.infer({"prompt": "Hello, Write a story about a dragon"}))
 ```
 
 ```yaml
 # runtime.yaml
-gpu:
-  T4
+gpu: T4
 build:
   python_packages:
-    - "accelerate==0.30.1"
-    - "transformers==4.41.2"
-    - "torch==2.3.0"
-    - "vllm==0.4.3"
+    - 'accelerate==0.30.1'
+    - 'transformers==4.41.2'
+    - 'torch==2.3.0'
+    - 'vllm==0.4.3'
 ```
 
-run command `inferless remote-run app.py -c runtime.yaml`
+run command `inferless remote-run app.py -c runtime.yaml --gpu A10 --prompt "Hello, Write a story about a dragon"`
 
 In this example, when the `infer` function is called, the `initialize` function will run first. The `initialize` function will load the model and tokenizer. The `infer` function will run the inference on the remote server.
 
 Replace `<HF_TOKEN>` with your Hugging Face token.
 
-
 ## Working Directory
 
-By default, the files from the working directory are copied to the server excluding: ".git", "*.pyc", "__pycache__"
+By default, the files from the working directory are copied to the server excluding: ".git", "\*.pyc", "**pycache**"
 
 If a `.gitignore` file is present in the working directory, the files mentioned in the `.gitignore` file will not be copied to the server.
 
-You can also specify a custom ignore file using the `--exclude`  `-e` option.
-`inferless remote-run app.py -c runtime.yaml -e custom_ignore_file.txt`
+You can also specify a custom ignore file using the `--exclude` `-e` option.
+`inferless remote-run app.py -c runtime.yaml -e custom_ignore_file.txt --gpu A10 --prompt "Hello, Write a story about a dragon"`
 
 <Note> Maximum file size that can be copied to the server is 10MB. </Note>
 
 ## Notes
+
 <Card icon="circle-info">
 <Note>Use Python3.10 for seamless experience, Other versions may face compatibility issues while using some libraries. </Note>
 <Tip>Try to avoid unnecessary packages in config file as it may increase the time to setup the environment. </Tip>
 
 </Card>
-
-
-
-
-
-
