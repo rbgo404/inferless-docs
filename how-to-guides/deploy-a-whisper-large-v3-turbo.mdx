@@ -182,11 +182,11 @@ build:
 
 You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
 
-### Step 1: Add the Decorators
+### Step 1: Add the Decorators and local entry point
 To enable **Remote Run**, simply do the following:
 1. Import the `inferless` library and initialized `Cls(gpu="A10")`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
-
+3. Add a local entry point to your script which allows you to test the model through the `inferless remote-run` command. Since `@app.load` automatically handles initialization when the model is instantiated, you can directly use the `infer` function without explicitly calling `initialize`.
 
 ```python
 import inferless
