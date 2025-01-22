@@ -1,6 +1,7 @@
 ---
-title: "inferless remote run"
+title: 'inferless remote run'
 ---
+
 Use the command `inferless remote-run` to run model inference on remote GPU from your local machine.
 This command will execute a particular function or class in the cloud environment.
 
@@ -12,54 +13,51 @@ This command will execute a particular function or class in the cloud environmen
 
 ### Getting Started 
 
-Let's assume you have an app.py with 2 functions init and load, You need to 4 lines of code to your app.py to make it run with remote run by initialising the inferless cls and adding functional annotations 
+Let's assume you have an app.py with 2 functions init and load, You need to 4 lines of code to your app.py to make it run with remote run by initialising the inferless cls and adding functional annotations
 
-```python 
+```python
 from threading import Thread
-from inferless import Cls # Add the inferless library 
+from inferless import Cls # Add the inferless library
 
 
-InferlessCls = Cls(gpu="A10")  # Init the class with the type of GPU you want to run with 
+InferlessCls = Cls(gpu="T4")  # Init the class. the type of GPU you want to run with (This can be passed from the command argument aswell)
 class InferlessPythonModel:
 
-    @InferlessCls.load     # Add the annotation 
+    @InferlessCls.load     # Add the annotation
     def initialize(self):
         import torch
         from transformers import pipeline
         self.generator = pipeline("text-generation", model="EleutherAI/gpt-neo-125M",device=0)
 
-   @InferlessCls.infer    # Add the annotation 
+    @InferlessCls.infer    # Add the annotation
     def infer(self, inputs):
-        message = inputs['message']
+        prompt = inputs['message']
         pipeline_output = self.generator(prompt, do_sample=True, min_length=120)
         generated_txt = pipeline_output[0]["generated_text"]
         return {"generated_text": generated_txt }
 
-model = InferlessPythonModel() # Call the test classs 
-print(model.infer({'message': 'Hello'}))
-
-````
-
+```
 
 ### Usage
 
 ```python
-inferless remote-run <filename> 
+inferless remote-run <filename>
 ```
 
 Params:
-  - `--config  -c` : Path to the runtime configuration file
-  - `--exclude  -e` : Path to the ignore file. This file contains the list of files that you want to exclude from the remote run similar to `.gitignore` file.
 
+- `--config  -c` : Path to the runtime configuration file
+- `--exclude  -e` : Path to the ignore file. This file contains the list of files that you want to exclude from the remote run similar to `.gitignore` file.
+- `--gpu -g` : Denotes the machine type (A10/A100/T4)
 
 Examples:
 
 ```python
-inferless remote-run app.py -c runtime.yaml 
+inferless remote-run app.py -c runtime.yaml  -g T4 --message "Write me a story of the World"
 ```
 
 ```python
-inferless remote-run app.py -c runtime.yaml -e .ignore
+inferless remote-run app.py -c runtime.yaml -e .ignore --message "Write me a story of the World"
 ```
 
-For more details and examples refer to the <a  href="/api-reference/remote-run" > Remote Run documentation </a>. 
+For more details and examples refer to the <a  href="/api-reference/remote-run" > Remote Run documentation </a>.
