@@ -186,7 +186,6 @@ You can use the `inferless remote-run`([installation guide here](https://docs.in
 To enable **Remote Run**, simply do the following:
 1. Import the `inferless` library and initialized `Cls(gpu="A10")`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
-3. Add a local entry point to your script which allows you to test the model through the `inferless remote-run` command. Since `@app.load` automatically handles initialization when the model is instantiated, you can directly use the `infer` function without explicitly calling `initialize`.
 
 ```python
 import inferless
@@ -257,20 +256,17 @@ class InferlessPythonModel:
             "to_timestamp": list(to_timestamp),
             "chunk_text": list(chunk_text),
         }
-    
 
-if __name__ == "__main__":
-    model = InferlessPythonModel()
-    output = model.infer({"audio_url": "https://github.com/rbgo404/Files/raw/main/jeanNL.mp3","language":"english"})
-    print(output)
 ```
 
 ### Step 2: Run with Remote GPU
 
 From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
 
+You can pass the input parameters in the same way (e.g., `--audio_url`, `--language`, etc.) as long as your code expects them in the `inputs` dictionary.
+
 ```bash
-inferless remote-run app.py -c inferless-runtime-config.yaml
+inferless remote-run app.py -c inferless-runtime-config.yaml --audio_url "https://raw.githubusercontent.com/rbgo404/Files/refs/heads/main/jeanNL.mp3" --language "english"
 ```
 
 If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
