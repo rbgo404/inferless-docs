@@ -37,6 +37,46 @@ DeepSeek-R1-Distill-Qwen-32B/
 
 You can also add other files to this directory.
 
+## Create the Input Schema with Pydantic
+
+Using the `inferless` Python client and Pydantic, you can define structured schemas directly in your code for input and output, eliminating the need for external file.
+
+### Input Schema
+When defining an input schema with Pydantic, you need to annotate your class attributes with the appropriate types, such as `str`, `float`, `int`, etc. 
+These type annotations specifys what type of data each field should contain. 
+The `default` value serves as the example input for testing with the `infer` function.
+
+```python
+@inferless.request
+class RequestObjects(BaseModel):
+    prompt: str = Field(default="Explain Deep Learning.")
+    temperature: Optional[float] = 0.7
+    top_p: Optional[float] = 0.1
+    repetition_penalty: Optional[float] = 1.18
+    top_k: Optional[int] = 40
+    max_tokens: Optional[int] = 256
+```
+
+### Output Schema
+The `@inferless.response` decorator helps you define structured output schemas.
+
+```python
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_text: str = Field(default='Test output')
+```
+
+### Usage in the `infer` Function
+Once you have annotated the objects you can expect the infer function to receive `RequestObjects` as input,
+and returns a `ResponseObjects` instance as output, ensuring the results adhere to a defined structure.
+
+```python
+class InferlessPythonModel:
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        
+        return ResponseObjects(generated_text=result[0])
+```
+
 ## Create the class for inference
 
 In the [app.py](https://github.com/inferless/DeepSeek-R1-Distill-Qwen-32B/blob/main/app.py) we will define the class and import all the required functions
@@ -87,48 +127,6 @@ class InferlessPythonModel:
   def finalize(self):
     self.llm = None
 ```
-
-## Create the Input Schema with Pydantic
-
-Using the `inferless` Python client and Pydantic, you can define structured schemas directly in your code for input and output, eliminating the need for external file.
-
-### Input Schema
-Using Pydantic with the inferless Python client allows you to define structured input schemas directly in your code. 
-To do so, use the `@inferless.request` decorator to specify input parameters.
-
-```python
-@inferless.request
-class RequestObjects(BaseModel):
-    prompt: str = Field(default="Explain Deep Learning.")
-    temperature: Optional[float] = 0.7
-    top_p: Optional[float] = 0.1
-    repetition_penalty: Optional[float] = 1.18
-    top_k: Optional[int] = 40
-    max_tokens: Optional[int] = 256
-```
-
-### Output Schema
-The `@inferless.response` decorator helps you define structured output schemas.
-
-```python
-@inferless.response
-class ResponseObjects(BaseModel):
-    generated_text: str = Field(default='Test output')
-```
-
-### Usage in the `infer` Function
-The input parameter of the `infer` function is now typed as the Pydantic `RequestObjects` class. 
-This ensures that input values are validated and accessible directly as attributes.
-
-Then use the `ResponseObjects` class in the infer function to structure the output of your model.
-
-```python
-class InferlessPythonModel:
-    def infer(self, request: RequestObjects) -> ResponseObjects:
-        
-        return ResponseObjects(generated_text=result[0])
-```
-
 
 ## Creating the Custom Runtime
 
