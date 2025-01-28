@@ -2,9 +2,13 @@
 title: "Setting up Webhooks"
 ---
 
-1.  Definition of Webhook Webhooks allow a system to send real-time data to another system as soon as an event occurs. In the context of handling model inference, you can seamlessly integrate webhooks by incorporating them directly into the inference function.
+### 1.  Definition of Webhook
 
-2.  Defining Webhook URL When we use a model like Stable Diffusion XL, or we chain multiple models together it takes longer inference time. In such a case, we can utilize webhooks. You can define your webhook URL as a global variable or you can fetch it from the .env file.
+Webhooks allow a system to send real-time data to another system as soon as an event occurs. In the context of handling model inference, you can seamlessly integrate webhooks by incorporating them directly into the inference function.
+
+### 2.  Defining Webhook URL
+
+When we use a model like Stable Diffusion XL, or we chain multiple models together it takes longer inference time. In such a case, we can utilize webhooks. You can define your webhook URL as a global variable or you can fetch it from the .env file.
 
 ```webhook
 WEBHOOK_URL = ""
@@ -16,7 +20,9 @@ from os.env import get
 WEBHOOK_URL = os.env.get("WEBHOOK_URL")
 ```
 
-3.  Using Webhooks in the Inference Function In the `def infer` function, you can use the webhook. After obtaining the inference result, it will send an HTTP POST request to the webhook endpoint (`**WEBHOOK_URL**`) with the inference result.
+### 3.  Using Webhooks in the Inference Function
+
+In the `def infer` function, you can use the webhook. After obtaining the inference result, it will send an HTTP POST request to the webhook endpoint (`WEBHOOK_URL`) with the inference result.
 
 ```python
 def infer(self, inputs):
