@@ -1,58 +1,41 @@
 ---
 title: "Automatic Build on Inferless"
 ---
+With Inferless, you can automatically build your model from various sources like Github, Hugging Face, Docker, and AWS S3 without worrying about pushing newer versions of your model. Inferless will automatically build the model for you.
 
-With Inferless, you can automatically build your model from various sources like Github, Hugging Face, Docker, AWS S3 where you don't worry about pushing newer version of your model. Inferless will automatically build the model for you.
+## Two Ways to Set Up Automatic Builds
 
-There are 2 wasy to set up automatic builds on Inferless:
+#### 1. Automatic Build from Git-Based Deployments
+If you are using Github/Gitlab integration with Inferless, you can set up automatic builds by specifying the 'branch' and checking the automatic build checkbox.
 
-1. **Automatic Build from Git Based Deployments**
+#### 2. Automatic Build via Webhooks
+If you are using Hugging Face, Docker, AWS S3, GCP, or any other source, you can set up automatic builds by configuring webhooks.
 
-If you are using Github/Gitlab integration with Inferless, you can set up automatic builds by specifying the 'branch' checking the automatic build checkbox.
+## Setting Up Automatic Build from Hugging Face
 
+### Step 1: Find the Webhook URL
 
-2 **Automatic Build from via Webhooks**
+- You can get the API URL which would be displayed during the model import.
 
-If you are using Hugging Face, Docker, AWS S3, GCP or any other source, you can set up automatic builds by setting up webhooks. 
+![API URL location during model import](/images/ab-hf.png)
 
+- You can review the webhook URL on the review page:
 
-### Example of Automatic Build from Hugging Face 
+![Review page showing webhook URL](/images/ab-hf-2.png)
 
+- If you're setting this up after model import, you can find the URL under `Model page -> Versions`:
 
-#### Step 1: Find the webhook URL for the model 
+![Versions page location](/images/ab-hf-3.png)
 
+### Step 2: Configure Hugging Face Webhook
+- Log into your Hugging Face account containing the model you wish to load
+- Navigate to `Settings` → `Webhooks`
+- Click "Add a new Webhook"
+- Select the target repository (your model)
+- Add the API URL you obtained from Inferless
+- Enable the `Repo Update` option under triggers
+- Click "Create Webhook" to complete the setup
 
-### Steps to enable Webhook in Hugging Face /Docker/S3 
+Here's how your completed webhook configuration should look:
 
-Below are the steps that are to be followed to enable a Webhook:
-
-* Log into your Hugging Face account which contains the model that you wish to load.
-
-* Go to `Settings` \-> `Webhooks.`
-
-* Click `"add a new Webhook".`
-
-* Choose the `target repository`, which is your model.
-
-* Add the `API URL`, which can be copied from your model Page  
-   1.  In case you are doing this during onboarding, the API URL would be displayed during the model import  
-   2.  View the screenshot below:
-
-![](/images/ab-hf.png)
-
-
-In the review page you can see the url to be used for the webhook
-
-![](/images/ab-hf-2.png)
-
-
-* In case you are doing this post-model import, you can view this under `Model page -> Versions`
-
-![](/images/ab-hf-3.png)
-
-* Enable the` Repo Update `option under `triggers`. Click "Create Webhook" to complete the process.
-
-* View the screenshot below for a sample completed "New Webhook" Page.
-
-
-![](/images/hugging-face3.png)
+![Completed webhook configuration](/images/hugging-face3.png)
