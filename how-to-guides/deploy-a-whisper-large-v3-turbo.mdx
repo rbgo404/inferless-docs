@@ -37,7 +37,7 @@ You can also add other files to this directory.
 
 ## Create the class for inference
 
-In the [app.py](https://github.com/inferless/Whisper-large-v3-turbo/blob/main/app.py) we will define the class and import all the required functions
+In the [app.py](https://github.com/inferless/Whisper-large-v3-turbo/blob/main/app.py) we will define the class and import all the required functions.
 
 1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
 
@@ -48,7 +48,6 @@ In the [app.py](https://github.com/inferless/Whisper-large-v3-turbo/blob/main/ap
 ```python
 import torch
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
-import json
 
 class InferlessPythonModel:
         
@@ -178,6 +177,103 @@ build:
     - "librosa==0.10.2.post1"
     - "soundfile==0.12.1"
 ```
+
+## Test your model with Remote Run
+
+You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
+
+### Step 1: Add the Decorators and local entry point
+To enable **Remote Run**, simply do the following:
+1. Import the `inferless` library and initialized `Cls(gpu="A10")`.
+2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+3. Add a local entry point to your script which allows you to test the model through the `inferless remote-run` command. Since `@app.load` automatically handles initialization when the model is instantiated, you can directly use the `infer` function without explicitly calling `initialize`.
+
+```python
+import inferless
+
+app = inferless.Cls(gpu="A10") # You can use these GPUs: T4/A10/A100
+
+class InferlessPythonModel:
+    @app.load
+    def initialize(self):
+        import torch
+        from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
+        
+        model_id = "openai/whisper-large-v3-turbo"
+        model = AutoModelForSpeechSeq2Seq.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16,
+            low_cpu_mem_usage=True,
+            use_safetensors=True,
+            device_map="cuda"
+        )
+        
+        processor = AutoProcessor.from_pretrained(model_id)
+        
+        self.pipe = pipeline(
+            "automatic-speech-recognition",
+            model=model,
+            tokenizer=processor.tokenizer,
+            feature_extractor=processor.feature_extractor,
+            torch_dtype=torch.float16,
+            return_timestamps=True
+        )
+
+    @app.infer
+    def infer(self, inputs):
+        # Extracting inputs with default values
+        audio_url = inputs["audio_url"]
+        return_timestamps = inputs.get("return_timestamps", "word") # Can be True, False, or "word"
+        max_new_tokens = inputs.get("max_new_tokens")
+        language = inputs.get("language")
+        task = inputs.get("task") # Can be "transcribe" or "translate"
+        temperature = inputs.get("temperature")
+
+        # Convert return_timestamps if needed
+        return_timestamps = return_timestamps == "True" if return_timestamps in ["True", "False"] else return_timestamps
+        # Call the pipeline with necessary parameters
+        result = self.pipe(
+        audio_url,
+        return_timestamps=return_timestamps,
+        generate_kwargs={
+            "max_new_tokens": max_new_tokens,
+            "language": language,
+            "task": task,
+            "temperature": temperature,
+            },
+        )
+        # Prepare the output based on the return_timestamps condition
+        if not return_timestamps:
+            return {"output_text": result["text"]}
+
+        # Extract timestamps and chunk text
+        from_timestamp, to_timestamp, chunk_text = zip(
+            *[(chunk['timestamp'][0], chunk['timestamp'][1], chunk['text']) for chunk in result['chunks']]
+        )
+
+        return {
+            "output_text": [result["text"]],
+            "from_timestamp": list(from_timestamp),
+            "to_timestamp": list(to_timestamp),
+            "chunk_text": list(chunk_text),
+        }
+    
+
+if __name__ == "__main__":
+    model = InferlessPythonModel()
+    output = model.infer({"audio_url": "https://github.com/rbgo404/Files/raw/main/jeanNL.mp3","language":"english"})
+    print(output)
+```
+
+### Step 2: Run with Remote GPU
+
+From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
+
+```bash
+inferless remote-run app.py -c inferless-runtime-config.yaml
+```
+
+If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
 
 ## Method A: Deploying the model on Inferless Platform
 Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.
