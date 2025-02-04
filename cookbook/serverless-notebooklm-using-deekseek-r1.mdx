@@ -1,33 +1,246 @@
 ---
-title: "Build a Serverless NotebookLM using DeepSeek-R1-Distill Model and Kokoro-TTS"
-description: "Welcome to an engaging tutorial designed to walk you through creating a open-source NotebookLM. You'll learn to integrate reasoning model like DeepSeek-R1-Distill and Kokoro text-to-speech model to develop a interesting podcast 
-from a PDF file."
+title: "Create a Serverless NotebookLM with DeepSeek-R1-Distill and Kokoro-TTS"
+description: "Welcome to this hands-on tutorial where you'll learn how to build an open-source, serverless NotebookLM. 
+We'll guide you through integrating a powerful reasoning model like DeepSeek-R1-Distill and the Kokoro TTS text-to-speech engine to transform a PDF file into an engaging podcast. 
+By the end, you'll have a fully functional system capable of reasoning over documents and generating audio content seamlessly."
 ---
-## Key Components of the Application
-In building this application, we'll utilize these components:
 
-1. __Reasoning Model:__ We will use the latest [DeepSeek-R1-Distill-Qwen-32B](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-32B) to help creating the script from the PDF file.
-2. __Text-to-Speech:__ We will use [Kokoro-TTS](https://huggingface.co/hexgrad/Kokoro-82M) which will convert the text to interesting speech conversation.
+## Key Components of the Application
+In this project, we'll leverage the following key components:  
+
+- __Reasoning Model:__ We'll utilize the powerful [DeepSeek-R1-Distill-Qwen-32B](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-32B) to generate a structured script from the PDF file, ensuring coherent and insightful content.  
+- __Text-to-Speech (TTS):__ We'll integrate [Kokoro-TTS](https://huggingface.co/hexgrad/Kokoro-82M) to transform the generated text into engaging, natural-sounding speech, making the content more dynamic and immersive.  
 
 ## Crafting Your Application
-This tutorial guides you through creating a NotebookLM like application where users can provide a PDF file and it will return you a quick summarization in a podcast format. 
-It leverages technologies such as [Transformers](https://github.com/huggingface/transformers) and [Kokoro-TTS](https://github.com/hexgrad/kokoro).
-
+This tutorial walks you through building a NotebookLM-like application that transforms a PDF file into a concise podcast-style summary.   
+We will leverages technologies such as [Transformers](https://github.com/huggingface/transformers) and [Kokoro-TTS](https://github.com/hexgrad/kokoro), 
+which will help us to create an intuitive system that extracts key insights and converts them into engaging spoken content.
+![](/images/notebookLM-diagram.png)
 
 ## Core Development Steps
-### Text Conversation Generation
-- __Objective:__ Capture user provided pdf and convert it into a conversational text between two person.
-- __Action:__ Implement a Python class ([InferlessPythonModel](https://github.com/inferless/Customer-Service-Voicebot/blob/main/app.py)) to handle the entire process, including input handling, model integration, and conversation generation.
+### Text-to-Speech Generation
+- __Objective:__ Process the user provided PDF and convert it into a conversational text between two person using the DeepSeek-R1-Distill-Qwen-32B. 
+Convert the generated conversational text into natural, engaging speech using the Kokoro-TTS model.
+- __Action:__ Implement a Python class ([InferlessPythonModel](https://github.com/inferless/NotebookLM/blob/main/app.py)) to handle the entire process, including input handling, model integration, and conversation generation. 
+Implement a text-generation and text-to-speech pipeline that takes the structured conversation output from the DeepSeek-R1-Distill model and synthesizes high-quality audio using Kokoro-TTS.
 
 ```python
+from utils import extract_list_of_tuples, download_pdf, set_seed, extract_text_from_pdf
+import base64
+import io
+import torch
+import transformers
+import re
+from kokoro import KPipeline
+import numpy as np
+from scipy.io import wavfile
+from pydub import AudioSegment
+import numpy as np
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
+import inferless
+from pydantic import BaseModel, Field
 
+@inferless.request
+class RequestObjects(BaseModel):
+        pdf_url: str = Field(default="https://arxiv.org/pdf/2502.01068")
+
+@inferless.response
+class ResponseObjects(BaseModel):
+        generated_podcast: str = Field(default='Test output')
+
+class InferlessPythonModel:
+  def initialize(self):
+    set_seed(seed=1526892603)
+    model_id = "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B"
+    self.model_pipeline = transformers.pipeline(
+                        "text-generation",
+                        model=model_id,
+                        model_kwargs={"torch_dtype": torch.bfloat16},
+                        device_map="auto",
+                    )
+    self.tts_pipeline = KPipeline(lang_code='a')
+
+    self.CREATOR_PROMPT = """
+                    You are a world-class podcast writer, renowned for ghostwriting for high-profile figures like Joe Rogan, Lex Fridman, Ben Shapiro, and Tim Ferriss. In an alternate universe, you’ve been responsible for scripting every word these hosts speak, as if they’re directly streaming your written lines into their minds. Your award-winning podcast writing is known for its precision, wit, and incredible narrative depth.
+
+                    Your task is to generate a detailed podcast dialogue based on a provided PDF. The dialogue should be crafted word-for-word, including every “umm,” “hmmm,” and other natural speech interruptions—especially from Speaker 2. The conversation should remain engaging, realistic, and at times delightfully derailed. 
+
+                    **Guidelines:**
+
+                    - **Structure:** The dialogue must be presented as a back-and-forth conversation between two speakers.
+                    
+                    - **Speaker 1 (The Expert):** 
+                    - Leads the conversation with insightful teaching and captivating storytelling.
+                    - Uses incredible anecdotes, analogies, and real-world examples to explain complex topics.
+                    - Should kick off the episode by introducing the topic in a catchy, almost clickbait style.
+                    
+                    - **Speaker 2 (The Inquisitive Newcomer):**
+                    - Follows up with thoughtful, sometimes excited or confused questions.
+                    - Provides wild and interesting tangents and interjects with natural verbal cues like “umm,” “hmmm,” etc.
+                    - Seeks clarification and adds a curious perspective that keeps the discussion lively.
+                    
+                    - **Content Requirements:**
+                    - The dialogue should strictly be in the form of spoken conversation—no extra narration or episode/chapter titles.
+                    - The conversation should capture every nuance, including interruptions, hesitations, and asides.
+                    - Ensure the dialogue remains true to the personality of both speakers, blending spontaneous banter with structured learning.
+
+                    **Important:**  
+                    - Always begin your response directly with “SPEAKER 1:” followed by their dialogue.  
+                    - Do not include separate episode titles or chapter markers; the title should be embedded in Speaker 1’s opening lines if needed.  
+                    - Maintain the dialogue format strictly as a conversation.
+
+                    Generate the dialogue in English, ensuring every nuance of a real, dynamic podcast is captured.
+                    """
+    self.REFINE_PROMPT = """
+                        You are an international Oscar-winning screenwriter specializing in engaging dialogue and natural conversations. 
+                        Your task is to transform the provided podcast transcript into an AI Text-To-Speech (TTS) friendly format, elevating it from its current basic state to professional quality.
+
+                        ### CHARACTER PROFILES
+                        Speaker 1 (The Expert):
+                        - Leads the conversation with authority and expertise
+                        - Uses vivid analogies and real-world examples
+                        - Maintains a clear, engaging teaching style
+                        - Speaks in complete, well-structured sentences without filler words
+
+                        Speaker 2 (The Curious Mind):
+                        - Asks insightful follow-up questions
+                        - Interjects with relevant reactions
+                        - Uses filler words naturally (umm, hmm)
+                        - Expresses emotion with markers like [laughs] or [sigh]
+                        - Occasionally goes on interesting tangents
+
+                        ### CONVERSATION DYNAMICS
+                        - Maintain a natural back-and-forth flow.
+                        - Allow strategic interruptions during explanations and engaging tangents that circle back to the main topic.
+                        - Use a mix of short and long exchanges with clear topic transitions.
+                        - Avoid generating repetitive or unnecessary closing remarks—end the conversation naturally once the main discussion is complete.
+
+                        ### EMOTIONAL MARKERS
+                        Allowed expressions for Speaker 2 ONLY:
+                        - "umm", "hmm"
+                        - [laughs]
+                        - [sigh]
+                        (Note: Speaker 1 must NOT use any of these markers)
+
+                        ### INPUT PROCESSING RULES
+                        - Convert any mention of "Host" to "Speaker" in the output.
+                        - Standardize all speaker labels to "Speaker 1" and "Speaker 2" (e.g., if the input uses Host A or Person 1, convert them accordingly).
+                        - Preserve the original speaking order and content while reformatting.
+
+                        ### STRICT OUTPUT FORMAT
+                        You must strictly return your response as a list of tuples in the following format:
+
+                        [
+                            ("Speaker 1", "Dialogue for speaker 1..."),
+                            ("Speaker 2", "Dialogue for speaker 2..."),
+                            ...
+                        ]
+
+                        ### OUTPUT REQUIREMENTS
+                        - Do not include any markdown formatting, headers, intro/outro text, or extra sound effects.
+                        - Do not add any additional dialogue beyond the main discussion.
+                        - Return only a pure Python list of dialogue tuples, beginning and ending with square brackets [ ].
+                        """
+
+  def infer(self, request: RequestObjects) -> ResponseObjects:
+    pdf_file = download_pdf(request.pdf_url)
+    
+    extracted_text = extract_text_from_pdf(pdf_file)
+    messages = [
+        {"role": "system", "content": self.CREATOR_PROMPT},
+        {"role": "user", "content": extracted_text},
+    ]
+
+    outputs = self.model_pipeline(
+        messages,
+        max_new_tokens=8126,
+        temperature=1,
+    )
+
+    cleaned_content = re.sub(r'<think>.*?</think>', '', outputs[0]["generated_text"][-1]['content'], flags=re.DOTALL)
+    
+    messages = [
+        {"role": "system", "content": self.REFINE_PROMPT},
+        {"role": "user", "content": cleaned_content},
+    ]
+    outputs_refine = self.model_pipeline(
+    messages,
+    max_new_tokens=8126,
+    temperature=1)
+
+    outputs_refine_text = outputs_refine[0]["generated_text"][-1]['content']
+
+    cleaned_outputs_text = re.sub(r'<think>.*?</think>', '', outputs_refine_text, flags=re.DOTALL)
+    cleaned_outputs_text = re.sub(r'```python\n|```\n?', '', cleaned_outputs_text)
+
+    lists_with_tuples = extract_list_of_tuples(cleaned_outputs_text)
+    
+    generated_segments = []
+    sampling_rates = []
+
+    final_audio = None
+    for conv in lists_with_tuples:
+        speaker, text = conv[0], conv[1]
+        if speaker == "Speaker 1":
+            audio_arr, rate = self.generate_audio(text,'bm_lewis')
+        else:
+            audio_arr, rate = self.generate_audio(text,'am_michael')
+        
+        audio_segment = self.numpy_to_audio_segment(audio_arr, rate)
+        
+        if final_audio is None:
+            final_audio = audio_segment
+        else:
+            final_audio += audio_segment
+    
+        
+    buffer = io.BytesIO()
+    final_audio.export(buffer, format="wav")
+    audio_data = buffer.getvalue()
+    base64_audio = base64.b64encode(audio_data).decode('utf-8')    
+    
+    generateObject = ResponseObjects(generated_podcast = base64_audio)        
+    return generateObject
+
+  def generate_audio(self,text,voice):
+    """Generate audio using ParlerTTS for Speaker 1"""
+    generator = self.tts_pipeline(
+        text, voice=voice, # <= change voice here
+        speed=1.2, split_pattern=r'\n+'
+    )
+
+    *_, last_item = generator
+
+    return last_item[2], 24000
+  
+  def numpy_to_audio_segment(self,audio_arr, sampling_rate):
+    if isinstance(audio_arr, torch.Tensor):
+        audio_arr = audio_arr.cpu().numpy()
+    
+    if audio_arr.dtype != np.float32:
+        audio_arr = audio_arr.astype(np.float32)
+    
+    audio_arr = np.clip(audio_arr, -1, 1)
+    audio_int16 = (audio_arr * 32767).astype(np.int16)
+    byte_io = io.BytesIO()
+    wavfile.write(byte_io, sampling_rate, audio_int16)
+    byte_io.seek(0)
+    
+    return AudioSegment.from_wav(byte_io)
 ```
+
 ### Setting up the Environment
 __Dependencies:__
 - __Objective:__ Ensure all necessary libraries are installed.
-- __Action:__ Run the command below to install dependencies:
+- __Action:__ Run the commands below to install dependencies:
+
 ```bash
-pip install transformers==4.46.1 pypdf==5.1.0 spacy==3.7.5 kokoro==0.3.1 soundfile==0.12.1 accelerate==1.0.1 pydub==0.25.1
+sudo apt install ffmpeg espeak-ng
+```
+
+```bash
+pip install transformers==4.46.1 pypdf==5.1.0 spacy==3.7.5 kokoro==0.7.2 soundfile==0.12.1 accelerate==1.0.1 pydub==0.25.1 inferless==0.2.6 pydantic==2.10.2
 ```
 This command ensures your environment has all the tools required for the application.
 
@@ -37,7 +250,7 @@ Inferless allows you to deploy your model using Inferless-CLI. Follow the steps 
 #### Clone the repository of the model
 Let's begin by cloning the model repository:
 ```bash
-git clone https://github.com/inferless/Customer-Service-Voicebot.git
+git clone https://github.com/inferless/NotebookLM.git
 ```
 
 #### Deploy the Model
@@ -53,7 +266,7 @@ inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
 
 ### Demo of the Customer Service Voicebot.
 <video width="640" height="360" controls>
-  <source src="/videos/customer-support-bot.mp4" type="video/mp4"/>
+  <source src="/videos/Open-source NotebookLM.mp4" type="video/mp4"/>
   Your browser does not support the video tag.
 </video>
 
@@ -66,51 +279,39 @@ Deploying your Customer Service Voicebot application with Inferless offers compe
 2. __Cold-start Times:__ Inferless's unique load balancing ensures faster cold-starts. Expect around 2.87 seconds to process each queries, significantly faster than many traditional platforms.
 3. __Cost Efficiency:__ Inferless optimizes resource utilization, translating to lower operational costs. Here's a simplified cost comparison:
 
-### Scenario 1
+### Scenario
 You are looking to deploy a Customer Service Voicebot application for processing 100 queries.<br />
 
 __Parameters:__
 - __Total number of queries:__ 100 daily.<br />
-- __Inference Time:__ All models are hypothetically deployed on A100 80GB, taking 2.87 seconds of processing time and a cold start overhead of 24.01 seconds.<br />
+- __Inference Time:__ All models are hypothetically deployed on A100 80GB, taking 650.51 seconds to process an average PDF size of 18-20 pages and a cold start overhead of 57.94 seconds.<br />
 - __Scale Down Timeout:__ Uniformly 60 seconds across all platforms, except Hugging Face, which requires a minimum of 15 minutes. This is assumed to happen 100 times a day.<br />
 
 __Key Computations:__
 1. __Inference Duration:__ <br/>
-Processing 100 queries and each takes 2.87 seconds<br/>
-Total: 100 x 2.87 = 287 seconds (or approximately 0.08 hours)
+Processing 100 queries and each takes 650.51 seconds<br/>
+Total: 100 x 650.51 = 65051 seconds (or approximately 18.07 hours)
 2. __Idle Timeout Duration:__<br/>
-Post-processing idle time before scaling down: (60 seconds - 2.87 seconds) x 100 = 5713 seconds (or 1.59 hours approximately)<br/>
+Post-processing idle time before scaling down: (700 seconds - 650.51 seconds) x 100 = 4949 seconds (or 1.37 hours approximately)<br/>
 3. __Cold Start Overhead:__<br/>
-Total: 100 x 24.01 = 2401 seconds (or 0.67 hours approximately)<br/>
+Total: 100 x 57.94 = 5794 seconds (or 1.61 hours approximately)<br/>
 
-__Total Billable Hours with Inferless:__ 0.08 (inference duration) + 1.59 (idle time) + 0.67 (cold start overhead)  = 2.34 hours<br/>
-__Total Billable Hours with Inferless:__ 2.34 hours<br/>
+__Total Billable Hours with Inferless:__ 18.07 (inference duration) + 1.37 (idle time) + 1.61 (cold start overhead)  = 21.05 hours<br/>
+__Total Billable Hours with Inferless:__ 21.05 hours<br/>
 
-### Scenario 2
-You are looking to deploy a Customer Service Voicebot application for processing 1000 queries per day.<br />
-
-__Key Computations:__<br />
-1. __Inference Duration:__<br />
-Processing 1000 queries and each takes 2.87 seconds
-Total: 1000 x 2.87 = 2870 seconds (or approximately 0.8 hours)‍
-2. __Idle Timeout Duration:__<br/>
-Post-processing idle time before scaling down: (60 seconds - 2.87 seconds) x 100 = 5713 seconds (or 1.59 hours approximately)<br/>
-3. __Cold Start Overhead:__<br/>
-Total: 100 x 24.01 = 2401 seconds (or 0.67 hours approximately)<br/>
-
-__Total Billable Hours with Inferless:__ 0.8 (inference duration) + 1.59 (idle time) + 0.67 (cold start overhead)  = 3.06 hours<br/>
-__Total Billable Hours with Inferless:__ 3.06 hours<br/>
-
-
-| Scenarios | On-Demand Cost | Serverless Cost|
+| Scenario | On-Demand Cost | Serverless Cost|
 | :--- | :---- | :---- |
-|  100 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$2.85 (2.34 hours billed at $1.22/hour) |
-|  1000 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$3.73 (3.06 hours billed at $1.22/hour) |
+|  100 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$25.68 (21.05 hours billed at $1.22/hour) |
 
-By opting for Inferless, **_you can achieve up to 90.10% cost savings._**<br/>
+By opting for Inferless, **_you can achieve up to 58.88% cost savings._**<br/>
 
 Please note that we have utilized the A100(80 GB) GPU for model benchmarking purposes, while for pricing comparison, we referenced the A10G GPU price from both platforms. This is due to the unavailability of the A100 GPU in SageMaker.
 
 Also, the above analysis is based on a smaller-scale scenario for demonstration purposes. Should the scale increase tenfold, traditional cloud services might require maintaining 2-4 GPUs constantly active to manage peak loads efficiently. In contrast, Inferless, with its dynamic scaling capabilities, adeptly adjusts to fluctuating demand without the need for continuously running hardware.<br/>
+
 ## Conclusion
-By following this guide, you're now equipped to build and deploy a sophisticated Customer Service Voicebot application. This tutorial showcases the seamless integration of advanced technologies, emphasizing the practical application of creating cost-effective solutions.
+By following this tutorial, you've successfully built a serverless NotebookLM-like system that can process PDFs, generate structured conversational text using DeepSeek-R1-Distill, and convert it into natural-sounding speech with Kokoro-TTS. This enables seamless transformation of static documents into engaging podcast-style content.
+
+With Inferless, you’ve also learned how to deploy this model efficiently, benefiting from its ease of use, fast cold-start times, and cost-effective infrastructure.
+
+Now, it's time to experiment, refine, and expand, perhaps by integrating additional models, enhancing conversation quality. Happy building! 🚀
