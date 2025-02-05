@@ -275,11 +275,11 @@ Inferless also supports a user-friendly UI for model deployment, catering to use
 ## Choosing Inferless for Deployment
 Deploying your Customer Service Voicebot application with Inferless offers compelling advantages, making your development journey smoother and more cost-effective. Here's why Inferless is the go-to choice:
 1. __Ease of Use:__ Forget the complexities of infrastructure management. With Inferless, you simply bring your model, and within minutes, you have a working endpoint. Deployment is hassle-free, without the need for in-depth knowledge of scaling or infrastructure maintenance.
-2. __Cold-start Times:__ Inferless's unique load balancing ensures faster cold-starts. Expect around 2.87 seconds to process each queries, significantly faster than many traditional platforms.
+2. __Cold-start Times:__ Inferless's unique load balancing ensures faster cold-starts. Expect around 413.23 seconds to process each queries, significantly faster than many traditional platforms.
 3. __Cost Efficiency:__ Inferless optimizes resource utilization, translating to lower operational costs. Here's a simplified cost comparison:
 
 ### Scenario
-You are looking to deploy a Customer Service Voicebot application for processing 100 queries.<br />
+You are looking to deploy this application for processing 100 queries.<br />
 
 __Parameters:__
 - __Total number of queries:__ 100 daily.<br />
@@ -288,7 +288,7 @@ __Parameters:__
 
 __Key Computations:__
 1. __Inference Duration:__ <br/>
-Processing 100 queries and each takes 413.23 seconds<br/>
+Processing 100 queries and each takes 44.4791667 seconds<br/>
 Total: 100 x 413.23 = 41323 seconds (or approximately 11.48 hours)
 2. __Idle Timeout Duration:__<br/>
 Post-processing idle time before scaling down: (450 seconds - 413.23 seconds) x 100 = 3677 seconds (or 1.02 hours approximately)<br/>
@@ -301,8 +301,6 @@ __Total Billable Hours with Inferless:__ 13.11 hours<br/>
 | Scenario | On-Demand Cost | Serverless Cost|
 | :--- | :---- | :---- |
 |  100 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$15.99 (13.11 hours billed at $1.22/hour) |
-
-Old Value−New Value/Old Value)×100
 
 
 By opting for Inferless, **_you can achieve up to 44.48% cost savings._**<br/>
