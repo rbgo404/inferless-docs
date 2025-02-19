@@ -15,7 +15,7 @@ We have deployed the model on an A100 GPU(80GB). Here are our observations:
 
 | Library      | Inference Time | Cold Start Time |
 | ------------ | ---------------| --------------- |
-| zonos        | 5.4 sec        | 88.44 sec       |
+| Zonos        | 5.4 sec        | 88.44 sec       |
 
 Note: The inference time and cold start time are average values.
 
@@ -31,15 +31,51 @@ Now quickly construct the GitHub/GitLab template, this process is mandatory and 
 Zyphra-Zonos/
 ├── app.py
 ├── inferless-runtime-config.yaml
-├── inferless.yaml
-└── input_schema.py
+└── inferless.yaml
 ```
 
 You can also add other files to this directory.
 
+## Create the Input Schema with Pydantic
+
+Using the `inferless` Python client and Pydantic, you can define structured schemas directly in your code for input and output, eliminating the need for external file.
+
+### Input Schema
+When defining an input schema with Pydantic, you need to annotate your class attributes with the appropriate types, such as `str`, `float`, `int`, etc. 
+These type annotations specifys what type of data each field should contain. 
+The `default` value serves as the example input for testing with the `infer` function.
+
+```python
+@inferless.request
+class RequestObjects(BaseModel):
+        input_text: str = Field(default="Can you provide ways to eat combinations of bananas and dragonfruits?")
+        audio_url: Optional[str] = "https://github.com/Zyphra/Zonos/raw/main/assets/exampleaudio.mp3"
+        language: Optional[str] = "en-us"
+```
+
+### Output Schema
+The `@inferless.response` decorator helps you define structured output schemas.
+
+```python
+@inferless.response
+class ResponseObjects(BaseModel):
+        generated_audio_base64: str = Field(default='Test output')
+```
+
+### Usage in the `infer` Function
+Once you have annotated the objects you can expect the infer function to receive `RequestObjects` as input,
+and returns a `ResponseObjects` instance as output, ensuring the results adhere to a defined structure.
+
+```python
+class InferlessPythonModel:
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        
+        return ResponseObjects(generated_text=result[0])
+```
+
 ## Create the class for inference
 
-In the [app.py](https://github.com/inferless/Qwen2.5-VL-7B-Instruct/blob/main/app.py) we will define the class and import all the required functions
+In the [app.py](https://github.com/inferless/Zyphra-Zonos/blob/main/app.py) we will define the class and import all the required functions
 
 1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
 
@@ -62,7 +98,6 @@ import inferless
 from pydantic import BaseModel, Field
 from typing import Optional
 
-app = inferless.Cls(gpu="A100")
 
 @inferless.request
 class RequestObjects(BaseModel):
@@ -75,7 +110,7 @@ class ResponseObjects(BaseModel):
         generated_audio_base64: str = Field(default='Test output')
 
 class InferlessPythonModel:
-    @app.load
+
     def initialize(self):
         # Load the Zonos model on CUDA
         self.device = "cuda"
@@ -98,7 +133,7 @@ class InferlessPythonModel:
         temp_file.write(response.content)
         temp_file.close()
         return temp_file.name
-    @app.infer
+
     def infer(self, request: RequestObjects) -> ResponseObjects:
         audio_path = self.download_audio(request.audio_url)
         
@@ -149,102 +184,23 @@ class InferlessPythonModel:
         self.model = None
 ```
 
-## Create the Input Schema
-
-We have to create a [input_schema.py](https://github.com/inferless/Qwen2.5-VL-7B-Instruct/blob/main/input_schema.py) in your GitHub/Gitlab repository this will help us create the Input parameters. You can checkout our documentation on [Input / Output Schema](https://docs.inferless.com/model-import/input-output-schema).
-
-For this tutorial, we have defined the parameter which are required during the API call. Now lets create the `input_schema.py`.
-
-```python
-INPUT_SCHEMA = {
-    "prompt": {
-        'datatype': 'STRING',
-        'required': True,
-        'shape': [1],
-        'example': ["What does this diagram illustrate?"]
-    },
-    "content_url": {
-        'datatype': 'STRING',
-        'required': True,
-        'shape': [1],
-        'example': ["https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen-VL/assets/demo.jpeg"]
-    },
-    "content_type": {
-        'datatype': 'STRING',
-        'required': False,
-        'shape': [1],
-        'example': ["image"]
-    },
-    "system_prompt": {
-        'datatype': 'STRING',
-        'required': False,
-        'shape': [1],
-        'example': ["You are a helpful coding bot."]
-    },
-    "temperature": {
-        'datatype': 'FP64',
-        'required': False,
-        'shape': [1],
-        'example': [0.7]
-    },
-    "top_p": {
-        'datatype': 'FP64',
-        'required': False,
-        'shape': [1],
-        'example': [0.1]
-    },
-    "repetition_penalty": {
-        'datatype': 'FP64',
-        'required': False,
-        'shape': [1],
-        'example': [1.18]
-    },
-    "max_tokens": {
-        'datatype': 'INT64',
-        'required': False,
-        'shape': [1],
-        'example': [256]
-    },
-    "max_pixels": {
-        'datatype': 'INT64',
-        'required': False,
-        'shape': [1],
-        'example': [12845056]
-    },
-    "top_k":{
-        'datatype': 'INT64',
-        'required': False,
-        'shape': [1],
-        'example': [40]
-    },
-    "max_duration":{
-        'datatype': 'INT64',
-        'required': False,
-        'shape': [1],
-        'example': [60]
-    },
-    "fps":{
-        'datatype': 'INT64',
-        'required': False,
-        'shape': [1],
-        'example': [1]
-    }
-}
-```
-
 ## Creating the Custom Runtime
 
-This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Qwen2.5-VL-7B-Instruct/blob/main/inferless-runtime-config.yaml).
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Zyphra-Zonos/blob/main/inferless-runtime-config.yaml).
 
 ```python
 build:
-  cuda_version: "12.1.1"
+  cuda_version: 12.1.1
+  system_packages:
+    - "espeak-ng"
   python_packages:
-    - qwen-vl-utils==0.0.10
-    - accelerate==1.3.0
-    - decord==0.6.0
-    - vllm==0.7.2
-    - git+https://github.com/huggingface/transformers.git@014047e1c8784c00e2a04cb04ffcecdd5cb23c16
+    - "inferless==0.2.6"
+    - "pydantic==2.10.2"
+  run:
+    - "git clone https://github.com/Zyphra/Zonos.git"
+    - "cd Zonos"
+    - "pip install -e ."
+    - "pip install --no-build-isolation -e .[compile]"
 ```
 
 ## Method A: Deploying the model on Inferless Platform
@@ -270,7 +226,7 @@ Once the model is in 'Active' status you can click on the 'API' page to call the
 
 ### Here is the Demo:
 
-![](/gif/qwen2-vl-demo.gif)
+![](/gif/phi-4-demo.gif)
 
 ## Method B: Deploying the model on Inferless CLI
 
@@ -279,7 +235,7 @@ Inferless allows you to deploy your model using Inferless-CLI. Follow the steps 
 ### Clone the repository of the model
 Let's begin by cloning the model repository:
 ```bash
-git clone https://github.com/inferless/Qwen2.5-VL-7B-Instruct.git
+git clone https://github.com/inferless/Zyphra-Zonos.git
 ```
 
 ### Deploy the Model
@@ -292,4 +248,4 @@ inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
 
 - `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
 - `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
-![](/images/qwen.png)
+![](/images/Zyphra-Zonos-cli.png)
