@@ -1,0 +1,295 @@
+---
+title: "Deploy Zyphra-Zonos using Inferless"
+description: "Zyphra's Zonos-v0.1-transformer is an advanced open-source text-to-speech (TTS) model designed to generate highly natural and expressive speech."
+---
+
+## Introduction
+
+Zyphra's Zonos-v0.1-transformer is an advanced open-source text-to-speech (TTS) model designed to generate highly natural and expressive speech. 
+Released under the Apache 2.0 license, this 1.6-billion-parameter transformer model has been trained on over 200,000 hours of diverse multilingual speech data, including English, Japanese, Chinese, French, and German.
+
+
+## Our Observations
+
+We have deployed the model on an A100 GPU(80GB). Here are our observations:
+
+| Library      | Inference Time | Cold Start Time |
+| ------------ | ---------------| --------------- |
+| zonos        | 5.4 sec        | 88.44 sec       |
+
+Note: The inference time and cold start time are average values.
+
+## Defining Dependencies
+
+We are using the [Zonos](https://github.com/Zyphra/Zonos/) to serve the model on a single A100 (80GB).
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`.
+
+```
+Zyphra-Zonos/
+├── app.py
+├── inferless-runtime-config.yaml
+├── inferless.yaml
+└── input_schema.py
+```
+
+You can also add other files to this directory.
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/Qwen2.5-VL-7B-Instruct/blob/main/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference and pass it through `inputs(dict)` parameter.
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+```python
+import io
+import wave
+import base64
+import numpy as np
+import torch
+import torchaudio
+import requests
+import tempfile
+from zonos.model import Zonos
+from zonos.conditioning import make_cond_dict
+import inferless
+from pydantic import BaseModel, Field
+from typing import Optional
+
+app = inferless.Cls(gpu="A100")
+
+@inferless.request
+class RequestObjects(BaseModel):
+        input_text: str = Field(default="Can you provide ways to eat combinations of bananas and dragonfruits?")
+        audio_url: Optional[str] = "https://github.com/Zyphra/Zonos/raw/main/assets/exampleaudio.mp3"
+        language: Optional[str] = "en-us"
+
+@inferless.response
+class ResponseObjects(BaseModel):
+        generated_audio_base64: str = Field(default='Test output')
+
+class InferlessPythonModel:
+    @app.load
+    def initialize(self):
+        # Load the Zonos model on CUDA
+        self.device = "cuda"
+        self.model = Zonos.from_pretrained(
+            "Zyphra/Zonos-v0.1-transformer", device=self.device
+        )
+        # Save torchaudio and the conditioning function for later use
+        self.torchaudio = torchaudio
+        self.make_cond_dict = make_cond_dict
+
+    def download_audio(self, url):
+        """
+        Downloads the audio file from the provided URL and returns the local file path.
+        """
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+
+        # Create a temporary file to store the downloaded audio
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+        temp_file.write(response.content)
+        temp_file.close()
+        return temp_file.name
+    @app.infer
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        audio_path = self.download_audio(request.audio_url)
+        
+        # Load the audio and compute speaker embedding
+        wav, sampling_rate = self.torchaudio.load(audio_path)
+        speaker = self.model.make_speaker_embedding(wav, sampling_rate)
+
+        # Prepare conditioning using the provided text, speaker, and language
+        cond_dict = self.make_cond_dict(text=request.text, speaker=speaker, language=request.language)
+        conditioning = self.model.prepare_conditioning(cond_dict)
+
+        # Generate latent codes from the model
+        codes = self.model.generate(conditioning)
+
+        # Decode the latent codes to obtain generated audio
+        wavs = self.model.autoencoder.decode(codes).cpu()
+        generated_tensor = wavs[0]  # shape: (channels, samples)
+        sample_rate = self.model.autoencoder.sampling_rate
+
+        # Optionally, save the generated audio to disk if output_path is specified
+        output_path = inputs.get("output_path", None)
+        if output_path:
+            self.torchaudio.save(output_path, generated_tensor, sample_rate)
+
+        # Convert the audio tensor to a base64-encoded WAV string
+        # Assume the tensor values are in the range [-1, 1]
+        audio_np = generated_tensor.numpy()
+        # Convert float32 to int16 (scale by 32767)
+        audio_int16 = (audio_np * 32767).astype(np.int16)
+
+        # Write WAV to an in-memory buffer
+        buffer = io.BytesIO()
+        with wave.open(buffer, 'wb') as wf:
+            n_channels = audio_int16.shape[0]
+            wf.setnchannels(n_channels)
+            wf.setsampwidth(2)  # 2 bytes for int16
+            wf.setframerate(sample_rate)
+            # Transpose so that samples are interleaved correctly
+            wf.writeframes(audio_int16.T.tobytes())
+        buffer.seek(0)
+        audio_bytes = buffer.read()
+        audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+        generateObject = ResponseObjects(generated_audio_base64 = audio_base64)
+        
+        return generateObject
+        
+    def finalize(self):
+        self.model = None
+```
+
+## Create the Input Schema
+
+We have to create a [input_schema.py](https://github.com/inferless/Qwen2.5-VL-7B-Instruct/blob/main/input_schema.py) in your GitHub/Gitlab repository this will help us create the Input parameters. You can checkout our documentation on [Input / Output Schema](https://docs.inferless.com/model-import/input-output-schema).
+
+For this tutorial, we have defined the parameter which are required during the API call. Now lets create the `input_schema.py`.
+
+```python
+INPUT_SCHEMA = {
+    "prompt": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["What does this diagram illustrate?"]
+    },
+    "content_url": {
+        'datatype': 'STRING',
+        'required': True,
+        'shape': [1],
+        'example': ["https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen-VL/assets/demo.jpeg"]
+    },
+    "content_type": {
+        'datatype': 'STRING',
+        'required': False,
+        'shape': [1],
+        'example': ["image"]
+    },
+    "system_prompt": {
+        'datatype': 'STRING',
+        'required': False,
+        'shape': [1],
+        'example': ["You are a helpful coding bot."]
+    },
+    "temperature": {
+        'datatype': 'FP64',
+        'required': False,
+        'shape': [1],
+        'example': [0.7]
+    },
+    "top_p": {
+        'datatype': 'FP64',
+        'required': False,
+        'shape': [1],
+        'example': [0.1]
+    },
+    "repetition_penalty": {
+        'datatype': 'FP64',
+        'required': False,
+        'shape': [1],
+        'example': [1.18]
+    },
+    "max_tokens": {
+        'datatype': 'INT64',
+        'required': False,
+        'shape': [1],
+        'example': [256]
+    },
+    "max_pixels": {
+        'datatype': 'INT64',
+        'required': False,
+        'shape': [1],
+        'example': [12845056]
+    },
+    "top_k":{
+        'datatype': 'INT64',
+        'required': False,
+        'shape': [1],
+        'example': [40]
+    },
+    "max_duration":{
+        'datatype': 'INT64',
+        'required': False,
+        'shape': [1],
+        'example': [60]
+    },
+    "fps":{
+        'datatype': 'INT64',
+        'required': False,
+        'shape': [1],
+        'example': [1]
+    }
+}
+```
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Qwen2.5-VL-7B-Instruct/blob/main/inferless-runtime-config.yaml).
+
+```python
+build:
+  cuda_version: "12.1.1"
+  python_packages:
+    - qwen-vl-utils==0.0.10
+    - accelerate==1.3.0
+    - decord==0.6.0
+    - vllm==0.7.2
+    - git+https://github.com/huggingface/transformers.git@014047e1c8784c00e2a04cb04ffcecdd5cb23c16
+```
+
+## Method A: Deploying the model on Inferless Platform
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.
+
+### Step 1: Login to the inferless dashboard can click on Import model button
+Navigate to your desired workspace in Inferless and Click on `Add a custom model` button that you see on the top right. An import wizard will open up.
+
+### Step 2: Follow the UI to complete the model  Import
+- Select the GitHub/GitLab Integration option to connect your source code repository with the deployment environment.
+- Navigate to the specific GitHub repository that contains your model's code. Here, you will need to identify and enter the name of the model you wish to import.
+- Choose the appropriate type of machine that suits your model's requirements. Additionally, specify the minimum and maximum number of replicas to define the scalability range for deploying your model.
+- Optionally, you have the option to enable automatic build and deployment. This feature triggers a new deployment automatically whenever there is a new code push to your repository.
+- If your model requires additional software packages, configure the Custom Runtime settings by including necessary pip or apt packages. Also, set up environment variables such as  Inference Timeout, Container Concurrency, and Scale Down Timeout to tailor the runtime environment according to your needs.
+- Wait for the validation process to complete, ensuring that all settings are correct and functional. Once validation is successful, click on the "Import" button to finalize the import of your model.
+![](/images/inferless_model_import.png)
+
+
+### Step 3: Wait for the model build to complete usually takes ~5-10 minutes
+
+### Step 4: Use the APIs to call the model
+Once the model is in 'Active' status you can click on the 'API' page to call the model
+
+### Here is the Demo:
+
+![](/gif/qwen2-vl-demo.gif)
+
+## Method B: Deploying the model on Inferless CLI
+
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+### Clone the repository of the model
+Let's begin by cloning the model repository:
+```bash
+git clone https://github.com/inferless/Qwen2.5-VL-7B-Instruct.git
+```
+
+### Deploy the Model
+To deploy the model using Inferless CLI, execute the following command:
+```bash
+inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
+```
+
+**Explanation of the Command:**
+
+- `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
+- `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
+![](/images/qwen.png)
