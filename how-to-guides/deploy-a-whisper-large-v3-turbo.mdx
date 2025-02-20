@@ -48,11 +48,18 @@ In the [app.py](https://github.com/inferless/Whisper-large-v3-turbo/blob/main/ap
 ```python
 import torch
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
+import inferless
+from huggingface_hub import snapshot_download
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+
+app = inferless.Cls(gpu="A10")
 
 class InferlessPythonModel:
-        
+    @app.load
     def initialize(self):
         model_id = "openai/whisper-large-v3-turbo"
+        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         model = AutoModelForSpeechSeq2Seq.from_pretrained(
             model_id,
             torch_dtype=torch.float16,
@@ -71,7 +78,7 @@ class InferlessPythonModel:
             torch_dtype=torch.float16,
             return_timestamps=True
         )
-
+    @app.infer
     def infer(self, inputs):
         # Extracting inputs with default values
         audio_url = inputs["audio_url"]
@@ -176,6 +183,9 @@ build:
     - "transformers==4.45.2"
     - "librosa==0.10.2.post1"
     - "soundfile==0.12.1"
+    - "inferless-cli==2.0.9"
+    - "hf-transfer==0.1.9"
+    - "huggingface-hub==0.27.1"
 ```
 
 ## Test your model with Remote Run
@@ -188,17 +198,20 @@ To enable **Remote Run**, simply do the following:
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
 
 ```python
+import torch
+from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 import inferless
+from huggingface_hub import snapshot_download
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
 
-app = inferless.Cls(gpu="A10") # You can use these GPUs: T4/A10/A100
+app = inferless.Cls(gpu="A10")
 
 class InferlessPythonModel:
     @app.load
     def initialize(self):
-        import torch
-        from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
-        
         model_id = "openai/whisper-large-v3-turbo"
+        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         model = AutoModelForSpeechSeq2Seq.from_pretrained(
             model_id,
             torch_dtype=torch.float16,
@@ -217,7 +230,6 @@ class InferlessPythonModel:
             torch_dtype=torch.float16,
             return_timestamps=True
         )
-
     @app.infer
     def infer(self, inputs):
         # Extracting inputs with default values
@@ -257,6 +269,9 @@ class InferlessPythonModel:
             "chunk_text": list(chunk_text),
         }
 
+
+    def finalize(self):
+        self.pipe = None
 ```
 
 ### Step 2: Run with Remote GPU
