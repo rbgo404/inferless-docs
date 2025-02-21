@@ -57,32 +57,36 @@ codellama-34b-python/
 In the [app.py](https://github.com/inferless/inferless_tutorials/blob/main/code_generation/CodeLlama-34B/app.py) (Check the Github URL) file, first, you will import all the required classes and functions and then create a model class, for example, "InferlessPythonModel".This class will have three functions:
 
 1.  `def initialize`: This function will load the model and tokenizer into the memory whenever the container starts.  
-```  
-def initialize(self):  
-        self.llm = LLM(  
-          model="TheBloke/CodeLlama-34B-Python-GPTQ",  
-          quantization="gptq")  
-```
 
 2.  `def infer`: This function helps to serve the loaded model. You can create a complex inference pipeline or chain multiple models together here.  
-```  
-def infer(self, inputs):  
-        prompts = inputs["prompt"]  
-        sampling_params = SamplingParams(  
-            temperature=1.0,  
-            top_p=1,  
-            max_tokens=512  
-        )  
-        result = self.llm.generate(prompts, sampling_params)  
-        result_output = [output.outputs[0].text for output in result]  
-  
-        return {"result": result_output[0]}  
-```
 
 3.  `def finalize`: This function deallocates the allocated memory for the model and tokenizer whenever the container shuts down.  
-```  
-def finalize(self,*args):  
-    self.llm = None  
+```python
+import inferless
+from vllm import SamplingParams, LLM
+
+app = inferless.Cls(gpu="A100")
+
+class InferlessPythonModel:
+
+    @app.load
+    def initialize(self):
+      self.llm = LLM(model="TheBloke/CodeLlama-34B-Python-GPTQ",quantization="gptq")
+    @app.infer
+    def infer(self, inputs):
+        prompts = inputs["prompt"]
+        sampling_params = SamplingParams(
+            temperature=1.0,
+            top_p=1,
+            max_tokens=512
+        )
+        result = self.llm.generate(prompts, sampling_params)
+        result_output = [output.outputs[0].text for output in result]
+
+        return {"result": result_output[0]}
+
+    def finalize(self):
+        self.llm = None
 ```
 
 ## Creating the custom runtime
@@ -92,13 +96,62 @@ Whenever you upload the model through GitHub/GitLab, you must upload a custom ru
 ```
 build:
   cuda_version: "12.1.1"
-  system_packages:
-    - "libssl-dev"
   python_packages:
-    - "accelerate"
-    - "transformers"
-    - "git+https://github.com/chu-tianxiang/vllm-gptq.git"
+    - "vllm==0.3.2"
+    - "inferless-cli==2.0.9"
+    - "hf-transfer==0.1.9"
+    - "huggingface-hub==0.27.1"
 ```
+
+## Test your model with Remote Run
+
+You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
+
+### Step 1: Add the Decorators and local entry point
+To enable **Remote Run**, simply do the following:
+1. Import the `inferless` library and initialize `Cls(gpu="A10")`. The available GPU options are `T4`, `A10` and `A100`.
+2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+
+```python
+import inferless
+from vllm import SamplingParams, LLM
+
+app = inferless.Cls(gpu="A100")
+
+class InferlessPythonModel:
+
+    @app.load
+    def initialize(self):
+      self.llm = LLM(model="TheBloke/CodeLlama-34B-Python-GPTQ",quantization="gptq")
+    @app.infer
+    def infer(self, inputs):
+        prompts = inputs["prompt"]
+        sampling_params = SamplingParams(
+            temperature=1.0,
+            top_p=1,
+            max_tokens=512
+        )
+        result = self.llm.generate(prompts, sampling_params)
+        result_output = [output.outputs[0].text for output in result]
+
+        return {"result": result_output[0]}
+
+    def finalize(self):
+        self.llm = None
+```
+
+### Step 2: Run with Remote GPU
+
+From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
+
+```bash
+inferless remote-run app.py -c inferless-runtime-config.yaml --prompt "def factorial(int n):"
+```
+
+You can pass the other input parameters in the same way as long as your code expects them in the `inputs` dictionary.
+
+If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
+
 
 ## Method A: Deploying the model on Inferless Platform
 

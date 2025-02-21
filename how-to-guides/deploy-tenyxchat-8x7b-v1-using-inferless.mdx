@@ -46,16 +46,23 @@ In the [app.py](https://github.com/inferless/TenyxChat-8x7B-v1/blob/main/app.py)
 ```python
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, pipeline
+import inferless
+from huggingface_hub import snapshot_download
+
+app = inferless.Cls(gpu="A100")
 
 class InferlessPythonModel:
+    @app.load
     def initialize(self):
         model_id = "tenyx/TenyxChat-8x7B-v1"
+        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         bnb_config = BitsAndBytesConfig(
             load_in_4bit=True)
         tokenizer = AutoTokenizer.from_pretrained(model_id)
         model = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, quantization_config=bnb_config, device_map="cuda")
         self.pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
-        
+
+    @app.infer
     def infer(self, inputs):
         prompt = inputs["prompt"]
         messages = [{"role": "system", "content":prompt}]
@@ -65,7 +72,7 @@ class InferlessPythonModel:
         return {'generated_result': generated_text}
 
     def finalize(self):
-        pass
+        self.pipe = None
 ```
 
 ## Creating the Custom Runtime
@@ -82,7 +89,64 @@ build:
     - "transformers==4.36.2"
     - "accelerate==0.25.0"
     - "scipy==1.11.4"
+    - "inferless-cli==2.0.9"
+    - "hf-transfer==0.1.9"
+    - "huggingface-hub==0.27.1"
 ```
+
+## Test your model with Remote Run
+
+You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
+
+### Step 1: Add the Decorators and local entry point
+To enable **Remote Run**, simply do the following:
+1. Import the `inferless` library and initialize `Cls(gpu="A10")`. The available GPU options are `T4`, `A10` and `A100`.
+2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+
+```python
+import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, pipeline
+import inferless
+from huggingface_hub import snapshot_download
+
+app = inferless.Cls(gpu="A100")
+
+class InferlessPythonModel:
+    @app.load
+    def initialize(self):
+        model_id = "tenyx/TenyxChat-8x7B-v1"
+        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True)
+        tokenizer = AutoTokenizer.from_pretrained(model_id)
+        model = AutoModelForCausalLM.from_pretrained(model_id, trust_remote_code=True, quantization_config=bnb_config, device_map="cuda")
+        self.pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)
+
+    @app.infer
+    def infer(self, inputs):
+        prompt = inputs["prompt"]
+        messages = [{"role": "system", "content":prompt}]
+        prompt = self.pipe.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        out = self.pipe(prompt, max_new_tokens=256, do_sample=True, top_p=0.9,temperature=0.9)
+        generated_text = out[0]["generated_text"][len(prompt):]
+        return {'generated_result': generated_text}
+
+    def finalize(self):
+        self.pipe = None
+```
+
+### Step 2: Run with Remote GPU
+
+From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
+
+```bash
+inferless remote-run app.py -c inferless-runtime-config.yaml --prompt "Write an Poem."
+```
+
+You can pass the other input parameters in the same way as long as your code expects them in the `inputs` dictionary.
+
+If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
+
 
 ##  Method A: Deploying the model on Inferless Platform 
 Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.

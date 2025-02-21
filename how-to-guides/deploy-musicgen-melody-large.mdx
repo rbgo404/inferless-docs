@@ -37,14 +37,20 @@ import torchaudio
 from audiocraft.models import MusicGen
 from audiocraft.data.audio import audio_write
 import base64
+import inferless
+from huggingface_hub import snapshot_download
+
+app = inferless.Cls(gpu="A100")
 
 class InferlessPythonModel:
-    
+    @app.load    
     def initialize(self):
-        self.model = MusicGen.get_pretrained('facebook/musicgen-stereo-melody-large')
+        model_id = 'facebook/musicgen-stereo-melody-large'
+        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
+        self.model = MusicGen.get_pretrained(model_id)
         self.model.set_generation_params(duration=8)
 
-        
+    @app.infer
     def infer(self, inputs):
         
         descriptions = [inputs["prompt"]]
@@ -94,7 +100,68 @@ build:
   python_packages:
     - "torch==2.1.0"
     - "audiocraft==1.2.0"
+    - "inferless-cli==2.0.9"
+    - "hf-transfer==0.1.9"
+    - "huggingface-hub==0.27.1"
 ```
+
+## Test your model with Remote Run
+
+You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
+
+### Step 1: Add the Decorators and local entry point
+To enable **Remote Run**, simply do the following:
+1. Import the `inferless` library and initialize `Cls(gpu="A10")`. The available GPU options are `T4`, `A10` and `A100`.
+2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+
+```python
+import torchaudio
+from audiocraft.models import MusicGen
+from audiocraft.data.audio import audio_write
+import base64
+import inferless
+from huggingface_hub import snapshot_download
+
+app = inferless.Cls(gpu="A100")
+
+class InferlessPythonModel:
+    @app.load    
+    def initialize(self):
+        model_id = 'facebook/musicgen-stereo-melody-large'
+        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
+        self.model = MusicGen.get_pretrained(model_id)
+        self.model.set_generation_params(duration=8)
+
+    @app.infer
+    def infer(self, inputs):
+        
+        descriptions = [inputs["prompt"]]
+        wav = self.model.generate(descriptions)
+        
+        for idx, one_wav in enumerate(wav):
+            audio_write("temp", one_wav.cpu(), self.model.sample_rate, strategy="loudness", loudness_compressor=True)
+        
+        with open("temp.wav", "rb") as audio_file:
+            audio_bytes = audio_file.read()
+            audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+        
+        return {"generated_audio_base64": audio_base64}
+
+    def finalize(self,args):
+        self.model = None
+```
+
+### Step 2: Run with Remote GPU
+
+From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
+
+```bash
+inferless remote-run app.py -c inferless-runtime-config.yaml --prompt "Rock with saturated guitars, a heavy bass line and crazy drum break and fills."
+```
+
+You can pass the other input parameters in the same way as long as your code expects them in the `inputs` dictionary.
+
+If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
 
 ## Method A: Deploying the model on Inferless Platform
 Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.
