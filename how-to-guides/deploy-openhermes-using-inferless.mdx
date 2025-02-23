@@ -35,9 +35,6 @@ In the [app.py](https://github.com/inferless/inferless_tutorials/tree/main/text_
 
 3.  `def finalize`: This function cleans up all the allocated memory.
 ```python
-import os
-os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
-from huggingface_hub import snapshot_download
 import inferless
 from vllm import LLM, SamplingParams
 
@@ -74,8 +71,7 @@ This is a mandatory step where we allow the users to upload their custom runtime
 build:
   cuda_version: "12.1.1"
   python_packages:
-    - "torch==2.1.2"
-    - "vllm==0.2.5"
+    - "vllm==0.3.2"
     - "inferless-cli==2.0.9"
     - "hf-transfer==0.1.9"
     - "huggingface-hub==0.27.1"
@@ -91,9 +87,6 @@ To enable **Remote Run**, simply do the following:
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
 
 ```python
-import os
-os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
-from huggingface_hub import snapshot_download
 import inferless
 from vllm import LLM, SamplingParams
 

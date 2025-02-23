@@ -3,17 +3,9 @@ title: "Deploy Mixtral-8x7B using Inferless"
 description: "Mixtral 8x7B, a sparse mixture of experts (SMoE) model with open weights, outperforms Llama 2 70B on benchmarks. It excels as the strongest open-weight model, displaying superior cost/performance."
 ---
 
-## Our Observations
-
-We have deployed this model using AutoGPTQ on an A100 GPU(80GB) machine with max-token set to 512\. Below are observations:
-
-| Inference Time | Token/Sec | Cold Start Time |
-| -------------- | --------- | --------------- |
-| 33.40 sec      | 14.78     | 13.52 sec       |
-
 ## Defining Dependencies
 
-We are using the AutoGPTQ library for the deployment, which we have built from the source.
+We are using the vLLM library for the deployment, which we have built from the source.
 
 ## Constructing the GitHub/GitLab Template
 

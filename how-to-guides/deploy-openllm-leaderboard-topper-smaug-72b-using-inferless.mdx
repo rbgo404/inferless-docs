@@ -46,7 +46,6 @@ In the [app.py](https://github.com/inferless/Smaug-72B/blob/main/app.py) we will
 ```python
 from vllm import LLM, SamplingParams
 import inferless
-from huggingface_hub import snapshot_download
 
 app = inferless.Cls(gpu="A100")
 
@@ -95,11 +94,7 @@ This is a mandatory step where we allow the users to upload their custom runtime
 ```
 build:
   cuda_version: "12.1.1"
-  system_packages:
-    - "libssl-dev"
   python_packages:
-    - "transformers==4.37.2"
-    - "accelerate==0.27.2"
     - "vllm==0.3.1"
     - "inferless-cli==2.0.9"
     - "hf-transfer==0.1.9"
@@ -118,7 +113,6 @@ To enable **Remote Run**, simply do the following:
 ```python
 from vllm import LLM, SamplingParams
 import inferless
-from huggingface_hub import snapshot_download
 
 app = inferless.Cls(gpu="A100")
 

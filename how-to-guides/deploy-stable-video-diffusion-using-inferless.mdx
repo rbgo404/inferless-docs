@@ -57,7 +57,7 @@ class InferlessPythonModel:
         self.pipe.to("cuda")
         self.pipe.unet = torch.compile(self.pipe.unet, mode="reduce-overhead", fullgraph=True)
         self.pipe.vae = torch.compile(self.pipe.vae, mode="reduce-overhead", fullgraph=True)
-    @app.infer
+    @app.infer    
     def infer(self,inputs):
         image_url = inputs['image_url']
         image = load_image(image_url)
@@ -72,7 +72,7 @@ class InferlessPythonModel:
             base64_encoded_data = base64.b64encode(video_bytes_io.read())
             base64_string = base64_encoded_data.decode("utf-8")
 
-        return {"generated_video": base64_string}
+        return {"generated_video": base64_string[:100]}
 
     def finalize(self):
         self.pipe = None
@@ -86,17 +86,12 @@ This is a mandatory step where we allow the users to upload their own custom run
 ```
 build:
   cuda_version: "12.1.1"
-  system_packages:
-    - "libssl-dev"
-    - "libx11-6"
-    - "libxext6"
-    - "libgl1-mesa-glx"
   python_packages:
-    - "torch==2.2.1"
+    - "diffusers==0.32.2"
     - "opencv-python==4.9.0.80"
-    - "transformers==4.38.1"
-    - "diffusers==0.26.3"
-    - "accelerate==0.27.2"
+    - "torch==2.6.0"
+    - "transformers==4.49.0"
+    - "accelerate==1.4.0"
     - "inferless-cli==2.0.9"
     - "hf-transfer==0.1.9"
     - "huggingface-hub==0.27.1"
@@ -108,7 +103,7 @@ You can use the `inferless remote-run`([installation guide here](https://docs.in
 
 ### Step 1: Add the Decorators and local entry point
 To enable **Remote Run**, simply do the following:
-1. Import the `inferless` library and initialize `Cls(gpu="A10")`. The available GPU options are `T4`, `A10` and `A100`.
+1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
 
 ```python
@@ -125,7 +120,6 @@ from diffusers.utils import load_image, export_to_video
 app = inferless.Cls(gpu="A100")
 
 class InferlessPythonModel:
-
     @app.load
     def initialize(self):
         model_id = "stabilityai/stable-video-diffusion-img2vid"
@@ -135,8 +129,7 @@ class InferlessPythonModel:
         self.pipe.to("cuda")
         self.pipe.unet = torch.compile(self.pipe.unet, mode="reduce-overhead", fullgraph=True)
         self.pipe.vae = torch.compile(self.pipe.vae, mode="reduce-overhead", fullgraph=True)
-
-    @app.infer
+    @app.infer    
     def infer(self,inputs):
         image_url = inputs['image_url']
         image = load_image(image_url)
@@ -151,7 +144,7 @@ class InferlessPythonModel:
             base64_encoded_data = base64.b64encode(video_bytes_io.read())
             base64_string = base64_encoded_data.decode("utf-8")
 
-        return {"generated_video": base64_string}
+        return {"generated_video": base64_string[:100]}
 
     def finalize(self):
         self.pipe = None

@@ -33,12 +33,15 @@ In the [app.py](https://github.com/inferless/Musicgen-stereo-melody-large/blob/m
 3.  `def finalize`: This function cleans up all the allocated memory.
 
 ```python
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+from huggingface_hub import snapshot_download
 import torchaudio
 from audiocraft.models import MusicGen
 from audiocraft.data.audio import audio_write
 import base64
 import inferless
-from huggingface_hub import snapshot_download
+
 
 app = inferless.Cls(gpu="A100")
 
@@ -115,12 +118,15 @@ To enable **Remote Run**, simply do the following:
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
 
 ```python
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+from huggingface_hub import snapshot_download
 import torchaudio
 from audiocraft.models import MusicGen
 from audiocraft.data.audio import audio_write
 import base64
 import inferless
-from huggingface_hub import snapshot_download
+
 
 app = inferless.Cls(gpu="A100")
 

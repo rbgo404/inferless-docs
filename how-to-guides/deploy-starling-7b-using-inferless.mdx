@@ -9,7 +9,7 @@ We have deployed a 4-bit GPTQ quantized version of the model using A100 GPU(80GB
 
 ## Defining Dependencies
 
-We are using the [AutoGPTQ](https://github.com/PanQiWei/AutoGPTQ/) library, which enables you to run LLM on low memory. We deploy a GPTQ 4bit quantized version of the model model.
+We are using the [vLLM](https://github.com/vllm-project/vllm/) library, which enables you to run LLM on low memory. We deploy a GPTQ 4bit quantized version of the model model.
 
 ## Constructing the GitHub/GitLab Template
 
@@ -36,9 +36,6 @@ In the [app.py](https://github.com/inferless/starling-lm-7b-alpha-gptq/blob/main
 3.  `def finalize`: This function cleans up all the allocated memory.
 
 ```python
-import os
-os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
-from huggingface_hub import snapshot_download
 import inferless
 from vllm import LLM, SamplingParams
 
@@ -48,7 +45,6 @@ class InferlessPythonModel:
     @app.load
     def initialize(self):
         model_id = "TheBloke/Starling-LM-7B-alpha-GPTQ"  # Specify the model repository ID
-        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         # Define sampling parameters for model generation
         self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95, max_tokens=200)
 
@@ -76,9 +72,7 @@ This is a mandatory step where we allow the users to upload their custom runtime
 build:
   cuda_version: "12.1.1"
   python_packages:
-    - "auto-gptq==0.5.1"
-    - "transformers==4.35.2"
-    - "accelerate==0.25.0"
+    - "vllm==0.3.2"
     - "inferless-cli==2.0.9"
     - "hf-transfer==0.1.9"
     - "huggingface-hub==0.27.1"
@@ -94,9 +88,6 @@ To enable **Remote Run**, simply do the following:
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
 
 ```python
-import os
-os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
-from huggingface_hub import snapshot_download
 import inferless
 from vllm import LLM, SamplingParams
 
@@ -106,7 +97,6 @@ class InferlessPythonModel:
     @app.load
     def initialize(self):
         model_id = "TheBloke/Starling-LM-7B-alpha-GPTQ"  # Specify the model repository ID
-        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         # Define sampling parameters for model generation
         self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95, max_tokens=200)
 

@@ -108,7 +108,7 @@ You can use the `inferless remote-run`([installation guide here](https://docs.in
 
 ### Step 1: Add the Decorators and local entry point
 To enable **Remote Run**, simply do the following:
-1. Import the `inferless` library and initialize `Cls(gpu="A10")`. The available GPU options are `T4`, `A10` and `A100`.
+1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
 
 ```python
@@ -143,7 +143,7 @@ class InferlessPythonModel:
 From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
 
 ```bash
-inferless remote-run app.py -c inferless-runtime-config.yaml --prompts "def factorial(int n):"
+inferless remote-run app.py -c inferless-runtime-config.yaml --prompt "def factorial(int n):"
 ```
 
 You can pass the other input parameters in the same way as long as your code expects them in the `inputs` dictionary.

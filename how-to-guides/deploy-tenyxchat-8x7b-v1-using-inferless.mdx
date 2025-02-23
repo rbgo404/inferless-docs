@@ -44,10 +44,11 @@ In the [app.py](https://github.com/inferless/TenyxChat-8x7B-v1/blob/main/app.py)
 3.  `def finalize`: This function cleans up all the allocated memory.
 
 ```python
-import torch
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+from huggingface_hub import snapshot_download
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, pipeline
 import inferless
-from huggingface_hub import snapshot_download
 
 app = inferless.Cls(gpu="A100")
 
@@ -82,12 +83,10 @@ This is a mandatory step where we allow the users to upload their custom runtime
 ```python
 build:
   cuda_version: "12.1.1"
-  system_packages:
-    - "libssl-dev"
   python_packages:
-    - "torch==2.1.2"
-    - "transformers==4.36.2"
-    - "accelerate==0.25.0"
+    - "bitsandbytes==0.45.2"
+    - "transformers==4.49.0"
+    - "accelerate==1.4.0"
     - "scipy==1.11.4"
     - "inferless-cli==2.0.9"
     - "hf-transfer==0.1.9"
@@ -100,14 +99,15 @@ You can use the `inferless remote-run`([installation guide here](https://docs.in
 
 ### Step 1: Add the Decorators and local entry point
 To enable **Remote Run**, simply do the following:
-1. Import the `inferless` library and initialize `Cls(gpu="A10")`. The available GPU options are `T4`, `A10` and `A100`.
+1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
 
 ```python
-import torch
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+from huggingface_hub import snapshot_download
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig, pipeline
 import inferless
-from huggingface_hub import snapshot_download
 
 app = inferless.Cls(gpu="A100")
 

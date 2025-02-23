@@ -37,7 +37,7 @@ In the [app.py](https://github.com/inferless/whisper-large-v3/blob/main/app.py) 
 import inferless
 from faster_whisper import WhisperModel
 
-app = inferless.Cls(gpu="A100")
+app = inferless.Cls(gpu="A10")
 
 class InferlessPythonModel:
     @app.load        
@@ -87,7 +87,7 @@ To enable **Remote Run**, simply do the following:
 import inferless
 from faster_whisper import WhisperModel
 
-app = inferless.Cls(gpu="A100")
+app = inferless.Cls(gpu="A10")
 
 class InferlessPythonModel:
     @app.load        

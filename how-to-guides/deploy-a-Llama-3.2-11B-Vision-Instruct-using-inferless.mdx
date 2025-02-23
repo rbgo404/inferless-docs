@@ -46,6 +46,9 @@ In the [app.py](https://github.com/inferless/Llama-3.2-11B-Vision-Instruct/blob/
 3.  `def finalize`: This function cleans up all the allocated memory.
 
 ```python
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+from huggingface_hub import snapshot_download
 import requests
 import torch
 from PIL import Image
@@ -58,6 +61,7 @@ class InferlessPythonModel:
     @app.load
     def initialize(self):
         model_id = "meta-llama/Llama-3.2-11B-Vision-Instruct"
+        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         self.model = MllamaForConditionalGeneration.from_pretrained(
             model_id,
             torch_dtype=torch.bfloat16,
@@ -147,17 +151,18 @@ You can use the `inferless remote-run`([installation guide here](https://docs.in
 
 ### Step 1: Add the Decorators and local entry point
 To enable **Remote Run**, simply do the following:
-1. Import the `inferless` library and initialize `Cls(gpu="A10")`. The available GPU options are `T4`, `A10` and `A100`.
+1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
 
 ```python
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+from huggingface_hub import snapshot_download
 import requests
 import torch
 from PIL import Image
 from transformers import MllamaForConditionalGeneration, AutoProcessor
 import inferless
-from huggingface_hub import snapshot_download
-
 
 app = inferless.Cls(gpu="A100")
 

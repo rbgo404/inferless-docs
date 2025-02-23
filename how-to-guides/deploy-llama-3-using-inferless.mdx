@@ -47,7 +47,6 @@ In the [app.py](https://github.com/inferless/Llama-3/blob/main/app.py) we will d
 ```python
 from vllm import LLM, SamplingParams
 import inferless
-from huggingface_hub import snapshot_download
 
 app = inferless.Cls(gpu="A100")
 
@@ -55,7 +54,6 @@ class InferlessPythonModel:
     @app.load
     def initialize(self):
         model_id = "Undi95/Meta-Llama-3-8B-hf"  # Specify the model repository ID
-        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         # Define sampling parameters for model generation
         self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95, max_tokens=128)
         # Initialize the LLM object
@@ -72,7 +70,7 @@ class InferlessPythonModel:
         return {'generated_text': result_output[0]}
 
     def finalize(self):
-        pass
+        self.llm = None
 ```
 
 ## Create the Input Schema
@@ -102,7 +100,6 @@ build:
   system_packages:
     - "libssl-dev"
   python_packages:
-    - "torch==2.2.1"
     - "vllm==0.4.1"
     - "inferless-cli==2.0.9"
     - "hf-transfer==0.1.9"
@@ -115,13 +112,12 @@ You can use the `inferless remote-run`([installation guide here](https://docs.in
 
 ### Step 1: Add the Decorators and local entry point
 To enable **Remote Run**, simply do the following:
-1. Import the `inferless` library and initialize `Cls(gpu="A10")`. The available GPU options are `T4`, `A10` and `A100`.
+1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
 
 ```python
 from vllm import LLM, SamplingParams
 import inferless
-from huggingface_hub import snapshot_download
 
 app = inferless.Cls(gpu="A100")
 
@@ -129,7 +125,6 @@ class InferlessPythonModel:
     @app.load
     def initialize(self):
         model_id = "Undi95/Meta-Llama-3-8B-hf"  # Specify the model repository ID
-        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         # Define sampling parameters for model generation
         self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95, max_tokens=128)
         # Initialize the LLM object
@@ -146,7 +141,7 @@ class InferlessPythonModel:
         return {'generated_text': result_output[0]}
 
     def finalize(self):
-        pass
+        self.llm = None
 ```
 
 ### Step 2: Run with Remote GPU

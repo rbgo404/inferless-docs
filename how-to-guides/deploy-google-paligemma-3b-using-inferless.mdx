@@ -47,12 +47,14 @@ In the [app.py](https://github.com/inferless/google-Paligemma-3b/blob/main/app.p
 3.  `def finalize`: This function cleans up all the allocated memory.
 
 ```python
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+from huggingface_hub import snapshot_download
 from transformers import AutoProcessor, PaliGemmaForConditionalGeneration
 from PIL import Image
 import requests
 import torch
 import inferless
-from huggingface_hub import snapshot_download
 
 
 app = inferless.Cls(gpu="A100")
@@ -67,9 +69,9 @@ class InferlessPythonModel:
         self.model = PaliGemmaForConditionalGeneration.from_pretrained(model_id,
                                                                        torch_dtype=dtype,
                                                                        device_map=device,revision="bfloat16",
-                                                                       token="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").eval()
+                                                                       token="<YOUR_HF_TOKEN>").eval()
         self.processor = AutoProcessor.from_pretrained(model_id,
-                                                       token="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")
+                                                       token="<YOUR_HF_TOKEN>")
     @app.infer
     def infer(self,inputs):
         prompt = inputs["prompt"]
@@ -138,12 +140,14 @@ To enable **Remote Run**, simply do the following:
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
 
 ```python
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+from huggingface_hub import snapshot_download
 from transformers import AutoProcessor, PaliGemmaForConditionalGeneration
 from PIL import Image
 import requests
 import torch
 import inferless
-from huggingface_hub import snapshot_download
 
 app = inferless.Cls(gpu="A100")
 
@@ -157,9 +161,9 @@ class InferlessPythonModel:
         self.model = PaliGemmaForConditionalGeneration.from_pretrained(model_id,
                                                                        torch_dtype=dtype,
                                                                        device_map=device,revision="bfloat16",
-                                                                       token="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").eval()
+                                                                       token="<YOUR_HF_TOKEN>").eval()
         self.processor = AutoProcessor.from_pretrained(model_id,
-                                                       token="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")
+                                                       token="<YOUR_HF_TOKEN>")
     @app.infer
     def infer(self,inputs):
         prompt = inputs["prompt"]

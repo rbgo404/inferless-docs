@@ -20,7 +20,7 @@ We are using the HuggingFace [Diffusers](https://github.com/huggingface/diffuser
 Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`
 
 ```
-stable-video-diffusion/
+stable-diffusion-xl-turbo/
 ├── app.py
 ├── inferless-runtime-config.yaml
 ├── inferless.yaml
@@ -83,7 +83,6 @@ build:
   cuda_version: "12.1.1"
   python_packages:
     - "diffusers==0.32.2"
-    - "pandas==2.1.4"
     - "torch==2.6.0"
     - "transformers==4.49.0"
     - "accelerate==1.4.0"

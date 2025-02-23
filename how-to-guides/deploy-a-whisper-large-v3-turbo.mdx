@@ -46,13 +46,20 @@ In the [app.py](https://github.com/inferless/Whisper-large-v3-turbo/blob/main/ap
 3.  `def finalize`: This function cleans up all the allocated memory.
 
 ```python
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+from huggingface_hub import snapshot_download
 import torch
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
+import inferless
+
+app = inferless.Cls(gpu="A10")
 
 class InferlessPythonModel:
-        
+    @app.load        
     def initialize(self):
         model_id = "openai/whisper-large-v3-turbo"
+        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         model = AutoModelForSpeechSeq2Seq.from_pretrained(
             model_id,
             torch_dtype=torch.float16,
@@ -72,6 +79,7 @@ class InferlessPythonModel:
             return_timestamps=True
         )
 
+    @app.infer
     def infer(self, inputs):
         # Extracting inputs with default values
         audio_url = inputs["audio_url"]
@@ -176,6 +184,9 @@ build:
     - "transformers==4.45.2"
     - "librosa==0.10.2.post1"
     - "soundfile==0.12.1"
+    - "inferless-cli==2.0.9"
+    - "hf-transfer==0.1.9"
+    - "huggingface-hub==0.27.1"
 ```
 
 ## Test your model with Remote Run
@@ -189,17 +200,20 @@ To enable **Remote Run**, simply do the following:
 3. Add a local entry point to your script which allows you to test the model through the `inferless remote-run` command. Since `@app.load` automatically handles initialization when the model is instantiated, you can directly use the `infer` function without explicitly calling `initialize`.
 
 ```python
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+from huggingface_hub import snapshot_download
+import torch
+from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 import inferless
 
-app = inferless.Cls(gpu="A10") # You can use these GPUs: T4/A10/A100
+app = inferless.Cls(gpu="A10")
 
 class InferlessPythonModel:
-    @app.load
+    @app.load        
     def initialize(self):
-        import torch
-        from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
-        
         model_id = "openai/whisper-large-v3-turbo"
+        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         model = AutoModelForSpeechSeq2Seq.from_pretrained(
             model_id,
             torch_dtype=torch.float16,
@@ -218,7 +232,7 @@ class InferlessPythonModel:
             torch_dtype=torch.float16,
             return_timestamps=True
         )
-
+        
     @app.infer
     def infer(self, inputs):
         # Extracting inputs with default values
@@ -257,12 +271,10 @@ class InferlessPythonModel:
             "to_timestamp": list(to_timestamp),
             "chunk_text": list(chunk_text),
         }
-    
 
-if __name__ == "__main__":
-    model = InferlessPythonModel()
-    output = model.infer({"audio_url": "https://github.com/rbgo404/Files/raw/main/jeanNL.mp3","language":"english"})
-    print(output)
+
+    def finalize(self):
+        self.pipe = None
 ```
 
 ### Step 2: Run with Remote GPU
@@ -270,7 +282,7 @@ if __name__ == "__main__":
 From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
 
 ```bash
-inferless remote-run app.py -c inferless-runtime-config.yaml
+inferless remote-run app.py -c inferless-runtime-config.yaml --audio_url "https://github.com/rbgo404/Files/raw/main/jeanNL.mp3"
 ```
 
 If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.

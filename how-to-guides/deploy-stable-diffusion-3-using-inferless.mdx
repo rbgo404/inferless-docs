@@ -40,11 +40,13 @@ In the [app.py](https://github.com/inferless/Stable-diffusion-3/blob/main/app.py
 3.  `def finalize`: This function cleans up all the allocated memory.
 
 ```python
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+from huggingface_hub import snapshot_download
 from diffusers import StableDiffusion3Pipeline
 import torch
 from io import BytesIO
 import base64
-import os
 import inferless
 
 app = inferless.Cls(gpu="A100")
@@ -52,16 +54,18 @@ app = inferless.Cls(gpu="A100")
 class InferlessPythonModel:
     @app.load
     def initialize(self):
+        model_id = "stabilityai/stable-diffusion-3-medium-diffusers"
+        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         HF_TOKEN =  os.getenv("HUGGINGFACE_AUTH_TOKEN") # Access Hugging Face token from environment variable
-        self.pipe = StableDiffusion3Pipeline.from_pretrained("stabilityai/stable-diffusion-3-medium-diffusers", torch_dtype=torch.float16,token=HF_TOKEN)
+        self.pipe = StableDiffusion3Pipeline.from_pretrained(model_id, torch_dtype=torch.float16,token=HF_TOKEN)
         self.pipe = self.pipe.to("cuda")
 
     @app.infer    
     def infer(self, inputs):
         prompt = inputs["prompt"]
         negative_prompt = inputs["negative_prompt"]
-        inference_steps = inputs["num_inference_steps"]
-        guidance_scale = inputs["guidance_scale"]
+        inference_steps = str(inputs["num_inference_steps"])
+        guidance_scale = float(inputs["guidance_scale"])
         
         image = self.pipe(prompt,negative_prompt=negative_prompt,num_inference_steps=inference_steps,guidance_scale=guidance_scale).images[0]
         buff = BytesIO()
@@ -162,8 +166,8 @@ class InferlessPythonModel:
     def infer(self, inputs):
         prompt = inputs["prompt"]
         negative_prompt = inputs["negative_prompt"]
-        inference_steps = inputs["num_inference_steps"]
-        guidance_scale = inputs["guidance_scale"]
+        inference_steps = str(inputs["num_inference_steps"])
+        guidance_scale = float(inputs["guidance_scale"])
         
         image = self.pipe(prompt,negative_prompt=negative_prompt,num_inference_steps=inference_steps,guidance_scale=guidance_scale).images[0]
         buff = BytesIO()
@@ -181,7 +185,7 @@ class InferlessPythonModel:
 From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
 
 ```bash
-inferless remote-run app.py -c inferless-runtime-config.yaml --prompt "a living room, bright modern Scandinavian style house, large windows, magazine photoshoot, 8k, studio lighting"  --negative_prompt "low quality" --inference_steps "28" --guidance_scale "7.0"
+inferless remote-run app.py -c runtime.yaml --prompt "a living room, bright modern Scandinavian style house, large windows, magazine photoshoot, 8k, studio lighting"  --negative_prompt "low quality" --num_inference_steps 28 --guidance_scale 7.0
 ```
 
 If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
