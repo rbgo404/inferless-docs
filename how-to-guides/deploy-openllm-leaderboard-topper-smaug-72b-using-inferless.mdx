@@ -54,7 +54,6 @@ class InferlessPythonModel:
     @app.load
     def initialize(self):
         model_id = "LoneStriker/Smaug-72B-v0.1-GPTQ"
-        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95,max_tokens=256)
         self.llm = LLM(model=model_id, quantization="gptq", dtype="float16",max_model_len=2048,gpu_memory_utilization=0.9)
 
@@ -120,7 +119,6 @@ class InferlessPythonModel:
     @app.load
     def initialize(self):
         model_id = "LoneStriker/Smaug-72B-v0.1-GPTQ"
-        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95,max_tokens=256)
         self.llm = LLM(model=model_id, quantization="gptq", dtype="float16",max_model_len=2048,gpu_memory_utilization=0.9)
 

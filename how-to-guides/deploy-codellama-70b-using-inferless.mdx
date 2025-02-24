@@ -47,7 +47,6 @@ In the [app.py](https://github.com/inferless/CodeLlama-70B/blob/main/app.py) we 
 ```python
 from vllm import LLM, SamplingParams
 import inferless
-from huggingface_hub import snapshot_download
 
 app = inferless.Cls(gpu="A100")
 
@@ -55,7 +54,6 @@ class InferlessPythonModel:
     @app.load
     def initialize(self):
         model_id = "TheBloke/CodeLlama-70B-Python-GPTQ"
-        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95,max_tokens=256)
         self.llm = LLM(model=model_id, quantization="gptq", dtype="float16",gpu_memory_utilization=0.5)
 
@@ -114,7 +112,6 @@ To enable **Remote Run**, simply do the following:
 ```python
 from vllm import LLM, SamplingParams
 import inferless
-from huggingface_hub import snapshot_download
 
 app = inferless.Cls(gpu="A100")
 
@@ -122,7 +119,6 @@ class InferlessPythonModel:
     @app.load
     def initialize(self):
         model_id = "TheBloke/CodeLlama-70B-Python-GPTQ"
-        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95,max_tokens=256)
         self.llm = LLM(model=model_id, quantization="gptq", dtype="float16",gpu_memory_utilization=0.5)
 

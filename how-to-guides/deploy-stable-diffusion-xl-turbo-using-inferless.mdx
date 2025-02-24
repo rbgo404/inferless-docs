@@ -190,11 +190,11 @@ git clone https://github.com/inferless/stable-diffusion-xl-turbo.git
 ### Deploy the Model
 To deploy the model using Inferless CLI, execute the following command:
 ```bash
-inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
+inferless deploy --gpu A10 --runtime inferless-runtime-config.yaml
 ```
 
 **Explanation of the Command:**
 
-- `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
+- `--gpu A10`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
 - `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
 ![](/images/cli-image.png)

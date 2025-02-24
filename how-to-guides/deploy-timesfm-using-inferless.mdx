@@ -48,12 +48,8 @@ In the [app.py](https://github.com/inferless/Timesfm/blob/main/app.py) we will d
 
 ```python
 import timesfm
-import inferless
-
-app = inferless.Cls(gpu="A100")
 
 class InferlessPythonModel:
-    @app.load
     def initialize(self):
         self.tfm = timesfm.TimesFm(
             context_len=128,
@@ -66,7 +62,6 @@ class InferlessPythonModel:
         )
         self.tfm.load_from_checkpoint(repo_id="google/timesfm-1.0-200m")
 
-    @app.infer
     def infer(self,inputs):
         forecast_input = inputs["forecast_input"]
         frequency_input = inputs["frequency_input"]
@@ -113,10 +108,6 @@ This is a mandatory step where we allow the users to upload their custom runtime
 
 ```python
 build:
-  python_packages:
-    - "inferless-cli==2.0.9"
-    - "hf-transfer==0.1.9"
-    - "huggingface-hub==0.27.1"
   run:
     - "git clone https://github.com/google-research/timesfm.git"
     - "cd timesfm"
@@ -125,65 +116,6 @@ build:
     - "pip install jax[cuda] -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html jax==0.4.28"
     - "huggingface-cli login --token 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 --add-to-git-credential"
 ```
-
-## Test your model with Remote Run
-
-You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
-
-### Step 1: Add the Decorators and local entry point
-To enable **Remote Run**, simply do the following:
-1. Import the `inferless` library and initialize `Cls(gpu="A10")`. The available GPU options are `T4`, `A10` and `A100`.
-2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
-
-```python
-import timesfm
-import inferless
-
-app = inferless.Cls(gpu="A100")
-
-class InferlessPythonModel:
-    @app.load
-    def initialize(self):
-        self.tfm = timesfm.TimesFm(
-            context_len=128,
-            horizon_len=96,
-            input_patch_len=32,
-            output_patch_len=128,
-            num_layers=20,
-            model_dims=1280,
-            backend="cpu",
-        )
-        self.tfm.load_from_checkpoint(repo_id="google/timesfm-1.0-200m")
-
-    @app.infer
-    def infer(self,inputs):
-        forecast_input = inputs["forecast_input"]
-        frequency_input = inputs["frequency_input"]
-        point_forecast, experimental_quantile_forecast = self.tfm.forecast(
-            [forecast_input],
-            freq=[frequency_input],
-        )
-        return {
-            "point_forecast":point_forecast,
-            "experimental_quantile_forecast":experimental_quantile_forecast
-        }
-
-    def finalize(self):
-        pass
-```
-
-### Step 2: Run with Remote GPU
-
-From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
-
-```bash
-inferless remote-run app.py -c inferless-runtime-config.yaml --
-```
-
-You can pass the other input parameters in the same way (e.g., `--task`, `--temperature`, etc.) as long as your code expects them in the `inputs` dictionary.
-
-If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
-
 
 ## Method A: Deploying the model on Inferless Platform
 Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.

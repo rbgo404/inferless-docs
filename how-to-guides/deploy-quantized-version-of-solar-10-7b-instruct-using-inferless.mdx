@@ -107,8 +107,7 @@ In the [app.py](https://github.com/inferless/SOLAR-10.7B-Instruct/blob/main/app.
 3.  `def finalize`: This function cleans up all the allocated memory.
 
 
-```
-from huggingface_hub import snapshot_download
+```python
 import inferless
 from vllm import LLM, SamplingParams
 
@@ -118,7 +117,6 @@ class InferlessPythonModel:
     @app.load
     def initialize(self):
         model_id = "Inferless/SOLAR-10.7B-Instruct-v1.0-GPTQ"
-        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95,max_tokens=256)
         self.llm = LLM(model=model_id, quantization="gptq", dtype="float16")
 
@@ -161,7 +159,6 @@ To enable **Remote Run**, simply do the following:
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
 
 ```python
-from huggingface_hub import snapshot_download
 import inferless
 from vllm import LLM, SamplingParams
 
@@ -171,7 +168,6 @@ class InferlessPythonModel:
     @app.load
     def initialize(self):
         model_id = "Inferless/SOLAR-10.7B-Instruct-v1.0-GPTQ"
-        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95,max_tokens=256)
         self.llm = LLM(model=model_id, quantization="gptq", dtype="float16")
 

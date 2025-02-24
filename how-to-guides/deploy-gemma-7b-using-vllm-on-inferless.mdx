@@ -82,7 +82,7 @@ class InferlessPythonModel:
         return {'gresult': result_output[0]}
 
     def finalize(self):
-        self.llm
+        self.llm = None
 ```
 
 ## Create the Input Schema
@@ -161,7 +161,7 @@ class InferlessPythonModel:
         return {'gresult': result_output[0]}
 
     def finalize(self):
-        self.llm
+        self.llm = None
 ```
 
 ### Step 2: Run with Remote GPU

@@ -44,7 +44,6 @@ class InferlessPythonModel:
     @app.load
     def initialize(self):
         model_id = "TheBloke/OpenHermes-2.5-Mistral-7B-AWQ"  # Specify the model repository ID
-        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         # Define sampling parameters for model generation
         self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95, max_tokens=128)
         # Initialize the LLM object
@@ -96,7 +95,6 @@ class InferlessPythonModel:
     @app.load
     def initialize(self):
         model_id = "TheBloke/OpenHermes-2.5-Mistral-7B-AWQ"  # Specify the model repository ID
-        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         # Define sampling parameters for model generation
         self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95, max_tokens=128)
         # Initialize the LLM object

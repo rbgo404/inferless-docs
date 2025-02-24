@@ -36,6 +36,9 @@ In the [app.py](https://github.com/inferless/meditron-7B-GPTQ/blob/main/app.py) 
 
 ```python
 from vllm import LLM, SamplingParams
+import inferless
+
+app = inferless.Cls(gpu="A100")
 
 class InferlessPythonModel:
     @app.load
