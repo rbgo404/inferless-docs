@@ -46,12 +46,18 @@ In the [app.py](https://github.com/inferless/CodeLlama-70B/blob/main/app.py) we 
 
 ```python
 from vllm import LLM, SamplingParams
+import inferless
+
+app = inferless.Cls(gpu="A100")
 
 class InferlessPythonModel:
+    @app.load
     def initialize(self):
+        model_id = "TheBloke/CodeLlama-70B-Python-GPTQ"
         self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95,max_tokens=256)
-        self.llm = LLM(model="TheBloke/CodeLlama-70B-Python-GPTQ", quantization="gptq", dtype="float16",gpu_memory_utilization=0.5)
+        self.llm = LLM(model=model_id, quantization="gptq", dtype="float16",gpu_memory_utilization=0.5)
 
+    @app.infer
     def infer(self, inputs):
         prompts = inputs["prompt"]
         result = self.llm.generate(prompts, self.sampling_params)
@@ -60,7 +66,7 @@ class InferlessPythonModel:
         return {'result': result_output[0]}
 
     def finalize(self):
-        pass
+        self.llm = None
 ```
 
 ## Create the Input Schema
@@ -87,11 +93,59 @@ This is a mandatory step where we allow the users to upload their custom runtime
 ```python
 build:
   cuda_version: "12.1.1"
-  system_packages:
-    - "libssl-dev"
   python_packages:
-    - "vllm"
+    - "vllm==0.6.3.post1"
+    - "inferless-cli==2.0.9"
+    - "hf-transfer==0.1.9"
+    - "huggingface-hub==0.27.1"
 ```
+
+## Test your model with Remote Run
+
+You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
+
+### Step 1: Add the Decorators and local entry point
+To enable **Remote Run**, simply do the following:
+1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
+2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+
+```python
+from vllm import LLM, SamplingParams
+import inferless
+
+app = inferless.Cls(gpu="A100")
+
+class InferlessPythonModel:
+    @app.load
+    def initialize(self):
+        model_id = "TheBloke/CodeLlama-70B-Python-GPTQ"
+        self.sampling_params = SamplingParams(temperature=0.7, top_p=0.95,max_tokens=256)
+        self.llm = LLM(model=model_id, quantization="gptq", dtype="float16",gpu_memory_utilization=0.5)
+
+    @app.infer
+    def infer(self, inputs):
+        prompts = inputs["prompt"]
+        result = self.llm.generate(prompts, self.sampling_params)
+        result_output = [output.outputs[0].text for output in result]
+
+        return {'result': result_output[0]}
+
+    def finalize(self):
+        self.llm = None
+```
+
+### Step 2: Run with Remote GPU
+
+From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
+
+```bash
+inferless remote-run app.py -c inferless-runtime-config.yaml --prompt "def factorial(int n):"
+```
+
+You can pass the other input parameters in the same way as long as your code expects them in the `inputs` dictionary.
+
+If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
+
 
 ##  Method A: Deploying the model on Inferless Platform 
 Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.

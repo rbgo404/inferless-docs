@@ -53,8 +53,12 @@ In the [app.py](https://github.com/inferless/Llama-3.1-8B-Instruct-GGUF/blob/mai
 from llama_cpp import Llama
 from huggingface_hub import hf_hub_download
 import os
+import inferless
+
+app = inferless.Cls(gpu="A100")
 
 class InferlessPythonModel:
+    @app.load
     def initialize(self):
         nfs_volume = os.getenv("NFS_VOLUME")
         if os.path.exists(nfs_volume + "/Meta-Llama-3.1-8B-Instruct-Q8_0.gguf") == False :
@@ -66,7 +70,7 @@ class InferlessPythonModel:
             model_path=f"{nfs_volume}/Meta-Llama-3.1-8B-Instruct-Q8_0.gguf",
             main_gpu=0,
             n_gpu_layers=-1)
-
+    @app.infer
     def infer(self, inputs):
         prompt = inputs["prompt"]
         system_prompt = inputs.get("system_prompt","You are a friendly bot.")
@@ -143,6 +147,8 @@ INPUT_SCHEMA = {
 }
 ```
 
+
+
 ## Creating the Custom Runtime
 
 This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Llama-3.1-8B-Instruct-GGUF/blob/main/inferless-runtime-config.yaml).
@@ -151,10 +157,77 @@ This is a mandatory step where we allow the users to upload their custom runtime
 build:
   cuda_version: "12.1.1"
   python_packages:
-    - "huggingface-hub==0.24.5"
-  run:
-    - 'CMAKE_ARGS="-DGGML_CUDA=on" pip install llama-cpp-python==0.2.85'
+    - inferless-cli==2.0.9
+    - hf-transfer==0.1.9
+    - huggingface-hub==0.27.1
+    - llama-cpp-python==0.3.7
 ```
+
+## Test your model with Remote Run
+
+You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
+
+### Step 1: Add the Decorators and local entry point
+To enable **Remote Run**, simply do the following:
+1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
+2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+
+```python
+from llama_cpp import Llama
+from huggingface_hub import hf_hub_download
+import os
+import inferless
+
+app = inferless.Cls(gpu="A100")
+
+class InferlessPythonModel:
+    @app.load
+    def initialize(self):
+        nfs_volume = os.getenv("NFS_VOLUME")
+        if os.path.exists(nfs_volume + "/Meta-Llama-3.1-8B-Instruct-Q8_0.gguf") == False :
+            cache_file = hf_hub_download(
+                                repo_id="bartowski/Meta-Llama-3.1-8B-Instruct-GGUF",
+                                filename="Meta-Llama-3.1-8B-Instruct-Q8_0.gguf",
+                                local_dir=nfs_volume)
+        self.llm = Llama(
+            model_path=f"{nfs_volume}/Meta-Llama-3.1-8B-Instruct-Q8_0.gguf",
+            main_gpu=0,
+            n_gpu_layers=-1)
+    @app.infer
+    def infer(self, inputs):
+        prompt = inputs["prompt"]
+        system_prompt = inputs.get("system_prompt","You are a friendly bot.")
+        temperature = inputs.get("temperature",0.7)
+        top_p = inputs.get("top_p",0.1)
+        top_k = inputs.get("top_k",40)
+        repeat_penalty = inputs.get("repeat_penalty",1.18)
+        max_tokens = inputs.get("max_tokens",256)
+
+        output = self.llm.create_chat_completion(
+                    messages = [
+                      {"role": "system", "content": f"{system_prompt}"},
+                      {"role": "user","content": f"{prompt}"}],
+                    temperature=temperature, top_p=top_p, top_k=top_k,repeat_penalty=repeat_penalty,max_tokens=max_tokens
+        )
+        text_result = output['choices'][0]['message']['content']
+
+        return {'generated_result': text_result}
+
+    def finalize(self):
+        self.llm = None
+```
+
+### Step 2: Run with Remote GPU
+
+From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
+
+```bash
+inferless remote-run app.py -c inferless-runtime-config.yaml -prompt "What is deep learning?"
+```
+
+You can pass the other input parameters in the same way (e.g., `--system_prompt`, `--temperature`, etc.) as long as your code expects them in the `inputs` dictionary.
+
+If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
 
 ## Method A: Deploying the model on Inferless Platform
 Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.

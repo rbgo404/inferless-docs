@@ -50,12 +50,17 @@ In the [app.py](https://github.com/inferless/Qwen2-VL-7B-Instruct/blob/main/app.
 from transformers import AutoProcessor
 from vllm import LLM, SamplingParams
 from qwen_vl_utils import process_vision_info
+import inferless
+
+app = inferless.Cls(gpu="A100")
 
 class InferlessPythonModel:
+  @app.load
   def initialize(self):
         self.llm = LLM(model="Qwen/Qwen2-VL-7B-Instruct")
         self.processor = AutoProcessor.from_pretrained("Qwen/Qwen2-VL-7B-Instruct")
-      
+
+  @app.infer
   def infer(self, inputs):
         prompt = inputs["prompt"]
         content_url = inputs["content_url"]
@@ -201,8 +206,107 @@ build:
   cuda_version: "12.1.1"
   python_packages:
     - qwen-vl-utils==0.0.8
-    - vllm==0.6.4.post1
+    - vllm==0.7.3
+    - inferless-cli==2.0.9
+    - hf-transfer==0.1.9
+    - huggingface-hub==0.27.1
 ```
+
+## Test your model with Remote Run
+
+You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
+
+### Step 1: Add the Decorators and local entry point
+To enable **Remote Run**, simply do the following:
+1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
+2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+
+```python
+from transformers import AutoProcessor
+from vllm import LLM, SamplingParams
+from qwen_vl_utils import process_vision_info
+import inferless
+
+app = inferless.Cls(gpu="A100")
+
+class InferlessPythonModel:
+  @app.load
+  def initialize(self):
+        self.llm = LLM(model="Qwen/Qwen2-VL-7B-Instruct")
+        self.processor = AutoProcessor.from_pretrained("Qwen/Qwen2-VL-7B-Instruct")
+
+  @app.infer
+  def infer(self, inputs):
+        prompt = inputs["prompt"]
+        content_url = inputs["content_url"]
+        content_type = inputs.get("content_type","image")
+        system_prompt = inputs.get("system_prompt","You are a helpful assistant.")
+        temperature = float(inputs.get("temperature",0.7))
+        top_p = float(inputs.get("top_p",0.1))
+        repetition_penalty = float(inputs.get("repetition_penalty",1.18))
+        top_k = int(inputs.get("top_k",40))
+        max_tokens = int(inputs.get("max_tokens",256))
+        max_pixels = int(inputs.get("max_pixels",12845056))
+        max_duration = int(inputs.get("max_duration",60))
+
+        sampling_params = SamplingParams(temperature=temperature,top_p=top_p,repetition_penalty=repetition_penalty,
+                                         top_k=top_k,max_tokens=max_tokens)
+        if content_type == "image":
+            content = {
+                "type": "image",
+                "image": content_url,
+                "max_pixels": max_pixels,
+            }      
+        else:
+            content = {
+                "type": "video",
+                "video": content_url,
+                "max_duration": max_duration
+            }  
+        
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": [
+                content,
+                {"type": "text","text": prompt},
+             ]},
+        ]
+
+        prompt = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        image_inputs, video_inputs = process_vision_info(messages)
+
+        mm_data = {}
+        if image_inputs is not None:
+            mm_data["image"] = image_inputs
+        if video_inputs is not None:
+            mm_data["video"] = video_inputs
+
+        llm_inputs = {
+            "prompt": prompt,
+            "multi_modal_data": mm_data,
+        }
+        
+        outputs = self.llm.generate([llm_inputs], sampling_params=sampling_params)
+        generated_text = outputs[0].outputs[0].text
+        
+        return {"generated_result": generated_text}
+
+  def finalize(self):
+    self.llm = None
+```
+
+### Step 2: Run with Remote GPU
+
+From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
+
+```bash
+inferless remote-run app.py -c inferless-runtime-config.yaml --prompt "What does this diagram illustrate?" --content_url "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen-VL/assets/demo.jpeg"
+```
+
+You can pass the other input parameters in the same way (e.g., `--content_type`, `--system_prompt`, etc.) as long as your code expects them in the `inputs` dictionary.
+
+If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
+
 
 ## Method A: Deploying the model on Inferless Platform
 Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.

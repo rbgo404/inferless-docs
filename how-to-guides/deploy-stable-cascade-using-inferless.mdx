@@ -45,12 +45,22 @@ from diffusers import StableCascadeDecoderPipeline, StableCascadePriorPipeline
 from io import BytesIO
 import base64
 import os
+import inferless
+from huggingface_hub import snapshot_download
+
+app = inferless.Cls(gpu="A100")
 
 class InferlessPythonModel:
+    @app.load
     def initialize(self):
-      self.prior = StableCascadePriorPipeline.from_pretrained("stabilityai/stable-cascade-prior", variant="bf16", torch_dtype=torch.bfloat16).to("cuda")
-      self.decoder = StableCascadeDecoderPipeline.from_pretrained("stabilityai/stable-cascade", variant="bf16", torch_dtype=torch.float16).to("cuda")
+      model_id_1 = "stabilityai/stable-cascade"
+      model_id_2 = "stabilityai/stable-cascade-prior"
+      snapshot_download(repo_id=model_id_1,allow_patterns=["*.safetensors"])
+      snapshot_download(repo_id=model_id_2,allow_patterns=["*.safetensors"])
+      self.prior = StableCascadePriorPipeline.from_pretrained(model_id_2, variant="bf16", torch_dtype=torch.bfloat16).to("cuda")
+      self.decoder = StableCascadeDecoderPipeline.from_pretrained(model_id_1, variant="bf16", torch_dtype=torch.float16).to("cuda")
 
+    @app.infer
     def infer(self, inputs):
       prompt = inputs["prompt"]
       negative_prompt = inputs["negative_prompt"]
@@ -103,7 +113,6 @@ INPUT_SCHEMA = {
 }
 ```
 
-
 ## Creating the Custom Runtime
 
 This is a mandatory step where we allow the users to upload their own custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Stable-cascade/blob/main/inferless-runtime-config.yaml).
@@ -118,10 +127,85 @@ build:
     - "libgl1-mesa-glx"
   python_packages:
     - "torch==2.2.1"
-    - "diffusers==0.27.0"
-    - "transformers==4.38.1"
-    - "accelerate==0.27.2"
+    - "accelerate==1.3.0"
+    - "diffusers==0.32.2"
+    - "transformers==4.48.3"
+    - "inferless-cli==2.0.9"
+    - "hf-transfer==0.1.9"
+    - "huggingface-hub==0.27.1"
 ```
+
+## Test your model with Remote Run
+
+You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
+
+### Step 1: Add the Decorators and local entry point
+To enable **Remote Run**, simply do the following:
+1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
+2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+
+```python
+import torch
+from diffusers import StableCascadeDecoderPipeline, StableCascadePriorPipeline
+from io import BytesIO
+import base64
+import os
+import inferless
+from huggingface_hub import snapshot_download
+
+app = inferless.Cls(gpu="A100")
+
+class InferlessPythonModel:
+    @app.load
+    def initialize(self):
+      model_id_1 = "stabilityai/stable-cascade"
+      model_id_2 = "stabilityai/stable-cascade-prior"
+      snapshot_download(repo_id=model_id_1,allow_patterns=["*.safetensors"])
+      snapshot_download(repo_id=model_id_2,allow_patterns=["*.safetensors"])
+      self.prior = StableCascadePriorPipeline.from_pretrained(model_id_2, variant="bf16", torch_dtype=torch.bfloat16).to("cuda")
+      self.decoder = StableCascadeDecoderPipeline.from_pretrained(model_id_1, variant="bf16", torch_dtype=torch.float16).to("cuda")
+
+    @app.infer
+    def infer(self, inputs):
+      prompt = inputs["prompt"]
+      negative_prompt = inputs["negative_prompt"]
+      prior_output = self.prior(
+          prompt=prompt,
+          height=1024,
+          width=1024,
+          negative_prompt=negative_prompt,
+          guidance_scale=4.0,
+          num_images_per_prompt=1,
+          num_inference_steps=20)
+
+      decoder_output = self.decoder(
+          image_embeddings=prior_output.image_embeddings.to(torch.float16),
+          prompt=prompt,
+          negative_prompt=negative_prompt,
+          guidance_scale=0.0,
+          output_type="pil",
+          num_inference_steps=10
+      ).images[0]
+      buff = BytesIO()
+      decoder_output.save(buff, format="JPEG")
+      img_str = base64.b64encode(buff.getvalue()).decode()
+      return { "generated_image_base64" : img_str }
+
+    def finalize(self):
+        self.pipe = None
+```
+
+### Step 2: Run with Remote GPU
+
+From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
+
+```bash
+inferless remote-run app.py -c inferless-runtime-config.yaml --prompt "Penguins having dinner" --negative_prompt "low quality"
+```
+
+You can pass the other input parameters in the same way as long as your code expects them in the `inputs` dictionary.
+
+If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
 
 ## Method A: Deploying the model on Inferless Platform
 Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.
@@ -148,7 +232,6 @@ Once the model is in 'Active' status you can click on the 'API' page to call the
 ![](/gif/stable-cascade.gif)
 
  
-
 ## Method B: Deploying the model on Inferless CLI
 
 Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.

@@ -27,35 +27,35 @@ You can also add other files to this directory.
 
 ## Create the class for inference
 
-In the [app.py](https://github.com/inferless/inferless_tutorials/tree/main/speech_recognition/Whisper-Large-v3/app.py) we will define the class and import all the required functions
+In the [app.py](https://github.com/inferless/whisper-large-v3/blob/main/app.py) we will define the class and import all the required functions
 
 1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
-
-```python
-class InferlessPythonModel: 
-    def initialize(self):
-        self.generator = pipeline(
-            "automatic-speech-recognition",
-            model="openai/whisper-large-v3", chunk_length_s=30, batch_size=8,
-            torch_dtype=torch.float16,
-            device_map="cuda:0",
-        )
-```
-
 2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference through the `inputs` parameter.
-
-```
-    def infer(self, inputs):
-        audio_url = inputs["audio_url"]
-        pipeline_output = self.generator(audio_url, )
-        return {"transcribed_output": pipeline_output["text"] }
-```
-
 3.  `def finalize`: This function cleans up all the allocated memory.
 
-```
-    def finalize(self,*args):
-        self.generator = None
+```python
+import inferless
+from faster_whisper import WhisperModel
+
+app = inferless.Cls(gpu="A10")
+
+class InferlessPythonModel:
+    @app.load        
+    def initialize(self):
+        model_size = "large-v3"
+        self.model = WhisperModel(model_size, device="cuda", compute_type="float16")
+
+    @app.infer
+    def infer(self, inputs):
+        
+        audio_url = inputs["audio_url"]
+        segments, info = self.model.transcribe(audio_url, beam_size=5)
+        text = ''.join([segment.text for segment in segments])
+        
+        return {"transcribed_output":text}
+
+    def finalize(self):
+        self.model = None
 ```
 
 ## Creating the Custom Runtime
@@ -67,11 +67,59 @@ build:
   system_packages:
     - "ffmpeg"
   python_packages:
-    - "ffmpeg-python"
-    - "ffmpeg"
-    - "torch==2.1.0"
-    - "transformers==4.36.1"
+    - "faster-whisper==1.0.0"
+    - "torch==2.2.1"
+    - "inferless-cli==2.0.9"
+    - "hf-transfer==0.1.9"
+    - "huggingface-hub==0.27.1"
 ```
+
+## Test your model with Remote Run
+
+You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
+
+### Step 1: Add the Decorators and local entry point
+To enable **Remote Run**, simply do the following:
+1. Import the `inferless` library and initialize `Cls(gpu="A10")`. The available GPU options are `T4`, `A10` and `A100`.
+2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+
+```python
+import inferless
+from faster_whisper import WhisperModel
+
+app = inferless.Cls(gpu="A10")
+
+class InferlessPythonModel:
+    @app.load        
+    def initialize(self):
+        model_size = "large-v3"
+        self.model = WhisperModel(model_size, device="cuda", compute_type="float16")
+
+    @app.infer
+    def infer(self, inputs):
+        
+        audio_url = inputs["audio_url"]
+        segments, info = self.model.transcribe(audio_url, beam_size=5)
+        text = ''.join([segment.text for segment in segments])
+        
+        return {"transcribed_output":text}
+
+    def finalize(self):
+        self.model = None
+```
+
+### Step 2: Run with Remote GPU
+
+From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
+
+```bash
+inferless remote-run app.py -c inferless-runtime-config.yaml --audio_url "https://raw.githubusercontent.com/rbgo404/Files/refs/heads/main/jeanNL.mp3"
+```
+
+You can pass the other input parameters in the same way as long as your code expects them in the `inputs` dictionary.
+
+If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
+
 
 ##  Method A: Deploying the model on Inferless Platform
 
@@ -113,11 +161,11 @@ git clone https://github.com/inferless/whisper-large-v3.git
 ### Deploy the Model
 To deploy the model using Inferless CLI, execute the following command:
 ```bash
-inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
+inferless deploy --gpu A10 --runtime inferless-runtime-config.yaml
 ```
 
 **Explanation of the Command:**
 
-- `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
+- `--gpu A10`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
 - `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
 ![](/images/cli-image.png)
