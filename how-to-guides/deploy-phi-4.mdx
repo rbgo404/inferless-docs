@@ -1,0 +1,193 @@
+---
+title: "Deploy the Phi-4 using Inferless"
+description: "Phi-4 is Microsoft's latest 14 billion parameters small language model (SLM). This model is part of the Phi family, which aims to balance between model size and performance, showcasing that smaller models can achieve state-of-the-art results."
+---
+
+## Introduction
+[Phi-4](https://huggingface.co/microsoft/phi-4) is a 14-billion parameter language model developed by Microsoft Research, 
+designed to excel in complex reasoning tasks, particularly within STEM domains. 
+Phi-4 strategically incorporates synthetic data throughout its training process, enhancing its problem-solving capabilities.
+
+It achieves an 80.4 score on the MATH benchmark, surpassing larger models like Llama-3.3 70B, Qwen 2.5 72B Instruct and GPT-4o. 
+It attains a score of 82.6 on the HumanEval coding benchmark, indicating strong code generation capabilities.
+
+## Defining Dependencies
+
+We are using the [vLLM](https://github.com/vllm-project/vllm/) to serve the model on a single A100.
+
+## Our Observations
+
+We have deployed the model on an A100 GPU(80GB). Here are our observations:
+
+| Library      | Inference Time  | Cold Start Time |Tokens/Sec    | Output Tokens Length    |
+| ------------ | --------------- | --------------- | ------------ | ----------------------- |
+| vLLM         | 2.78 sec        | 39.95 sec       | 32.6         | 128                     |
+
+Note: The inference time and cold start time are average values.
+
+## Defining Dependencies
+
+We are using the [vLLM](https://github.com/vllm-project/vllm/) to serve the model on a single A100 (80GB).
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`.
+
+```
+Phi-4/
+├── app.py
+├── inferless-runtime-config.yaml
+└── inferless.yaml
+```
+
+You can also add other files to this directory.
+
+## Create the Input Schema with Pydantic
+
+Using the `inferless` Python client and Pydantic, you can define structured schemas directly in your code for input and output, eliminating the need for external file.
+
+### Input Schema
+When defining an input schema with Pydantic, you need to annotate your class attributes with the appropriate types, such as `str`, `float`, `int`, etc. 
+These type annotations specifys what type of data each field should contain. 
+The `default` value serves as the example input for testing with the `infer` function.
+
+```python
+@inferless.request
+class RequestObjects(BaseModel):
+        prompt: str = Field(default="Implement a function to check if a given number is a prime number.")
+        temperature: Optional[float] = 0.7
+        top_p: Optional[float] = 0.1
+        repetition_penalty: Optional[float] = 1.18
+        top_k: Optional[int] = 40
+        max_tokens: Optional[int] = 256
+```
+
+### Output Schema
+The `@inferless.response` decorator helps you define structured output schemas.
+
+```python
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_text: str = Field(default='Test output')
+```
+
+### Usage in the `infer` Function
+Once you have annotated the objects you can expect the infer function to receive `RequestObjects` as input,
+and returns a `ResponseObjects` instance as output, ensuring the results adhere to a defined structure.
+
+```python
+class InferlessPythonModel:
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        
+        return ResponseObjects(generated_text=result[0])
+```
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/Phi-4/blob/main/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference and pass it through `inputs(dict)` parameter.
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+```python
+from vllm import LLM
+from vllm.sampling_params import SamplingParams
+import inferless
+from pydantic import BaseModel, Field
+from typing import Optional
+
+@inferless.request
+class RequestObjects(BaseModel):
+        prompt: str = Field(default="Implement a function to check if a given number is a prime number.")
+        temperature: Optional[float] = 0.7
+        top_p: Optional[float] = 0.1
+        repetition_penalty: Optional[float] = 1.18
+        top_k: Optional[int] = 40
+        max_tokens: Optional[int] = 256
+
+@inferless.response
+class ResponseObjects(BaseModel):
+        generated_text: str = Field(default='Test output')
+    
+class InferlessPythonModel:
+    def initialize(self):
+        model_id = "microsoft/phi-4"
+        self.llm = LLM(model=model_id,enforce_eager=True)
+
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        sampling_params = SamplingParams(temperature=request.temperature,top_p=request.top_p,
+                                         repetition_penalty=request.repetition_penalty,
+                                         top_k=request.top_k,max_tokens=request.max_tokens
+                                        )
+        result = self.llm.generate(request.prompt, sampling_params)
+        result_output = [output.outputs[0].text for output in result]
+        
+        generateObject = ResponseObjects(generated_text = result_output[0])        
+        return generateObject
+        
+    def finalize(self):
+        self.llm = None
+```
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Phi-4/blob/main/inferless-runtime-config.yaml).
+
+```python
+build:
+  cuda_version: "12.1.1"
+  python_packages:
+    - vllm==0.6.6.post1
+    - inferless==0.2.6
+    - pydantic==2.10.2
+```
+
+## Method A: Deploying the model on Inferless Platform
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.
+
+### Step 1: Login to the inferless dashboard can click on Import model button
+Navigate to your desired workspace in Inferless and Click on `Add a custom model` button that you see on the top right. An import wizard will open up.
+
+### Step 2: Follow the UI to complete the model  Import
+- Select the GitHub/GitLab Integration option to connect your source code repository with the deployment environment.
+- Navigate to the specific GitHub repository that contains your model's code. Here, you will need to identify and enter the name of the model you wish to import.
+- Choose the appropriate type of machine that suits your model's requirements. Additionally, specify the minimum and maximum number of replicas to define the scalability range for deploying your model.
+- Optionally, you have the option to enable automatic build and deployment. This feature triggers a new deployment automatically whenever there is a new code push to your repository.
+- If your model requires additional software packages, configure the Custom Runtime settings by including necessary pip or apt packages. Also, set up environment variables such as  Inference Timeout, Container Concurrency, and Scale Down Timeout to tailor the runtime environment according to your needs.
+- Wait for the validation process to complete, ensuring that all settings are correct and functional. Once validation is successful, click on the "Import" button to finalize the import of your model.
+![](/images/inferless_model_import.png)
+
+
+### Step 3: Wait for the model build to complete usually takes ~5-10 minutes
+
+### Step 4: Use the APIs to call the model
+Once the model is in 'Active' status you can click on the 'API' page to call the model
+
+### Here is the Demo:
+
+![](/gif/phi-4-demo.gif)
+
+## Method B: Deploying the model on Inferless CLI
+
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+### Clone the repository of the model
+Let's begin by cloning the model repository:
+```bash
+git clone https://github.com/inferless/Phi-4.git
+```
+
+### Deploy the Model
+To deploy the model using Inferless CLI, execute the following command:
+```bash
+inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
+```
+
+**Explanation of the Command:**
+
+- `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
+- `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
+![](/images/Phi-4-cli.png)

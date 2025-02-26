@@ -47,23 +47,32 @@ In the [app.py](https://github.com/inferless/google-Paligemma-3b/blob/main/app.p
 3.  `def finalize`: This function cleans up all the allocated memory.
 
 ```python
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+from huggingface_hub import snapshot_download
 from transformers import AutoProcessor, PaliGemmaForConditionalGeneration
 from PIL import Image
 import requests
 import torch
+import inferless
+
+
+app = inferless.Cls(gpu="A100")
 
 class InferlessPythonModel:
+    @app.load
     def initialize(self):
         model_id = "google/paligemma-3b-mix-224"
+        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         device = "cuda:0"
         dtype = torch.bfloat16
         self.model = PaliGemmaForConditionalGeneration.from_pretrained(model_id,
                                                                        torch_dtype=dtype,
                                                                        device_map=device,revision="bfloat16",
-                                                                       token="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").eval()
+                                                                       token="<YOUR_HF_TOKEN>").eval()
         self.processor = AutoProcessor.from_pretrained(model_id,
-                                                       token="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")
-
+                                                       token="<YOUR_HF_TOKEN>")
+    @app.infer
     def infer(self,inputs):
         prompt = inputs["prompt"]
         image_url = inputs["image_url"]
@@ -116,7 +125,73 @@ build:
     - "accelerate==0.30.1"
     - "transformers==4.41.0"
     - "torch==2.3.0"
+    - "inferless-cli==2.0.9"
+    - "hf-transfer==0.1.9"
+    - "huggingface-hub==0.27.1"
 ```
+
+## Test your model with Remote Run
+
+You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
+
+### Step 1: Add the Decorators and local entry point
+To enable **Remote Run**, simply do the following:
+1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
+2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+
+```python
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+from huggingface_hub import snapshot_download
+from transformers import AutoProcessor, PaliGemmaForConditionalGeneration
+from PIL import Image
+import requests
+import torch
+import inferless
+
+app = inferless.Cls(gpu="A100")
+
+class InferlessPythonModel:
+    @app.load
+    def initialize(self):
+        model_id = "google/paligemma-3b-mix-224"
+        snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
+        device = "cuda:0"
+        dtype = torch.bfloat16
+        self.model = PaliGemmaForConditionalGeneration.from_pretrained(model_id,
+                                                                       torch_dtype=dtype,
+                                                                       device_map=device,revision="bfloat16",
+                                                                       token="<YOUR_HF_TOKEN>").eval()
+        self.processor = AutoProcessor.from_pretrained(model_id,
+                                                       token="<YOUR_HF_TOKEN>")
+    @app.infer
+    def infer(self,inputs):
+        prompt = inputs["prompt"]
+        image_url = inputs["image_url"]
+        image = Image.open(requests.get(image_url, stream=True).raw)
+        model_inputs = self.processor(text=prompt, images=image, return_tensors="pt").to("cuda")
+        input_len = model_inputs["input_ids"].shape[-1]
+
+        with torch.inference_mode():
+            generation = self.model.generate(**model_inputs, max_new_tokens=100, do_sample=False)
+            generation = generation[0][input_len:]
+            decoded = self.processor.decode(generation, skip_special_tokens=True)
+
+        return {'response': decoded}
+
+    def finalize(self):
+        pass
+```
+
+### Step 2: Run with Remote GPU
+
+From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
+
+```bash
+inferless remote-run app.py -c inferless-runtime-config.yaml --prompt "What is this?" --image_url "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/transformers/tasks/car.jpg?download=true"
+```
+
+If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
 
 ## Method A: Deploying the model on Inferless Platform
 Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.

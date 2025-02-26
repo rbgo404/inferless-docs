@@ -3,17 +3,9 @@ title: "Deploy Mixtral-8x7B using Inferless"
 description: "Mixtral 8x7B, a sparse mixture of experts (SMoE) model with open weights, outperforms Llama 2 70B on benchmarks. It excels as the strongest open-weight model, displaying superior cost/performance."
 ---
 
-## Our Observations
-
-We have deployed this model using AutoGPTQ on an A100 GPU(80GB) machine with max-token set to 512\. Below are observations:
-
-| Inference Time | Token/Sec | Cold Start Time |
-| -------------- | --------- | --------------- |
-| 33.40 sec      | 14.78     | 13.52 sec       |
-
 ## Defining Dependencies
 
-We are using the AutoGPTQ library for the deployment, which we have built from the source.
+We are using the vLLM library for the deployment, which we have built from the source.
 
 ## Constructing the GitHub/GitLab Template
 
@@ -40,31 +32,39 @@ In the [app.py](https://github.com/inferless/inferless_tutorials/blob/main/text_
 3.  `def finalize`: This function cleans up all the allocated memory.
 
 ```python
+import inferless
+from vllm import SamplingParams
+from vllm import LLM
+
+app = inferless.Cls(gpu="A100")
+
 class InferlessPythonModel:
-        def initialize(self):
-                model_name_or_path = "TheBloke/Mixtral-8x7B-v0.1-GPTQ"
-                self.model = AutoGPTQForCausalLM.from_quantized(model_name_or_path,
-                        model_basename="model",
-                        use_safetensors=True,
-                        trust_remote_code=False,
-                        device="cuda:0",
-                        use_triton=False,
-                        disable_exllama=True,
-                        disable_exllamav2=True,
-                        quantize_config=None)
-                self.tokenizer = AutoTokenizer.from_pretrained(model_name_or_path, use_fast=True, trust_remote_code=False)
-                
-        def infer(self, inputs):
-                prompts = inputs["prompt"]
-                input_ids = self.tokenizer(prompts, return_tensors='pt').input_ids.cuda()
-                output = self.model.generate(inputs=input_ids, temperature=0.7, do_sample=True, top_p=0.95, top_k=40, max_new_tokens=512)
-                text = self.tokenizer.decode(output[0])
-        
-                return {'generated_result': output.shape[1]}
-                
-        def finalize(self,*args):
-                self.model = None
-                self.tokenizer = None
+    @app.load
+    def initialize(self):
+        self.template = """SYSTEM: You are a helpful assistant.
+        USER: {}
+        ASSISTANT: """
+        self.llm = LLM(
+          model="TheBloke/Mixtral-8x7B-v0.1-GPTQ",
+          quantization="gptq",
+          dtype="float16")
+
+    @app.infer
+    def infer(self, inputs):
+        prompts = [self.template.format(inputs["prompt"])]
+        sampling_params = SamplingParams(
+            temperature=0.75,
+            top_p=1,
+            max_tokens=256,
+            presence_penalty=1.15,
+        )
+        result = self.llm.generate(prompts, sampling_params)
+        result_output = [output.outputs[0].text for output in result]
+
+        return {"generated_result": result_output[0]}
+
+    def finalize(self):
+        self.llm = None
 ```
 
 ## Creating the Software packages
@@ -74,15 +74,70 @@ This is a mandatory step where we allow the users to add all the required softwa
 ```python
 build:
   cuda_version: "12.1.1"
-  system_packages:
-    - "libssl-dev"
   python_packages:
-    - "torch==2.1.0 --index-url https://download.pytorch.org/whl/cu121"
-    - "gekko==1.0.6"
-    - "pandas==2.1.4"
-    - "setuptools==69.0.2"
-    - "wheel==0.42.0"
+    - "vllm==0.3.2"
+    - "inferless-cli==2.0.9"
+    - "hf-transfer==0.1.9"
+    - "huggingface-hub==0.27.1"
 ```
+
+## Test your model with Remote Run
+
+You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
+
+### Step 1: Add the Decorators and local entry point
+To enable **Remote Run**, simply do the following:
+1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
+2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+
+```python
+import inferless
+from vllm import SamplingParams
+from vllm import LLM
+
+app = inferless.Cls(gpu="A100")
+
+class InferlessPythonModel:
+    @app.load
+    def initialize(self):
+        self.template = """SYSTEM: You are a helpful assistant.
+        USER: {}
+        ASSISTANT: """
+        self.llm = LLM(
+          model="TheBloke/Mixtral-8x7B-v0.1-GPTQ",
+          quantization="gptq",
+          dtype="float16")
+
+    @app.infer
+    def infer(self, inputs):
+        prompts = [self.template.format(inputs["prompt"])]
+        sampling_params = SamplingParams(
+            temperature=0.75,
+            top_p=1,
+            max_tokens=256,
+            presence_penalty=1.15,
+        )
+        result = self.llm.generate(prompts, sampling_params)
+        result_output = [output.outputs[0].text for output in result]
+
+        return {"generated_result": result_output[0]}
+
+    def finalize(self):
+        self.llm = None
+```
+
+### Step 2: Run with Remote GPU
+
+From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
+
+```bash
+inferless remote-run app.py -c inferless-runtime-config.yaml --prompt "What is Quantum Computing?"
+```
+
+You can pass the other input parameters in the same way as long as your code expects them in the `inputs` dictionary.
+
+If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
+
 
 ##  Method A: Deploying the model on Inferless Platform
 

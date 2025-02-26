@@ -45,20 +45,25 @@ In the [app.py](https://github.com/inferless/Llama3-TenyxChat-70B/blob/main/app.
 3.  `def finalize`: This function cleans up all the allocated memory.
 
 ```python
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    BitsAndBytesConfig,
-    AutoTokenizer
-)
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+from huggingface_hub import snapshot_download
+from transformers import AutoModelForCausalLM,BitsAndBytesConfig,AutoTokenizer
+import inferless
 
-class InferlessPythonModel:    
+
+app = inferless.Cls(gpu="A100")
+
+class InferlessPythonModel:   
+    @app.load
     def initialize(self):
         model_name = "tenyx/Llama3-TenyxChat-70B"
+        snapshot_download(repo_id=model_name,allow_patterns=["*.safetensors"])
         bnb_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4")
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=bnb_config, device_map={"": 0})
-        
+
+    @app.infer
     def infer(self, inputs):
         prompt = inputs["prompt"]
         chat = [{"role": "user", "content": prompt}]
@@ -68,7 +73,7 @@ class InferlessPythonModel:
         output = self.tokenizer.decode(generated_output[0], skip_special_tokens=True)
         return {"generated_outputs":output}
         
-    def finalize(self,args):
+    def finalize(self):
         self.model = None
 ```
 
@@ -102,7 +107,61 @@ build:
     - "transformers==4.40.1"
     - "accelerate==0.29.3"
     - "bitsandbytes==0.43.1"
+    - "inferless-cli==2.0.9"
+    - "hf-transfer==0.1.9"
+    - "huggingface-hub==0.27.1"
 ```
+
+## Test your model with Remote Run
+
+You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
+
+### Step 1: Add the Decorators and local entry point
+To enable **Remote Run**, simply do the following:
+1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
+2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+
+```python
+import os
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+from huggingface_hub import snapshot_download
+from transformers import AutoModelForCausalLM,BitsAndBytesConfig,AutoTokenizer
+import inferless
+
+app = inferless.Cls(gpu="A100")
+
+class InferlessPythonModel:   
+    @app.load
+    def initialize(self):
+        model_name = "tenyx/Llama3-TenyxChat-70B"
+        snapshot_download(repo_id=model_name,allow_patterns=["*.safetensors"])
+        bnb_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_quant_type="nf4")
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=bnb_config, device_map={"": 0})
+
+    @app.infer
+    def infer(self, inputs):
+        prompt = inputs["prompt"]
+        chat = [{"role": "user", "content": prompt}]
+        chat_template = self.tokenizer.apply_chat_template(chat,tokenize=False)
+        inputs = self.tokenizer(chat_template,return_tensors="pt")
+        generated_output = self.model.generate(**inputs, max_new_tokens=120)
+        output = self.tokenizer.decode(generated_output[0], skip_special_tokens=True)
+        return {"generated_outputs":output}
+        
+    def finalize(self):
+        self.model = None
+```
+
+### Step 2: Run with Remote GPU
+
+From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
+
+```bash
+inferless remote-run app.py -c inferless-runtime-config.yaml --prompt "What is AI?"
+```
+
+If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
 
 ## Method A: Deploying the model on Inferless Platform
 Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.
