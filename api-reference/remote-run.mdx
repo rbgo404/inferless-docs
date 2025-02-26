@@ -65,6 +65,31 @@ class MyLLModel:
         return "generated output"
 ```
 
+### <i>@inferless.local_entry_point</i>
+
+`@inferless.local_entry_point` annotation lets you mark a module-level function as the local entry point for remote run.
+
+<Note>
+	Optional Usage: Using this annotation is completely optional. If you choose not to define a local entry point, Inferless will
+	fall back to your default annotated functions (e.g. those marked with @inferless.method or via Cls). This function is called
+	only when running your code using the inferless remote-run command locally. It is not used when deploying your model.
+</Note>
+
+```
+import inferless
+
+@inferless.local_entry_point
+def my_local_entry(dynamic_params):
+    """
+    This function serves as the local entry point for remote run.
+    It creates an instance of your model and calls its inference method,
+    passing the dynamic parameters.
+    """
+    from app import InferlessPythonModel  # adjust import as needed
+    model_instance = InferlessPythonModel()
+    return model_instance.infer(dynamic_params)
+```
+
 ## Examples
 
 This section contains working examples of how to use the `remote-run` command.
