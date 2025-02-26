@@ -1,0 +1,84 @@
+---
+title: "3D Generative Models CheatSheet"
+description: A comprehensive guide to open-source 3D generative models, datasets, toolkits, and resources for development, deployment, and evaluation.
+--- 
+
+## 1. Models (Open-Source)
+
+- **[Shap-E](https://huggingface.co/openai/shap-e):** A conditional generative model from OpenAI that creates 3D assets from text prompts using a diffusion process.
+- **[LLaMA-Mesh](https://huggingface.co/Zhengyi/LLaMA-Mesh):** This model unifies 3D mesh generation with language models, enabling the generation of 3D meshes from text prompts. 
+- **[Hunyuan3D-1](https://huggingface.co/tencent/Hunyuan3D-1):** Hunyuan3D-1 is designed for generating high-quality 3D models and supports various applications in computer graphics and virtual environments.
+- **[TRELLIS-Image-Large](https://huggingface.co/JeffreyXiang/TRELLIS-image-large):** his model focuses on generating detailed 3D representations from images, enhancing the fidelity of visual outputs in generative tasks.
+- **[InstantMesh](https://huggingface.co/TencentARC/InstantMesh):** InstantMesh is a tool for generating high-quality meshes from point clouds, facilitating efficient 3D modeling workflows.
+
+## 2. Inference Libraries / Toolkits
+
+- **[Hunyuan3D-1](https://github.com/tencent/Hunyuan3D-1)** A Unified Framework for Text-to-3D and Image-to-3D Generation utilizing the Hunyuan3D-1 model effectively in various applications.
+- **[InstantMesh](https://github.com/TencentARC/InstantMesh):** A library for creating high-quality meshes from point clouds, providing tools for mesh generation and manipulation.
+- **[TripoSR](https://github.com/VAST-AI-Research/TripoSR):**  This toolkit focuses on super-resolution techniques for improving the quality of 3D models and images.
+- **[TRELLIS](https://github.com/Microsoft/TRELLIS):** A comprehensive framework for working with generative models in 3D, offering various utilities for model inference and evaluation.
+- **[dust3r](https://github.com/naver/dust3r/):** A library aimed at enhancing the generation of 3D structures through advanced algorithms and techniques.
+
+## 3. Datasets
+
+- **[objaverse](https://huggingface.co/datasets/allenai/objaverse):** A large-scale dataset containing diverse 3D object representations, useful for training generative models.
+- **[TRELLIS-500K](https://huggingface.co/datasets/JeffreyXiang/TRELLIS-500K):** A dataset of 500K 3D assets curated from Objaverse(XL), ABO, 3D-FUTURE, HSSD, and Toys4k, filtered based on aesthetic scores.
+- **[Cap3D](https://huggingface.co/datasets/tiange/Cap3D):** A comprehensive dataset which contains multiple dataset and also it contains descriptive captions for 3D objects.
+
+## 4. Use Cases
+
+- **Gaming and Animation:** Generating high-quality 3D assets for interactive applications and storytelling.
+- **Product Design:** Rapid prototyping of design concepts using AI-generated 3D models.
+- **Education and Training:** Creating 3D visualizations for educational content and simulations.
+- **Healthcare:** Developing 3D anatomical models for diagnostics, training, and surgery planning.
+- **Virtual Reality (VR) and Augmented Reality (AR):** Enhancing immersive experiences through dynamic 3D content creation.
+
+## 5. Deployment Options
+
+- **[On-Premises Deployment](https://medium.com/@cprasenjit32/deployment-of-machine-learning-models-on-premises-and-in-the-cloud-39b021efba97):** Running models on local servers for full control and data privacy.
+- **[Cloud Services](https://www.analyticsvidhya.com/blog/2022/09/how-to-deploy-a-machine-learning-model-on-aws-ec2/):** Utilizing cloud providers like AWS, Azure, or Google Cloud for scalable deployment.
+- **[Serverless GPU Platforms](https://docs.inferless.com/how-to-guides/deploy-a-codellama-python-34b-model-using-inferless):** Serverless GPU platforms like [Inferless](https://www.inferless.com/) provide on-demand, scalable GPU resources for machine learning workloads, eliminating the need for infrastructure management and offering cost efficiency.
+- **[Containerization](https://www.datacamp.com/tutorial/containerization-docker-and-kubernetes-for-machine-learning):** Using Docker or Kubernetes to manage and scale deployments efficiently.
+
+
+## 6. Training & Fine-Tuning Resources
+
+- **[Machine Learning for 3D](https://huggingface.co/learn/ml-for-3d-course/unit0/introduction):** An introductory course covering machine learning techniques applied to 3D data.
+- **[Learning for 3D Vision](https://learning3d.github.io/?utm_source=chatgpt.com):** This course delves into the convergence of 3D vision and learning-based methods.
+- **[3D Point Cloud and Machine Learning](https://www.youtube.com/playlist?list=PLY8iUIKUWr9PRHjh4H86UwwnM_3gU3sHV):** A video playlist detailing machine learning approaches specifically tailored to point cloud data.
+
+## 7. Evaluation & Benchmarking
+
+- **[GT23D-Bench](https://arxiv.org/html/2412.09997v1):** A Comprehensive General Text-to-3D Generation Benchmark
+- **Peak Signal-to-Noise Ratio (PSNR):** A critical metric used to evaluate the quality of reconstructions and ground-truth rendered images.
+- **Chamfer Distance (CD) and Fscore (FS):** These two are standard metrics for evaluating the accuracy of 3D shape reconstructions.
+
+## 8. Model Optimization & Compression
+
+- **Quantization:** Reducing model size for deployment on edge devices without significant loss of accuracy.
+- **Knowledge Distillation:** Training smaller models to mimic larger, more complex models.
+- **Pruning:** Removing redundant parameters to streamline model performance.
+
+## 9. Integration & Workflow Tools
+- **[Meshgen](https://github.com/huggingface/meshgen):** A Blender addon for generating meshes with AI.
+- **[Open3D](https://github.com/isl-org/Open3D):** An open-source library that supports the processing of 3D data, including visualization, reconstruction, and analysis functionalities.
+
+## 10. Common Challenges & Troubleshooting
+
+- **Data Quality:** Ensuring high-quality input data for better outputs.
+- **Scalability:** Managing computational resources for large-scale 3D generation.
+- **Model Robustness:** Addressing failures in handling diverse input types.
+- **Interoperability Issues:** Problems may arise when integrating AI tools with existing workflows. Leverage standard file formats and cross-platform libraries for smoother integration.
+- **Ethical Issues:** Preventing misuse of generated models for unethical applications.
+
+## 11. Ethical Considerations
+
+- **Bias in Data:** Ensuring diverse datasets to avoid biases in generated outputs.
+- **Intellectual Property (IP):** Respecting copyright and IP laws when training or using generative models.
+- **Responsible Use:** Establishing guidelines to prevent the misuse of generative technologies.
+- **Transparency:** Maintain openness about how models are trained, evaluated, and deployed. This builds trust and promotes responsible AI usage.
+## 12. Licensing & Governance
+
+- **Check Licenses:** (MIT, Apache 2.0, GPL) before commercial use.
+- **Hugging Face Model Cards:** Follow best practices for transparency.
+- **Data Usage Agreements:** Ensure compliance with dataset terms.

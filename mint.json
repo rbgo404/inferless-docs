@@ -56,12 +56,27 @@
 		{
 			"name": "References",
 			"url": "references"
+		},
+		{
+			"name": "OSS Cheatsheet",
+			"url": "cheatsheet"
 		}
 	],
 	"navigation": [
 		{
 			"group": "",
 			"pages": ["introduction/introduction"]
+		},
+		{
+			"group":"Cheatsheet",
+			"pages":[
+				"cheatsheet/tts-cheatsheet",
+				"cheatsheet/code-cheatsheet",
+				"cheatsheet/text-to-image-cheatsheet",
+				"cheatsheet/vision-llm-cheatsheet",
+        "cheatsheet/ai-agent-cheatsheet",
+        "cheatsheet/itt3d-cheatsheet"
+			]
 		},
 		{
 			"group": "Getting Started",
@@ -264,6 +279,10 @@
 				{
 					"group": "December 2024",
 					"pages": ["changelog/november-2024/9th-december", "changelog/december-2024/9th-december"]
+				},
+				{
+					"group": "January 2025",
+					"pages": ["changelog/January-2025/9th-january"]
 				}
 			]
 		},
@@ -306,7 +325,8 @@
 				"how-to-guides/deploy-a-whisper-large-v3-turbo",
 				"how-to-guides/deploy-a-Ministral-8B-Instruct",
 				"how-to-guides/deploy-Qwen2.5-Coder-32B-Instruct",
-				"how-to-guides/deploy-Qwen2-VL-7B-Instruct"
+				"how-to-guides/deploy-Qwen2-VL-7B-Instruct",
+				"how-to-guides/deploy-a-Qwen-QwQ-32B-preview"
 			]
 		},
 		{
@@ -343,3 +363,6 @@
 		"linkedin": "https://www.linkedin.com/company/inferless/"
 	}
 }
+
+
+
