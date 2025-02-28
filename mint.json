@@ -327,6 +327,7 @@
 				"how-to-guides/deploy-Qwen2-VL-7B-Instruct",
 				"how-to-guides/deploy-a-Qwen-QwQ-32B-preview",
 				"how-to-guides/deploy-DeepSeek-R1-Distill-Qwen-32B",
+				"how-to-guides/deploy-mistral-7b-instruct-v0.3"
 				"how-to-guides/deploy-phi-4",
 				"how-to-guides/deploy-qwen2.5-vl-7b"
 			]
