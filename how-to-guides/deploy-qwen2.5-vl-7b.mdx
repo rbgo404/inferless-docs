@@ -48,7 +48,7 @@ These type annotations specifys what type of data each field should contain.
 The `default` value serves as the example input for testing with the `infer` function.
 
 ```python
-inferless.request
+@inferless.request
 class RequestObjects(BaseModel):
         prompt: str = Field(default="What does this diagram illustrate?")
         content_url: str = Field(default="https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen-VL/assets/demo.jpeg")
