@@ -276,7 +276,7 @@ git clone https://github.com/inferless/product-hunt-thread-summarizer.git
 #### Deploy the Model
 To deploy the model using Inferless CLI, execute the following command:
 ```bash
-inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
+inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml --env HF_TOKEN=<YOUR_HUGGING_FACE_ACCESS_TOKEN>
 ```
 
 **Explanation of the Command:**
