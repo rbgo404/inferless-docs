@@ -204,7 +204,8 @@
 				"cookbook/serverless-llama3-youtube-summarizer",
 				"cookbook/serverless-customer-service-bot",
 				"cookbook/comfyui-api-inferless",
-				"cookbook/serverless-speech-book-summary"
+				"cookbook/serverless-speech-book-summary",
+				"cookbook/product-hunt-thread-summarizer"
 			]
 		},
 		{

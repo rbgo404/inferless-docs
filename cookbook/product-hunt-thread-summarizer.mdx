@@ -1,0 +1,328 @@
+---
+title: "Build a Serverless Product Hunt Thread Summarizer"
+description: "In this tutorial, we'll build a serverless Product Hunt thread summarizer using Large Language Models (LLMs). 
+You'll learn how to scrape, process, and summarize Product Hunt threads using LLM into concise summaries, highlighting key insights. 
+By creating this application, you'll help users save time and quickly grasp community sentiments on topic."
+---
+
+## Key Components of the Application
+
+We'll build this application using the following components:
+
+1. **Text Generation Model:**  
+   We'll leverage the [Mistral-Small-24B-Instruct-2501](https://huggingface.co/mistralai/Mistral-Small-24B-Instruct-2501) model using [vLLM](https://github.com/vllm-project/vllm) to generate accurate, insightful summaries of Product Hunt threads efficiently.
+
+2. **Web Scraper:**  
+   We'll use [BeautifulSoup4](https://pypi.org/project/beautifulsoup4/) to reliably scrape and extract relevant data, including user comments from Product Hunt discussion threads.
+
+
+## Crafting Your Application
+
+Here’s a clearer approach to building your Product Hunt thread summarizer:
+
+1. **Discussion Thread URL Input:**  
+   Prompt the user to provide the Product Hunt discussion link they want to summarize.  
+
+2. **Data Retrieval and Preprocessing:**  
+   Use the web scraper to fetch the discussion content from the given URL. Then, parse, clean, and organize the text to prepare it for summary.
+
+3. **Summary Generation:**  
+   Use the LLM to process the extracted content and produce a cohesive, concise summary in the desired format, ensuring key details and insights are highlighted.
+
+![](/images/book-summary-architecture.png)
+
+## Core Development Steps
+
+### Text Extraction and Preprocessing
+- **Objective:** Retrieve and structure the raw text from a Product Hunt discussion URL by removing unnecessary elements and splitting the content into organized segments. This lays the groundwork for generating meaningful summaries.
+- **Action:**  
+  1. Create a `WebScraper` class to fetch the discussion thread HTML from the provided URL and convert it into text using BeautifulSoup.
+  2. Clean and preprocess the text by splitting it into logical chunks, filtering out unrelated lines (e.g., “Upvote”, “Share”), and capturing key metadata such as timestamps and authors.  
+  3. Organize the processed text into a structured, ready to be passed on for summary generation.
+
+```python
+import requests
+from bs4 import BeautifulSoup
+import re
+import json
+import time
+
+class WebScraper:
+    def __init__(self):
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+        })
+    
+    def extract_content(self, url):
+        try:
+            response = self.session.get(url, timeout=100)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, 'html.parser')
+            title = soup.title.string if soup.title else "No title found"
+            body_text = soup.body.get_text(separator='\n', strip=True) if soup.body else ""
+            
+            return body_text
+            
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching URL: {e}")
+            return None
+    
+    def clear_session(self):
+        self.session.close()
+
+
+def preprocess_text(raw_text):
+    lines = [line.strip() for line in raw_text.splitlines() if line.strip()]
+    
+    start_idx = 0
+    for i, line in enumerate(lines):
+        if line.endswith('?'):
+            start_idx = i
+            break
+    lines = lines[start_idx:]
+    posts = []
+    current_post = []
+    for line in lines:
+        if re.match(r'\d+[hd] ago', line) and current_post:
+            posts.append(current_post)
+            current_post = []
+        current_post.append(line)
+    if current_post:
+        posts.append(current_post)
+        
+    return posts
+
+def parse_filtered_text(post_lines):
+    author = None
+    if "by" in post_lines:
+        try:
+            idx = post_lines.index("by")
+            author = post_lines[idx+1] if idx+1 < len(post_lines) else None
+        except ValueError:
+            pass
+            
+    timestamp = None
+    for line in post_lines:
+        m = re.search(r'\d+[hd] ago', line)
+        if m:
+            timestamp = m.group(0)
+            break
+            
+    ignore_words = {"Upvote", "Report", "Share", "Add a comment", "Login to comment", "Replies", "Best"}
+    content_lines = []
+    for line in post_lines:
+        if line in ignore_words:
+            continue
+        if re.match(r'\(\d+\)', line):
+            continue
+        content_lines.append(line)
+    
+    content = "\n".join(content_lines)
+    return {"timestamp": timestamp, "content": content}
+```
+
+### Generating Concise Summary
+- **Objective:** Transform the parsed discussion text into a concise, well-structured summary. This summary should capture key insights while adhering to a specific format, ensuring users can quickly grasp the most important information from the thread.
+- **Action:**  
+  1. Initialize the Mistral-Small-24B-Instruct model and specify the system and user prompts with required formatting rules.
+  2. Pass this prompt to the LLM and obtain the formatted summary.  
+
+```python
+from utils import WebScraper, preprocess_text, parse_filtered_text
+from vllm import LLM
+from vllm.sampling_params import SamplingParams
+import inferless
+from pydantic import BaseModel, Field
+from typing import Optional
+
+
+@inferless.request
+class RequestObjects(BaseModel):
+        url: str = Field(default="https://www.producthunt.com/p/general/how-many-hours-do-you-think-a-workweek-should-have-and-what-s-the-answer-from-big-companies")
+        temperature: Optional[float] = 0.15
+        top_p: Optional[float] = 1.0
+        repetition_penalty: Optional[float] = 1.0
+        top_k: Optional[int] = -1
+        max_tokens: Optional[int] = 1024
+        seed: Optional[int] = 4424234
+
+@inferless.response
+class ResponseObjects(BaseModel):
+        generated_result: str = Field(default='Test output')
+
+class InferlessPythonModel:
+    def initialize(self):
+        model_id = "mistralai/Mistral-Small-24B-Instruct-2501"
+        self.llm = LLM(model=model_id)
+        self.web_scrap_obj = WebScraper()
+        self.SYSTEM_PROMPT = """You are a conversational agent that provides highly structured, well-organized responses.
+                                Always use proper markdown formatting with hierarchical organization.
+                                Group related points under thematic categories with bold headers.
+                                Provide comprehensive analysis rather than superficial observations.
+                                Maintain consistent formatting throughout your response."""
+
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        raw_text = self.web_scrap_obj.extract_content(request.url)
+        filtered_text = preprocess_text(raw_text)
+        parsed_text = [parse_filtered_text(lines) for lines in filtered_text]
+        
+        prompt = f"""
+                    You are a helpful assistant. Please read the following conversation text:
+                    {str(parsed_text)}
+                    
+                    Then, produce a concise summary following EXACTLY this format and style, with no deviations:
+                    
+                    What is it about?
+                    [Brief paragraph summarizing what the conversation discusses overall]
+                    
+                    Insights
+                    - **[Category/Theme 1]**:
+                    - [Specific point with detail]
+                    - [Specific point with detail]
+                    - [Specific point with detail]
+                    - **[Category/Theme 2]**:
+                    - [Specific point with detail]
+                    - [Specific point with detail]
+                    - [Specific point with detail]
+                    - **[Category/Theme 3]**:
+                    - [Specific point with detail]
+                    - [Specific point with detail]
+                    - [Specific point with detail]
+                    - **[Category/Theme 4]**:
+                    - [Specific point with detail]
+                    - [Specific point with detail]
+                    - [Specific point with detail]
+                    
+                    IMPORTANT FORMATTING RULES:
+                    1. Use exactly the format shown above
+                    2. Start each insight with a dash followed by bold category name and colon
+                    3. Use two spaces of indentation for each specific point
+                    4. Each specific point should start with a dash
+                    5. Do not add sub-categories or nested bullet points beyond what's shown in the template
+                    6. Avoid using author names
+                    6. Keep to 4-5 main categories maximum
+                    7. Format must match the example exactly
+                    
+                    Example of correct formatting:
+                    
+                    What is it about?
+                    The conversation discusses the use of AI-generated comments on social media platforms, exploring the benefits, drawbacks, and ethical implications. Participants share their opinions on whether AI comments enhance or detract from genuine social interaction.
+                    
+                    Insights
+                    - **Benefits of AI Comments**:
+                    - AI can help with grammar correction and generating basic ideas.
+                    - Useful for big creators to interact with fans faster and on a large scale.
+                    - Can assist in moderation, filtering spam, and bridging language barriers.
+                    - **Drawbacks of AI Comments**:
+                    - Lack of authenticity and personal touch.
+                    - Can make interactions feel artificial and insincere.
+                    - Risk of manipulation, bias, and creating echo chambers.
+                    - May lead to a loss of genuine human connection and engagement.
+                    - **Ethical Considerations**:
+                    - AI should assist rather than replace human interaction.
+                    - Over-reliance on AI comments can devalue the content and the effort put into creating it.
+                    - Users prefer genuine, human-generated responses over AI-generated ones.
+                    - **User Experiences**:
+                    - Some users find AI comments annoying and insincere.
+                    - Others see potential in using AI for brainstorming and generating basic content ideas.
+                    - There is a preference for a synergy between human and AI interaction, where AI assists but does not replace human input.
+                """
+        
+        messages = [{
+                "role": "system",
+                "content": self.SYSTEM_PROMPT
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+                   ]
+        sampling_params = SamplingParams(temperature=request.temperature,top_p=request.top_p,
+                                         repetition_penalty=request.repetition_penalty,
+                                         top_k=request.top_k,max_tokens=request.max_tokens,seed=request.seed)
+        outputs = self.llm.chat(messages, sampling_params=sampling_params)
+        generateObject = ResponseObjects(generated_result = outputs[0].outputs[0].text)        
+        return generateObject
+
+    def finalize(self):
+        self.llm = None
+        self.web_scrap_obj.clear_session()
+```
+
+### Setting up the Environment
+__Dependencies:__
+- __Objective:__ Ensure all necessary libraries are installed.
+- __Action:__ Run the command below to install dependencies:
+```bash
+pip install vllm==0.7.2 accelerate==1.0.0 beautifulsoup4==4.13.3 hf-transfer==0.1.9 inferless==0.2.13 pydantic==2.10.2
+```
+This command ensures your environment has all the tools required for the application.
+### Deploying Your Model with Inferless CLI
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+#### Clone the repository of the model
+Let's begin by cloning the model repository:
+```bash
+git clone https://github.com/inferless/product-hunt-thread-summarizer.git
+```
+
+#### Deploy the Model
+To deploy the model using Inferless CLI, execute the following command:
+```bash
+inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
+```
+
+**Explanation of the Command:**
+
+- `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
+- `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
+
+### Demo of the Book Audio Summary Generator.
+<video width="640" height="360" controls>
+  <source src="/videos/product-hunt-demo-video.mp4" type="video/mp4"/>
+  Your browser does not support the video tag.
+</video>
+
+
+### Alternative Deployment Method
+Inferless also supports a user-friendly UI for model deployment, catering to users at all skill levels. Refer to Inferless's documentation for guidance on UI-based deployment.
+## Choosing Inferless for Deployment
+Deploying your Product Hunt Thread Summarizer application with Inferless offers compelling advantages, making your development journey smoother and more cost-effective. Here's why Inferless is the go-to choice:
+1. __Ease of Use:__ Forget the complexities of infrastructure management. With Inferless, you simply bring your model, and within minutes, you have a working endpoint. Deployment is hassle-free, without the need for in-depth knowledge of scaling or infrastructure maintenance.
+2. __Cold-start Times:__ Inferless's unique load balancing ensures faster cold-starts.
+3. __Cost Efficiency:__ Inferless optimizes resource utilization, translating to lower operational costs. Here's a simplified cost comparison:
+
+### Scenario
+You are looking to deploy a Product Hunt Thread Summarizer application for processing 100 queries.<br />
+
+__Parameters:__
+- __Total number of queries:__ 100 daily.<br />
+- __Inference Time:__ All models are hypothetically deployed on A100 80GB, taking 15.82 seconds to process a request and a cold start overhead of 50.47 seconds.<br />
+- __Scale Down Timeout:__ Uniformly 60 seconds across all platforms, except Hugging Face, which requires a minimum of 15 minutes. This is assumed to happen 100 times a day.<br />
+
+__Key Computations:__
+1. __Inference Duration:__ <br/>
+Processing 100 queries and each takes 15.82 seconds<br/>
+Total: 100 x 15.82 = 1582 seconds (or approximately 0.44 hours)
+2. __Idle Timeout Duration:__<br/>
+Post-processing idle time before scaling down: (60 seconds - 15.82 seconds) x 100 = 4418 seconds (or 1.22 hours approximately)<br/>
+3. __Cold Start Overhead:__<br/>
+Total: 100 x 50.47 = 5047 seconds (or 1.40 hours approximately)<br/>
+
+__Total Billable Hours with Inferless:__ 0.44 (inference duration) + 1.22 (idle time) + 1.40 (cold start overhead)  = 3.06 hours<br/>
+__Total Billable Hours with Inferless:__ 3.06 hours<br/>
+
+| Scenario | On-Demand Cost | Serverless Cost|
+| :--- | :---- | :---- |
+|  100 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$3.73 (3.06 hours billed at $1.22/hour) |
+
+By opting for Inferless, **_you can achieve up to 87.05% cost savings._**<br/>
+
+Please note that we have utilized the A100(80 GB) GPU for model benchmarking purposes, while for pricing comparison, we referenced the A10G GPU price from both platforms. This is due to the unavailability of the A100 GPU in SageMaker.
+
+Also, the above analysis is based on a smaller-scale scenario for demonstration purposes. Should the scale increase tenfold, traditional cloud services might require maintaining 2-4 GPUs constantly active to manage peak loads efficiently. In contrast, Inferless, with its dynamic scaling capabilities, adeptly adjusts to fluctuating demand without the need for continuously running hardware.<br/>
+## Conclusion
+By following this guide, you're now equipped to build and deploy a sophisticated Product Hunt Thread Summarizer application. This tutorial showcases the seamless integration of advanced technologies, emphasizing the practical application of creating cost-effective solutions.
