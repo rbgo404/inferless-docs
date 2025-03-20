@@ -37,7 +37,7 @@ Here’s a clearer approach to building your Product Hunt thread summarizer:
 - **Objective:** Retrieve and structure the raw text from a Product Hunt discussion URL by removing unnecessary elements and splitting the content into organized segments. This lays the groundwork for generating meaningful summaries.
 - **Action:**  
   1. Create a `WebScraper` class to fetch the discussion thread HTML from the provided URL and convert it into text using BeautifulSoup.
-  2. Clean and preprocess the text by splitting it into logical chunks, filtering out unrelated lines (e.g., “Upvote”, “Share”), and capturing key metadata such as timestamps and authors.  
+  2. Clean and preprocess the text filtering out unrelated lines.  
   3. Organize the processed text into a structured, ready to be passed on for summary generation.
 
 ```python
