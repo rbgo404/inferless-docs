@@ -138,6 +138,15 @@ class InferlessPythonModel:
 
     def finalize(self):
         self.llm = None
+
+@inferless.local_entry_point
+def my_local_entry(dynamic_params):
+
+    request_objects = RequestObjects(**dynamic_params)
+
+    model_instance = InferlessPythonModel()
+
+    return model_instance.infer(request_objects)
 ```
 
 ### Step 2: Run with Remote GPU
