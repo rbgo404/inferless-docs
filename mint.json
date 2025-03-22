@@ -88,16 +88,15 @@
 				"concepts/overview",
 				"model-import/cli-import",
 				"concepts/configuring-the-input-output-schema",
-				"concepts/multiple-inputs",
-				"concepts/multiple-outputs",
 				"concepts/building-custom-images",
 				"concepts/working-with-files",
 				"concepts/working-with-nfs-volumes",
 				"concepts/processing-concurrent-requests",
-				"concepts/dynamic-batching",
-				"concepts/streaming-with-sse",
 				"concepts/setting-up-automatic-builds",
-				"concepts/managing-secrets-on-inferless"
+				"concepts/managing-secrets-on-inferless",
+				"concepts/remote-run",
+				"concepts/dynamic-batching",
+				"concepts/streaming-with-sse"
 			]
 		},
 		{
@@ -134,7 +133,6 @@
 			"group": "API Reference",
 			"pages": [
 				"api-reference/aws-privatelink",
-				"api-reference/remote-run",
 				{
 					"group": "Model Endpoint",
 					"pages": [
