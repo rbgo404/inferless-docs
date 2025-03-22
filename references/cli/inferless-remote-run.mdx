@@ -13,28 +13,52 @@ This command will execute a particular function or class in the cloud environmen
 
 ### Getting Started 
 
-Let's assume you have an app.py with 2 functions init and load, You need to 4 lines of code to your app.py to make it run with remote run by initialising the inferless cls and adding functional annotations
+Let's assume you have an app.py with 2 functions init and load
+
+### Class Method
+
+You will need to add annotations to code to your app.py to make it run with remote run 
+
+* request - Annotation that defines the request schema
+* response -  Annotation that defines the response schema
+* load - Annotation that takes care of loading the model 
+* infer - Annotation that defines the function for the inference logic 
+* local_entry_point -  Annotation lets you mark control the entry point of the execution 
+
+After you have added annotations instantiate the class 
+
+app = inferless.Cls(gpu="T4") 
+
 
 ```python
-from threading import Thread
-from inferless import Cls # Add the inferless library
+import torch
+from transformers import pipeline
+from pydantic import BaseModel, Field
+import inferless
 
+@inferless.request
+class RequestObjects(BaseModel):
+    prompt: str = Field(default="a horse near a beach")
 
-InferlessCls = Cls(gpu="T4")  # Init the class. the type of GPU you want to run with (This can be passed from the command argument aswell)
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_txt: str = Field(default='Test output')
+
+app = inferless.Cls(gpu="T4")
 class InferlessPythonModel:
-
-    @InferlessCls.load     # Add the annotation
+    @app.load
     def initialize(self):
-        import torch
-        from transformers import pipeline
         self.generator = pipeline("text-generation", model="EleutherAI/gpt-neo-125M",device=0)
-
-    @InferlessCls.infer    # Add the annotation
+    @app.infer
     def infer(self, inputs):
-        prompt = inputs['message']
-        pipeline_output = self.generator(prompt, do_sample=True, min_length=120)
-        generated_txt = pipeline_output[0]["generated_text"]
-        return {"generated_text": generated_txt }
+        pipeline_output = self.generator(inputs.prompt, do_sample=True, min_length=128)
+        generateObject = ResponseObjects(generated_txt = pipeline_output[0]["generated_text"])
+        return generateObject
+
+@inferless.local_entry_point
+def my_local_entry(dynamic_params):
+    model_instance = InferlessPythonModel()
+    return model_instance.infer(RequestObjects(**dynamic_params))
 
 ```
 
@@ -50,10 +74,29 @@ Params:
 - `--exclude  -e` : Path to the ignore file. This file contains the list of files that you want to exclude from the remote run similar to `.gitignore` file.
 - `--gpu -g` : Denotes the machine type (A10/A100/T4)
 
+
+### Runtime Configuration
+
+You can configure the runtime for remote run using a configuration file. The configuration file is a YAML file through which you can specify custom packages that you want to install on the remote server.
+
+You can specify <b>system packages</b> (packages installed using `apt-get`) <b>python packages</b> (packages installed using `pip`) and <b>run commands</b> (shell commands) that you want to configure on the remote server.
+
+```yaml
+# runtime.yaml
+build:
+  system_packages:
+    - libssl-dev
+  python_packages:
+    - accelerate==0.27.2
+    - torch==2.1.1
+  run_commands:
+    - wget https://example.com/model.pth
+```
+
 Examples:
 
 ```python
-inferless remote-run app.py -c runtime.yaml  -g T4 --message "Write me a story of the World"
+inferless remote-run app.py -c runtime.yaml  -g T4 --prompt "Write me a story of the World"
 ```
 
 ```python
