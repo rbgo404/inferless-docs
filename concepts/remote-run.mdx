@@ -1,0 +1,115 @@
+---
+title: 'Remote Run: Run your code remotely'
+---
+
+<Note>only Python3.10 is supported, Other versions may face compatibility issues while using some libraries. </Note>
+
+It is now possible to run your code remotely using Inferless. This feature is extremely useful when you want to run your code partly or entirely on a remote server. By introducing a few annotations in your code, you can run your code on a remote server with the command <strong>inferless remote-run app.py -c config.yaml</strong>. 
+
+There are 2 ways to use Remote run 
+
+* Function Method 
+* Class Method
+
+## Function Method
+
+`@inferless.method(gpu="T4")` is used to specify the function that you want to run for inference you can specify the gpu to be used here. 
+
+```python
+import inferless
+
+@inferless.method(gpu="T4")
+def my_agent():
+    return "Hello World"
+```
+
+## Class Method
+
+You can use the following annotations to specify the code that you want to run on the remote server.
+The annotations accept a `gpu` parameter which specifies the GPU that you want to use on the remote server.
+Currently, the supported GPUs are `T4` & `A10` & `A100`
+
+Create a new app object with <i>inferless.Cls</i>
+
+Use below annotation to specify the class you want to run on the remote server. `Cls contains two sub annotations: `@Cls.load` and `@Cls.infer`.
+
+`@app.load` is used to specify the function that you want to load the model before inference 
+
+`@app.infer` is used to specify the function that you want to run for inference.
+
+`@inferless.local_entry_point` annotation lets you mark a module-level function as the local entry point for remote run.
+
+`@inferless.local_entry_point` annotation lets you mark a module-level function as the local entry point for remote run.
+
+## Examples
+
+```python
+from pydantic import BaseModel, Field
+import inferless
+
+@inferless.request
+class RequestObjects(BaseModel):
+    prompt: str = Field(default="a horse near a beach")
+
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_txt: str = Field(default='Test output')
+
+app = inferless.Cls(gpu="T4")
+class InferlessPythonModel:
+    @app.load
+    def initialize(self):
+        import torch
+        from transformers import pipeline
+        self.generator = pipeline("text-generation", model="EleutherAI/gpt-neo-125M",device=0)
+    @app.infer
+    def infer(self, inputs: RequestObjects) -> ResponseObjects:
+        pipeline_output = self.generator(inputs.prompt, do_sample=True, min_length=128)
+        generateObject = ResponseObjects(generated_txt = pipeline_output[0]["generated_text"])
+        return generateObject
+
+
+@inferless.local_entry_point
+def my_local_entry(dynamic_params):
+    model_instance = InferlessPythonModel()
+    return model_instance.infer(RequestObjects(**dynamic_params))
+```
+
+## Runtime Configuration
+
+You can configure the runtime for remote run using a configuration file. The configuration file is a YAML file through which you can specify custom packages that you want to install on the remote server.
+
+You can specify <b>system packages</b> (packages installed using `apt-get`) <b>python packages</b> (packages installed using `pip`) and <b>run commands</b> (shell commands) that you want to configure on the remote server.
+
+runtime.yaml
+
+```
+build:
+    system_packages:
+    - libssl-dev
+    python_packages:
+        - transformers
+        - torch
+        - accelerate
+        - inferless
+        - pydantic
+```
+
+
+## Working Directory
+
+By default, the files from the working directory are copied to the server excluding: ".git", "\*.pyc", "**pycache**"
+
+If a `.gitignore` file is present in the working directory, the files mentioned in the `.gitignore` file will not be copied to the server.
+
+You can also specify a custom ignore file using the `--exclude` `-e` option.
+`inferless remote-run app.py -c runtime.yaml -e custom_ignore_file.txt --gpu A10 --prompt "Hello, Write a story about a dragon"`
+
+<Note> Maximum file size that can be copied to the server is 10MB. </Note>
+
+## Notes
+
+<Card icon="circle-info">
+<Tip>Try to avoid unnecessary packages in config file as it may increase the time to setup the environment. </Tip>
+
+</Card>

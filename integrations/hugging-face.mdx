@@ -24,21 +24,11 @@ You can use the imported GitHub Repo to change the pre-processing and post-proce
 
 ### Step 1: Add Model in your workspace.
 
-* Navigate to your desired workspace in Inferless and Click on `"Add a custom model" `button that you see on the top right. An import wizard will open up.
+* Navigate to your desired workspace in Inferless and Click on `"Huggingface" `.  An import wizard will open up.
 
 <Frame caption = "Click on Add Model">![](/images/step1-common-add-model.png)</Frame>
 
-###  Step 2: Choose the source of your model.
-
-* Since we are using a model from Hugging Face in this example, select `Hugging Face `as the method of uploading from the `Provider` list.
-
-* To proceed with the upload, you will need to connect your `Hugging Face account `and a private `GitHub account`. This is a mandatory step as the Hugging Face credentials enable us to import your private repositories, while GitHub creates the template of the Hugging face repo where you can make changes later to modify your pre-processing and post-processing function
-
-* **For more information:** Inferless works by copying the model from Hugging Face and creating a new repository in GitHub. The model repository is then loaded into Inferless.
-
-<Frame caption = "Select Hugging Face and also add the neccesary accounts">![](/images/hf-2.png)</Frame>
-
-### Step 3: Enter the model details 
+### Step 2: Enter the model details 
 
 * **Model Details** : In this step, Add your `model name`(The name that you wish to call your model), Choose the `model type`(Eg: Transformer), Choose the `task type` (Eg: Text generation) and `Huggingface model name`.
 
@@ -48,14 +38,14 @@ You can use the imported GitHub Repo to change the pre-processing and post-proce
          * You would need to set up a webhook for this method. Click [here](/model-import/automatic-build-via-webhooks) for more details.
 
 
-### Step 4: Edit the Inference Code and Input/Output Schema 
+### Step 3: Edit the Inference Code and Input/Output Schema 
 
 * **Model Code**c: In this step, you can modify the input params ( by adding to input_schema.py ) and output params, you can also modify the model load and inference code in app.py  
 
 <Frame caption = "Enter the details as noted">![](/images/hf-3-model-import.png)</Frame>
 
 
-### Step 5: Configure Machine and Environment.
+### Step 4: Configure Machine and Environment.
 * Choose the type of machine, and specify the minimum and maximum number of replicas for deploying your model.
          * **Min scale** \-  
          ```  
@@ -70,7 +60,7 @@ You can use the imported GitHub Repo to change the pre-processing and post-proce
 <Frame caption = "Set runtime and configuration">![](/images/common-machine-env.png)</Frame>
 
 
-### Step 6: Review your model details
+### Step 5: Review your model details
 
 * Once you click "Continue," you will be able to review the details added for the model.
 
@@ -81,7 +71,7 @@ You can use the imported GitHub Repo to change the pre-processing and post-proce
 <Frame caption = "Review all the details carefully before proceeding">![](/images/common-deploy.png)</Frame>
 
 
-### Step 7 : Run your model
+### Step 6 : Run your model
 
 * Once you click submit, the model import process would start.  
 * It may take some time to complete the import process, and during this time, you will be redirected to your workspace and can see the status of the import under `"In Progress/Failed"` tab.  
@@ -94,7 +84,6 @@ You can use the imported GitHub Repo to change the pre-processing and post-proce
 <Frame caption = "Under the API Tab, you can view the API endpoint details."> ![](/images/common-api-call.png)  </Frame>
 
 ### Extra Step: Getting API key details
-
 
 
 * You can now call using this from your end. The inference result would be the output for these calls.  
