@@ -119,10 +119,9 @@ class RequestObjects(BaseModel):
     prompt: str = Field(default="Explain Deep Learning.")
     temperature: Optional[float] = 0.7
     top_p: Optional[float] = 0.1
-    repetition_penalty: Optional[float] = 1.18
-    top_k: Optional[int] = 40
-    max_tokens: Optional[int] = 256
-
+    do_sample: Optional[bool] = True
+    max_new_tokens: Optional[int] = 256
+    
 @inferless.response
 class ResponseObjects(BaseModel):
     generated_text: str = Field(default='Test output')

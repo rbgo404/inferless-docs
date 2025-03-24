@@ -246,6 +246,86 @@ build:
     - "transformers==4.40.1"
 ```
 
+
+## Test your model with Remote Run
+
+You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
+
+### Step 1: Add the Decorators and local entry point
+To enable **Remote Run**, simply do the following:
+1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
+2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+3. Create the Local Entry Point by decorating a function (for example, `my_local_entry`) with `@inferless.local_entry_point`. 
+Within this function, instantiate your model class, convert any incoming parameters into a `RequestObjects` object, and invoke the model's `infer` method. 
+
+```python
+from vllm import LLM, SamplingParams
+from transformers import AutoTokenizer
+import inferless
+from pydantic import BaseModel, Field
+from typing import Optional
+
+
+@inferless.request
+class RequestObjects(BaseModel):
+    prompt: str = Field(default="Implement a function to check if a given number is a prime number.")
+    temperature: Optional[float] = 0.7
+    top_p: Optional[float] = 0.1
+    repetition_penalty: Optional[float] = 1.18
+    top_k: Optional[int] = 40
+    max_tokens: Optional[int] = 256
+    
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_text: str = Field(default='Test output')
+
+app = inferless.Cls(gpu="A100")
+
+class InferlessPythonModel:
+    @app.load
+    def initialize(self):
+        model_id = "rbgo/inferless-llama-3-8B"
+        # Initialize the LLM object
+        self.llm = LLM(model=model_id)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_id)
+    
+    @app.infer
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        sampling_params = SamplingParams(temperature=request.temperature,top_p=request.top_p,
+                                         repetition_penalty=request.repetition_penalty,
+                                         top_k=request.top_k,max_tokens=request.max_tokens
+                                        )
+        chat_format = [{"role": "user", "content": request.prompt}]
+        input_text = self.tokenizer.apply_chat_template(chat_format,tokenize=False,add_generation_prompt=True)
+        result = self.llm.generate(input_text, sampling_params)
+        # Extract the generated text from the result
+        result_output = [output.outputs[0].text for output in result]
+
+        generateObject = ResponseObjects(generated_text = result_output[0])        
+        return generateObject
+
+    def finalize(self):
+        self.llm = None
+
+@inferless.local_entry_point
+def my_local_entry(dynamic_params):
+    request_objects = RequestObjects(**dynamic_params)
+    model_instance = InferlessPythonModel()
+
+    return model_instance.infer(request_objects)
+```
+
+### Step 2: Run with Remote GPU
+
+From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
+
+```bash
+inferless remote-run app.py -c inferless-runtime-config.yaml --prompt "Explain Deep Learning."
+```
+
+You can pass the other input parameters in the same way (e.g., `--temperature`, `--max_tokens`, etc.) as long as your code expects them in the `inputs` dictionary.
+
+
 ## Method A: Deploying the model on Inferless Platform
 Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.
 
