@@ -206,6 +206,26 @@ from huggingface_hub import snapshot_download
 import torch
 from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 import inferless
+from pydantic import BaseModel, Field
+from typing import Optional
+
+app = inferless.Cls(gpu="A10")
+
+@inferless.request
+class RequestObjects(BaseModel):
+  audio_url: str = Field(default="https://github.com/rbgo404/Files/raw/main/jeanNL.mp3")
+  return_timestamps: Optional[str] = "word"
+  language: Optional[str] = "english"
+  task: Optional[str] = "transcribe"
+  temperature: Optional[float] = 0.5
+  max_new_tokens: Optional[int] = 400
+
+@inferless.response
+class ResponseObjects(BaseModel):
+  output_text: list = Field(default=['Test output'])
+  from_timestamp: list = Field(default=['Test output'])
+  to_timestamp: list = Field(default=['Test output'])
+  chunk_text: list = Field(default=['Test output'])
 
 app = inferless.Cls(gpu="A10")
 
@@ -234,26 +254,17 @@ class InferlessPythonModel:
         )
         
     @app.infer
-    def infer(self, inputs):
-        # Extracting inputs with default values
-        audio_url = inputs["audio_url"]
-        return_timestamps = inputs.get("return_timestamps", "word") # Can be True, False, or "word"
-        max_new_tokens = inputs.get("max_new_tokens")
-        language = inputs.get("language")
-        task = inputs.get("task") # Can be "transcribe" or "translate"
-        temperature = inputs.get("temperature")
-
-        # Convert return_timestamps if needed
-        return_timestamps = return_timestamps == "True" if return_timestamps in ["True", "False"] else return_timestamps
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        return_timestamps = request.return_timestamps == "True" if request.return_timestamps in ["True", "False"] else request.return_timestamps
         # Call the pipeline with necessary parameters
         result = self.pipe(
-        audio_url,
+        request.audio_url,
         return_timestamps=return_timestamps,
         generate_kwargs={
-            "max_new_tokens": max_new_tokens,
-            "language": language,
-            "task": task,
-            "temperature": temperature,
+            "max_new_tokens": request.max_new_tokens,
+            "language": request.language,
+            "task": request.task,
+            "temperature": request.temperature,
             },
         )
         # Prepare the output based on the return_timestamps condition
@@ -265,16 +276,23 @@ class InferlessPythonModel:
             *[(chunk['timestamp'][0], chunk['timestamp'][1], chunk['text']) for chunk in result['chunks']]
         )
 
-        return {
-            "output_text": [result["text"]],
-            "from_timestamp": list(from_timestamp),
-            "to_timestamp": list(to_timestamp),
-            "chunk_text": list(chunk_text),
-        }
+        generateObject = ResponseObjects(output_text = [result["text"]],
+                                        from_timestamp= list(from_timestamp),
+                                        to_timestamp= list(to_timestamp),
+                                        chunk_text= list(chunk_text)
+                                        )
+        return generateObject
 
 
     def finalize(self):
         self.pipe = None
+
+@inferless.local_entry_point
+def my_local_entry(dynamic_params):
+    request_objects = RequestObjects(**dynamic_params)
+    model_instance = InferlessPythonModel()
+
+    return model_instance.infer(request_objects)
 ```
 
 ### Step 2: Run with Remote GPU

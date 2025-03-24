@@ -151,14 +151,32 @@ You can use the `inferless remote-run`([installation guide here](https://docs.in
 To enable **Remote Run**, simply do the following:
 1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+3. Create the Local Entry Point by decorating a function (for example, `my_local_entry`) with `@inferless.local_entry_point`. 
+Within this function, instantiate your model class, convert any incoming parameters into a `RequestObjects` object, and invoke the model's `infer` method. 
+
 
 ```python
 from vllm import LLM
 from vllm.sampling_params import SamplingParams
 from transformers import AutoTokenizer
 import inferless
+from pydantic import BaseModel, Field
+from typing import Optional
 
 app = inferless.Cls(gpu="A100")
+
+@inferless.request
+class RequestObjects(BaseModel):
+  prompt: str = Field(default="Explain Deep Learning.")
+  temperature: Optional[float] = 0.7
+  top_p: Optional[float] = 0.1
+  repetition_penalty: Optional[float] = 1.18
+  top_k: Optional[int] = 40
+  max_tokens: Optional[int] = 256
+
+@inferless.response
+class ResponseObjects(BaseModel):
+  generated_text: str = Field(default='Test output')
 
 class InferlessPythonModel:
     @app.load
@@ -168,24 +186,25 @@ class InferlessPythonModel:
         self.tokenizer = AutoTokenizer.from_pretrained(model_id)
 
     @app.infer
-    def infer(self, inputs):
-        prompts = inputs["prompt"]
-        temperature = inputs.get("temperature",0.7)
-        top_p = inputs.get("top_p",0.1)
-        repetition_penalty = inputs.get("repetition_penalty",1.18)
-        top_k = int(inputs.get("top_k",40))
-        max_tokens = inputs.get("max_tokens",256)
-
-        sampling_params = SamplingParams(temperature=temperature,top_p=top_p,repetition_penalty=repetition_penalty,
-                                         top_k=top_k,max_tokens=max_tokens)
-        input_text = self.tokenizer.apply_chat_template([{"role": "user", "content": prompts}], tokenize=False)
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        sampling_params = SamplingParams(temperature=request.temperature,top_p=request.top_p,repetition_penalty=request.repetition_penalty,
+                                         top_k=request.top_k,max_tokens=request.max_tokens)
+        input_text = self.tokenizer.apply_chat_template([{"role": "user", "content": request.prompts}], tokenize=False)
         result = self.llm.generate(input_text, sampling_params)
         result_output = [output.outputs[0].text for output in result]
 
-        return {'result': result_output[0]}
+        generateObject = ResponseObjects(generated_text = result_output[0])
+        return generateObject
 
     def finalize(self):
         self.llm = None
+
+@inferless.local_entry_point
+def my_local_entry(dynamic_params):
+    request_objects = RequestObjects(**dynamic_params)
+    model_instance = InferlessPythonModel()
+
+    return model_instance.infer(request_objects)
 ```
 
 ### Step 2: Run with Remote GPU
