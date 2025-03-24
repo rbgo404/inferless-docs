@@ -89,11 +89,29 @@ You can use the `inferless remote-run`([installation guide here](https://docs.in
 To enable **Remote Run**, simply do the following:
 1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+3. Create the Local Entry Point by decorating a function (for example, `my_local_entry`) with `@inferless.local_entry_point`. 
+Within this function, instantiate your model class, convert any incoming parameters into a `RequestObjects` object, and invoke the model's `infer` method. 
 
 ```python
 import inferless
 from vllm import SamplingParams
 from vllm import LLM
+from pydantic import BaseModel, Field
+from typing import Optional
+
+
+@inferless.request
+class RequestObjects(BaseModel):
+    prompt: str = Field(default="Explain Deep Learning.")
+    temperature: Optional[float] = 0.7
+    top_p: Optional[float] = 0.1
+    repetition_penalty: Optional[float] = 1.18
+    top_k: Optional[int] = 40
+    max_tokens: Optional[int] = 256
+
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_text: str = Field(default='Test output')
 
 app = inferless.Cls(gpu="A100")
 
@@ -109,21 +127,25 @@ class InferlessPythonModel:
           dtype="float16")
 
     @app.infer
-    def infer(self, inputs):
-        prompts = [self.template.format(inputs["prompt"])]
-        sampling_params = SamplingParams(
-            temperature=0.75,
-            top_p=1,
-            max_tokens=256,
-            presence_penalty=1.15,
-        )
-        result = self.llm.generate(prompts, sampling_params)
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        sampling_params = SamplingParams(temperature=request.temperature,top_p=request.top_p,repetition_penalty=request.repetition_penalty,
+                                         top_k=request.top_k,max_tokens=request.max_tokens)
+        result = self.llm.generate([self.template.format(request.prompt)], sampling_params)
         result_output = [output.outputs[0].text for output in result]
 
-        return {"generated_result": result_output[0]}
+        generateObject = ResponseObjects(generated_text = result_output[0])
+        return generateObject
 
     def finalize(self):
         self.llm = None
+
+@inferless.local_entry_point
+def my_local_entry(dynamic_params):
+    request_objects = RequestObjects(**dynamic_params)
+    model_instance = InferlessPythonModel()
+
+    return model_instance.infer(request_objects)
+
 ```
 
 ### Step 2: Run with Remote GPU

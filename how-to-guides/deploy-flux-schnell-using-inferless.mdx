@@ -179,7 +179,7 @@ app = inferless.Cls(gpu="A100")
 
 @inferless.request
 class RequestObjects(BaseModel):
-    prompt: str = Field(default="A cat holding a sign that says hello world"")
+    prompt: str = Field(default="A cat holding a sign that says hello world")
     height: Optional[int] = 512
     width: Optional[int] = 512
     num_inference_steps: Optional[int] = 4

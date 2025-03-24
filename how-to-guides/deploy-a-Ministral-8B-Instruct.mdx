@@ -167,16 +167,16 @@ app = inferless.Cls(gpu="A100")
 
 @inferless.request
 class RequestObjects(BaseModel):
-  prompt: str = Field(default="Explain Deep Learning.")
-  temperature: Optional[float] = 0.7
-  top_p: Optional[float] = 0.1
-  repetition_penalty: Optional[float] = 1.18
-  top_k: Optional[int] = 40
-  max_tokens: Optional[int] = 256
+    prompt: str = Field(default="Explain Deep Learning.")
+    temperature: Optional[float] = 0.7
+    top_p: Optional[float] = 0.1
+    repetition_penalty: Optional[float] = 1.18
+    top_k: Optional[int] = 40
+    max_tokens: Optional[int] = 256
 
 @inferless.response
 class ResponseObjects(BaseModel):
-  generated_text: str = Field(default='Test output')
+    generated_text: str = Field(default='Test output')
 
 class InferlessPythonModel:
     @app.load
@@ -189,7 +189,7 @@ class InferlessPythonModel:
     def infer(self, request: RequestObjects) -> ResponseObjects:
         sampling_params = SamplingParams(temperature=request.temperature,top_p=request.top_p,repetition_penalty=request.repetition_penalty,
                                          top_k=request.top_k,max_tokens=request.max_tokens)
-        input_text = self.tokenizer.apply_chat_template([{"role": "user", "content": request.prompts}], tokenize=False)
+        input_text = self.tokenizer.apply_chat_template([{"role": "user", "content": request.prompt}], tokenize=False)
         result = self.llm.generate(input_text, sampling_params)
         result_output = [output.outputs[0].text for output in result]
 
