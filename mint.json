@@ -17,8 +17,8 @@
 		"dark": "#94CF09"
 	},
 	"topbarCtaButton": {
-		"name": "Join Private Beta",
-		"url": "https://form.typeform.com/to/nzuhQtba?typeform-source=www.inferless.com"
+		"name": "Deploy now",
+		"url": "https://console.inferless.com/auth/signup"
 	},
 	"anchors": [
 		{
