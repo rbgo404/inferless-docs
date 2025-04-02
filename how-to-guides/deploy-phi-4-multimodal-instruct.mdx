@@ -271,7 +271,7 @@ From your local terminal, navigate to the folder containing your `app.py` and yo
 inferless remote-run app.py -c inferless-runtime-config.yaml --task_type "image" --prompt "What does this diagram illustrate?" --content_url "https://qianwen-res.oss-cn-beijing.aliyuncs.com/Qwen-VL/assets/demo.jpeg"
 ```
 
-You can pass the other input parameters in the same way (e.g., `--temperature`, `--system_prompt`, etc.) as long as your code expects them in the `inputs` dictionary.
+You can pass the other input parameters in the same way (e.g., `--content_url`, `--max_new_tokens`, etc.) as long as your code expects them in the `inputs` dictionary.
 
 If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
 
