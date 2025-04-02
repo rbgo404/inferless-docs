@@ -1,0 +1,11 @@
+---
+title: "31st March 2025: New Dashboard UI, CLI Enhancements and Simplified Explore Models "
+---
+
+**Latest Enhancements & Features:**
+1. **RPS-Based Autoscaling in Serverless V2:** We’ve deployed a new autoscaling worker in Serverless V2 that uses Requests Per Second (RPS) as a signal for scaling. This helps optimize costs while reducing cold starts at high traffic levels.
+2. **Model Rebuild Speedup:** Model rebuilds are now faster! We’ve skipped validation checks during rebuilds so developers can iterate quickly when updating their code.
+3. **CLI Enhancements – Remote Run:** You can now send full Python objects in Remote Run using Pydantic models, making structured input handling easier for advanced use cases.
+4. **Explore Models UI Redesign:** The Explore Models UI has been refreshed! You now get easier access to various task types, ability to customize GPU and environment variables at deploy time, native support for vLLM models
+5. **CLI Bug Fixes for Volumes:** We have added validation for file directories and uploads.Prevented failures during data copy to NFS volumes to ensure smooth volume operations
+These updates deliver better scaling, faster iteration, and a smoother experience across the CLI and UI.
