@@ -140,13 +140,11 @@ This is a mandatory step where we allow the users to upload their custom runtime
 build:
   cuda_version: "12.1.1"
   python_packages:
-    - "torch==2.1.2"
-    - "vllm==0.2.6"
-    - "transformers==4.36.2"
-    - "accelerate==0.25.0"
-    - "inferless-cli==2.0.9"
-    - "hf-transfer==0.1.9"
-    - "huggingface-hub==0.27.1"
+    - vllm==0.7.2
+    - inferless==0.2.6
+    - pydantic==2.10.2
+    - hf-transfer==0.1.9
+    - huggingface-hub==0.27.1
 ```
 
 ## Test your model with Remote Run
@@ -192,7 +190,7 @@ class InferlessPythonModel:
     def infer(self, request: RequestObjects) -> ResponseObjects:
         sampling_params = SamplingParams(temperature=request.temperature,top_p=request.top_p,repetition_penalty=request.repetition_penalty,
                                          top_k=request.top_k,max_tokens=request.max_tokens)
-        result = self.llm.generate(prompt, sampling_params)
+        result = self.llm.generate(request.prompt, sampling_params)
         result_output = [output.outputs[0].text for output in result]
 
         generateObject = ResponseObjects(generated_text = result_output[0])
