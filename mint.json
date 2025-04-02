@@ -286,6 +286,10 @@
 				{
 					"group": "February 2025",
 					"pages": ["changelog/February-2025/28th-February"]
+				},
+				{
+					"group": "March 2025",
+					"pages": ["changelog/March-2025/31st-March"]
 				}
 			]
 		},
