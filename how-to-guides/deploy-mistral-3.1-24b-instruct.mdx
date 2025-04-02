@@ -6,8 +6,7 @@ description: "Mistral-Small-3.1-24B-Instruct-2503 is a 24-billion-parameter lang
 ## Introduction
 
 [Mistral-Small-3.1-24B-Instruct-2503](https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503) builds upon the base model by incorporating both text and vision capabilities while maintaining a highly efficient design.
-With 24B parameters, it offers top-tier performance for a wide range of applications—from conversational agents and function calling to long document understanding and visual analysis.
-
+With 24B parameters, it offers top-tier performance for a wide range of applications from conversational agents and function calling to long document understanding and visual analysis.
 
 ## Defining Dependencies
 
@@ -85,7 +84,7 @@ class InferlessPythonModel:
 
 ## Create the class for inference
 
-In the [app.py](https://github.com/inferless/mistral-7b-instruct-v0.3/blob/main/app.py) we will define the class and import all the required functions
+In the [app.py](https://github.com/inferless/mistral-small-3.1-24b-instruct/blob/main/app.py) we will define the class and import all the required functions
 
 1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
 
@@ -170,7 +169,7 @@ class InferlessPythonModel:
 
 ## Creating the Custom Runtime
 
-This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/mistral-7b-instruct-v0.3/blob/main/inferless-runtime-config.yaml).
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/mistral-small-3.1-24b-instruct/blob/main/inferless-runtime-config.yaml).
 
 ```python
 build:
@@ -327,7 +326,7 @@ Inferless allows you to deploy your model using Inferless-CLI. Follow the steps 
 ### Clone the repository of the model
 Let's begin by cloning the model repository:
 ```bash
-git clone https://github.com/inferless/mistral-7b-instruct-v0.3.git
+git clone https://github.com/inferless/mistral-small-3.1-24b-instruct.git
 ```
 
 ### Deploy the Model
@@ -340,4 +339,4 @@ inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
 
 - `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
 - `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
-![](/images/mistral-v0.3.png)
+![](/images/mistral-3.1-24b-cli-deploy.png)
