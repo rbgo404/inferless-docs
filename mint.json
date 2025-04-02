@@ -333,7 +333,8 @@
 				"how-to-guides/deploy-mistral-7b-instruct-v0.3",
 				"how-to-guides/deploy-phi-4",
 				"how-to-guides/deploy-qwen2.5-vl-7b",
-				"how-to-guides/deploy-gemma-27b-it"
+				"how-to-guides/deploy-gemma-27b-it",
+				"how-to-guides/deploy-mistral-3.1-24b-instruct"
 			]
 		},
 		{
