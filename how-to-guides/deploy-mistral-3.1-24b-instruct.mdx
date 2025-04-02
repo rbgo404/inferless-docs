@@ -79,7 +79,7 @@ and returns a `ResponseObjects` instance as output, ensuring the results adhere 
 class InferlessPythonModel:
     def infer(self, request: RequestObjects) -> ResponseObjects:
         
-        return ResponseObjects(generated_text=result[0])
+        return ResponseObjects(generated_text=generated_text)
 ```
 
 ## Create the class for inference
