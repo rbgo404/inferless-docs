@@ -1,0 +1,232 @@
+---
+title: "Deploy SpatialLM-Llama-1B using Inferless"
+description: "SpatialLM-Llama-1B is a 3D large language model by Manycore Research, engineered to transform raw point cloud data into structured 3D scene representations, enhancing spatial reasoning for robotics and autonomous navigation."
+---
+
+## Introduction
+SpatialLM-Llama-1B is a state‑of‑the‑art 3D language model developed by Manycore Research.
+Built to interpret unstructured point cloud data from sources such as monocular video, RGBD images, and LiDAR sensors, it seamlessly converts raw 3D geometric information into structured scene outputs.
+Whether it’s delineating architectural elements like walls, doors, and windows or generating precise oriented object bounding boxes, SpatialLM-Llama-1B elevates spatial understanding. This breakthrough model paves the way for innovative applications in embodied robotics, autonomous navigation, and comprehensive 3D scene analysis.
+
+
+## Defining Dependencies
+
+We are using the [transformers](https://github.com/huggingface/transformers) to serve the model on a single A100.
+
+## Defining Dependencies
+
+We are using the [transformers](https://github.com/huggingface/transformers) to serve the model on a single A100 (80GB).
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`.
+
+```
+spatiallm-llama-1b/
+├── spatiallm/
+├── app.py
+├── code_template.txt
+├── inference.py
+├── inferless-runtime-config.yaml
+├── inferless.yaml
+└── visualize.py
+```
+
+You can also add other files to this directory.
+
+## Create the Input Schema with Pydantic
+
+Using the `inferless` Python client and Pydantic, you can define structured schemas directly in your code for input and output, eliminating the need for external file.
+
+### Input Schema
+When defining an input schema with Pydantic, you need to annotate your class attributes with the appropriate types, such as `str`, `float`, `int`, etc. 
+These type annotations specifys what type of data each field should contain. 
+The `default` value serves as the example input for testing with the `infer` function.
+
+```python
+@inferless.request
+class RequestObjects(BaseModel):
+    url: str = Field(default="https://github.com/rbgo404/Files/raw/main/scene0000_00.ply")
+```
+
+### Output Schema
+The `@inferless.response` decorator helps you define structured output schemas.
+
+```python
+@inferless.response
+class ResponseObjects(BaseModel):
+    layout_content: str = Field(default="Test output")
+```
+
+### Usage in the `infer` Function
+Once you have annotated the objects you can expect the infer function to receive `RequestObjects` as input,
+and returns a `ResponseObjects` instance as output, ensuring the results adhere to a defined structure.
+
+```python
+class InferlessPythonModel:
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        
+        return ResponseObjects(generated_result = generated_text)
+```
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/gemma-3-27b-it/blob/main/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference.
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+```python
+import argparse
+import os
+import glob
+import requests
+import torch
+import numpy as np
+from tqdm import tqdm
+from transformers import AutoTokenizer, AutoModelForCausalLM
+from spatiallm import Layout
+from spatiallm.pcd import load_o3d_pcd, get_points_and_colors, cleanup_pcd
+from inference import preprocess_point_cloud, generate_layout
+import rerun as rr
+import rerun.blueprint as rrb
+import uuid
+from pydantic import BaseModel, Field
+import inferless
+
+@inferless.request
+class RequestObjects(BaseModel):
+    url: str = Field(default="https://github.com/rbgo404/Files/raw/main/scene0000_00.ply")
+
+@inferless.response
+class ResponseObjects(BaseModel):
+    layout_content: str = Field(default="Test output")
+
+class InferlessPythonModel:
+  def initialize(self):
+        self.tokenizer = AutoTokenizer.from_pretrained('manycore-research/SpatialLM-Llama-1B')
+        self.model = AutoModelForCausalLM.from_pretrained('manycore-research/SpatialLM-Llama-1B').to("cuda")
+        self.model.set_point_backbone_dtype(torch.float32)
+        self.model.eval()
+
+  def infer(self, request: RequestObjects) -> ResponseObjects:
+        file_id = uuid.uuid4()
+        file_name = f'scene_{file_id}.ply'
+    
+        response = requests.get(request.url)
+        response.raise_for_status()
+
+        with open(file_name, 'wb') as file:
+            file.write(response.content)
+        
+        config = {
+            "point_cloud": file_name,
+            "layout": f'scene_{file_id}.txt',
+            "radius": 0.01,
+            "max_points": 1000000,
+            "headless": False,
+            "connect": False,
+            "serve": False,
+            "addr": None,
+            "save": f'scene_{file_id}.rrd',
+            "stdout": False,
+        }
+        args = argparse.Namespace(**config)
+
+        point_cloud = load_o3d_pcd(config["point_cloud"])
+        point_cloud = cleanup_pcd(point_cloud)
+        points, colors = get_points_and_colors(point_cloud)
+        min_extent = np.min(points, axis=0)
+
+        # preprocess the point cloud to tensor features
+        grid_size = Layout.get_grid_size()
+        num_bins = Layout.get_num_bins()
+        input_pcd = preprocess_point_cloud(points, colors, grid_size, num_bins)
+
+        current_directory = os.getcwd()
+
+        # generate the layout
+        layout = generate_layout(
+            self.model,input_pcd,self.tokenizer,
+            f'{current_directory}/code_template.txt',10,0.95,0.6,1,
+        )
+        layout.translate(min_extent)
+        pred_language_string = layout.to_language_string()
+        
+        os.remove(file_name)
+        return ResponseObjects(layout_content=pred_language_string)
+        
+  def finalize(self):
+      self.model = None
+```
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/gemma-3-27b-it/blob/main/inferless-runtime-config.yaml).
+
+```python
+build:
+  cuda_version: "12.1.1"
+  python_packages:
+    - "inferless==0.2.14"
+    - "pydantic==2.10.6"
+  system_packages:
+    - "libssl-dev"
+    - "libsparsehash-dev"
+    - "libgl1-mesa-glx"
+    - "libx11-6"
+  run:
+    - "pip install torch==2.4.1+cu124 torchvision==0.19.1+cu124 torchaudio==2.4.1+cu124 --index-url https://download.pytorch.org/whl/cu124"
+    - "pip install transformers==4.50.2 tokenizers==0.21.1 safetensors==0.4.5 pandas==2.2.3 einops==0.8.1 scipy==1.15.2 scikit-learn==1.6.1 toml==0.10.2 rerun-sdk==0.21.0 shapely==2.0.7 bbox==0.9.4 terminaltables==3.1.10 open3d==0.18.0 nvidia-cudnn-cu12 nvidia-nccl-cu12 addict==2.4.0 --ignore-installed"
+    - 'git clone https://github.com/mit-han-lab/torchsparse.git && cd torchsparse && TORCH_CUDA_ARCH_LIST="8.0" FORCE_CUDA=1 python3 setup.py install && cd ..'
+```
+
+## Method A: Deploying the model on Inferless Platform
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.
+
+### Step 1: Login to the inferless dashboard can click on Import model button
+Navigate to your desired workspace in Inferless and Click on `Add a custom model` button that you see on the top right. An import wizard will open up.
+
+### Step 2: Follow the UI to complete the model  Import
+- Select the GitHub/GitLab Integration option to connect your source code repository with the deployment environment.
+- Navigate to the specific GitHub repository that contains your model's code. Here, you will need to identify and enter the name of the model you wish to import.
+- Choose the appropriate type of machine that suits your model's requirements. Additionally, specify the minimum and maximum number of replicas to define the scalability range for deploying your model.
+- Optionally, you have the option to enable automatic build and deployment. This feature triggers a new deployment automatically whenever there is a new code push to your repository.
+- If your model requires additional software packages, configure the Custom Runtime settings by including necessary pip or apt packages. Also, set up environment variables such as  Inference Timeout, Container Concurrency, and Scale Down Timeout to tailor the runtime environment according to your needs.
+- Wait for the validation process to complete, ensuring that all settings are correct and functional. Once validation is successful, click on the "Import" button to finalize the import of your model.
+![](/images/inferless_model_import.png)
+
+
+### Step 3: Wait for the model build to complete usually takes ~5-10 minutes
+
+### Step 4: Use the APIs to call the model
+Once the model is in 'Active' status you can click on the 'API' page to call the model
+
+### Here is the Demo:
+
+![](/gif/spatiallm-demo.gif)
+
+## Method B: Deploying the model on Inferless CLI
+
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+### Clone the repository of the model
+Let's begin by cloning the model repository:
+```bash
+git clone https://github.com/inferless/gemma-3-27b-it.git
+```
+
+### Deploy the Model
+To deploy the model using Inferless CLI, execute the following command:
+```bash
+inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
+```
+
+**Explanation of the Command:**
+
+- `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
+- `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
+![](/images/gemma-3-cli.png)
