@@ -199,7 +199,6 @@
 				"cookbook/serverless-logo-generator",
 				"cookbook/qna-serverless-pdf-application",
 				"cookbook/serverless-voice-chatbot",
-				"cookbook/serverless-llama3-youtube-summarizer",
 				"cookbook/serverless-customer-service-bot",
 				"cookbook/comfyui-api-inferless",
 				"cookbook/serverless-speech-book-summary",
@@ -338,6 +337,7 @@
 				"how-to-guides/deploy-phi-4",
 				"how-to-guides/deploy-qwen2.5-vl-7b",
 				"how-to-guides/deploy-gemma-27b-it",
+				"how-to-guides/deploy-mistral-3.1-24b-instruct",
 				"how-to-guides/deploy-phi-4-multimodal-instruct"
 			]
 		},
