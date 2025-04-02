@@ -286,6 +286,10 @@
 				{
 					"group": "February 2025",
 					"pages": ["changelog/February-2025/28th-February"]
+				},
+				{
+					"group": "March 2025",
+					"pages": ["changelog/March-2025/31st-March"]
 				}
 			]
 		},
@@ -334,7 +338,8 @@
 				"how-to-guides/deploy-phi-4",
 				"how-to-guides/deploy-qwen2.5-vl-7b",
 				"how-to-guides/deploy-gemma-27b-it",
-				"how-to-guides/deploy-mistral-3.1-24b-instruct"
+				"how-to-guides/deploy-mistral-3.1-24b-instruct",
+				"how-to-guides/deploy-phi-4-multimodal-instruct"
 			]
 		},
 		{
