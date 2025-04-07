@@ -143,6 +143,8 @@ You can use the `inferless remote-run`([installation guide here](https://docs.in
 To enable **Remote Run**, simply do the following:
 1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+3. Create the Local Entry Point by decorating a function (for example, `my_local_entry`) with `@inferless.local_entry_point`. 
+Within this function, instantiate your model class, convert any incoming parameters into a `RequestObjects` object, and invoke the model's `infer` method. 
 
 ```python
 import torch
@@ -152,6 +154,17 @@ import base64
 import os
 import inferless
 from huggingface_hub import snapshot_download
+from pydantic import BaseModel, Field
+from typing import Optional
+
+@inferless.request
+class RequestObjects(BaseModel):
+    prompt: str = Field(default="Penguins having dinner")
+    negative_prompt: str = Field(default="low quality")
+
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_image_base64: str = Field(default='Test output')
 
 app = inferless.Cls(gpu="A100")
 
@@ -166,22 +179,20 @@ class InferlessPythonModel:
       self.decoder = StableCascadeDecoderPipeline.from_pretrained(model_id_1, variant="bf16", torch_dtype=torch.float16).to("cuda")
 
     @app.infer
-    def infer(self, inputs):
-      prompt = inputs["prompt"]
-      negative_prompt = inputs["negative_prompt"]
+    def infer(self, request: RequestObjects) -> ResponseObjects:
       prior_output = self.prior(
-          prompt=prompt,
+          prompt=request.prompt,
           height=1024,
           width=1024,
-          negative_prompt=negative_prompt,
+          negative_prompt=request.negative_prompt,
           guidance_scale=4.0,
           num_images_per_prompt=1,
           num_inference_steps=20)
 
       decoder_output = self.decoder(
           image_embeddings=prior_output.image_embeddings.to(torch.float16),
-          prompt=prompt,
-          negative_prompt=negative_prompt,
+          prompt=request.prompt,
+          negative_prompt=request.negative_prompt,
           guidance_scale=0.0,
           output_type="pil",
           num_inference_steps=10
@@ -189,10 +200,19 @@ class InferlessPythonModel:
       buff = BytesIO()
       decoder_output.save(buff, format="JPEG")
       img_str = base64.b64encode(buff.getvalue()).decode()
-      return { "generated_image_base64" : img_str }
+
+      generateObject = ResponseObjects(generated_image_base64 = img_str)
+      return generateObject
 
     def finalize(self):
         self.pipe = None
+
+@inferless.local_entry_point
+def my_local_entry(dynamic_params):
+    request_objects = RequestObjects(**dynamic_params)
+    model_instance = InferlessPythonModel()
+
+    return model_instance.infer(request_objects)
 ```
 
 ### Step 2: Run with Remote GPU

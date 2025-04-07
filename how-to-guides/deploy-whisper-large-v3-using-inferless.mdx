@@ -68,6 +68,7 @@ build:
     - "ffmpeg"
   python_packages:
     - "faster-whisper==1.0.0"
+    - "ctranslate2==4.4.0"
     - "torch==2.2.1"
     - "inferless-cli==2.0.9"
     - "hf-transfer==0.1.9"
@@ -82,10 +83,23 @@ You can use the `inferless remote-run`([installation guide here](https://docs.in
 To enable **Remote Run**, simply do the following:
 1. Import the `inferless` library and initialize `Cls(gpu="A10")`. The available GPU options are `T4`, `A10` and `A100`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+3. Create the Local Entry Point by decorating a function (for example, `my_local_entry`) with `@inferless.local_entry_point`. 
+Within this function, instantiate your model class, convert any incoming parameters into a `RequestObjects` object, and invoke the model's `infer` method. 
 
 ```python
 import inferless
 from faster_whisper import WhisperModel
+from pydantic import BaseModel, Field
+from typing import Optional
+
+
+@inferless.request
+class RequestObjects(BaseModel):
+    audio_url: str = Field(default="http://thepodcastexchange.ca/s/Porsche-Macan-July-5-2018-1.mp3")
+
+@inferless.response
+class ResponseObjects(BaseModel):
+    transcribed_output: str = Field(default='Test output')
 
 app = inferless.Cls(gpu="A10")
 
@@ -96,17 +110,24 @@ class InferlessPythonModel:
         self.model = WhisperModel(model_size, device="cuda", compute_type="float16")
 
     @app.infer
-    def infer(self, inputs):
-        
-        audio_url = inputs["audio_url"]
-        segments, info = self.model.transcribe(audio_url, beam_size=5)
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        segments, info = self.model.transcribe(request.audio_url, beam_size=5)
         text = ''.join([segment.text for segment in segments])
         
-        return {"transcribed_output":text}
+        generateObject = ResponseObjects(transcribed_output = text)
+        return generateObject
 
     def finalize(self):
         self.model = None
+
+@inferless.local_entry_point
+def my_local_entry(dynamic_params):
+    request_objects = RequestObjects(**dynamic_params)
+    model_instance = InferlessPythonModel()
+
+    return model_instance.infer(request_objects)
 ```
+
 
 ### Step 2: Run with Remote GPU
 

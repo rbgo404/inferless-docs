@@ -116,6 +116,8 @@ You can use the `inferless remote-run`([installation guide here](https://docs.in
 To enable **Remote Run**, simply do the following:
 1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+3. Create the Local Entry Point by decorating a function (for example, `my_local_entry`) with `@inferless.local_entry_point`. 
+Within this function, instantiate your model class, convert any incoming parameters into a `RequestObjects` object, and invoke the model's `infer` method. 
 
 ```python
 import os
@@ -126,7 +128,16 @@ from audiocraft.models import MusicGen
 from audiocraft.data.audio import audio_write
 import base64
 import inferless
+from pydantic import BaseModel, Field
+from typing import Optional
 
+@inferless.request
+class RequestObjects(BaseModel):
+    prompt: str = Field(default="Rock with saturated guitars, a heavy bass line and crazy drum break and fills.")
+
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_audio_base64: str = Field(default='Test output')
 
 app = inferless.Cls(gpu="A100")
 
@@ -139,9 +150,8 @@ class InferlessPythonModel:
         self.model.set_generation_params(duration=8)
 
     @app.infer
-    def infer(self, inputs):
-        
-        descriptions = [inputs["prompt"]]
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        descriptions = [request.prompt]
         wav = self.model.generate(descriptions)
         
         for idx, one_wav in enumerate(wav):
@@ -151,10 +161,18 @@ class InferlessPythonModel:
             audio_bytes = audio_file.read()
             audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
         
-        return {"generated_audio_base64": audio_base64}
+        generateObject = ResponseObjects(generated_audio_base64 = audio_base64)
+        return generateObject
 
     def finalize(self,args):
         self.model = None
+
+@inferless.local_entry_point
+def my_local_entry(dynamic_params):
+    request_objects = RequestObjects(**dynamic_params)
+    model_instance = InferlessPythonModel()
+
+    return model_instance.infer(request_objects)
 ```
 
 ### Step 2: Run with Remote GPU

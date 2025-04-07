@@ -160,6 +160,8 @@ You can use the `inferless remote-run`([installation guide here](https://docs.in
 To enable **Remote Run**, simply do the following:
 1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+3. Create the Local Entry Point by decorating a function (for example, `my_local_entry`) with `@inferless.local_entry_point`. 
+Within this function, instantiate your model class, convert any incoming parameters into a `RequestObjects` object, and invoke the model's `infer` method. 
 
 ```python
 import os
@@ -170,8 +172,23 @@ import torch
 from io import BytesIO
 import base64
 import inferless
+from pydantic import BaseModel, Field
+from typing import Optional
 
 app = inferless.Cls(gpu="A100")
+
+@inferless.request
+class RequestObjects(BaseModel):
+    prompt: str = Field(default="A cat holding a sign that says hello world")
+    height: Optional[int] = 512
+    width: Optional[int] = 512
+    num_inference_steps: Optional[int] = 4
+    guidance_scale: Optional[float] = 7.5
+    max_sequence_length: Optional[int] = 256
+
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_image_base64: str = Field(default='Test output')
 
 class InferlessPythonModel:
     @app.load
@@ -180,31 +197,32 @@ class InferlessPythonModel:
         snapshot_download(repo_id=model_id,allow_patterns=["*.safetensors"])
         self.pipe = FluxPipeline.from_pretrained(model_id, torch_dtype=torch.bfloat16).to("cuda")
     @app.infer
-    def infer(self, inputs):
-        prompt = inputs["prompt"]
-        height = inputs.get("height", 512)
-        width = inputs.get("width", 512)
-        guidance_scale = inputs.get("guidance_scale", 7.5)
-        num_inference_steps = inputs.get("num_inference_steps", 4)
-        max_sequence_length = inputs.get("max_sequence_length", 256)
-
+    def infer(self, request: RequestObjects) -> ResponseObjects:
         image = self.pipe(
-            prompt,
-            height=height,
-            width=width,
-            guidance_scale=guidance_scale,
-            num_inference_steps=num_inference_steps,
-            max_sequence_length=max_sequence_length,
+            request.prompt,
+            height=request.height,
+            width=request.width,
+            guidance_scale=request.guidance_scale,
+            num_inference_steps=request.num_inference_steps,
+            max_sequence_length=request.max_sequence_length,
         ).images[0]
 
         buff = BytesIO()
         image.save(buff, format="JPEG")
         img_str = base64.b64encode(buff.getvalue()).decode()
 
-        return {"generated_image_base64": img_str}
+        generateObject = ResponseObjects(generated_image_base64 = img_str)        
+        return generateObject
 
     def finalize(self):
         self.pipe = None
+
+@inferless.local_entry_point
+def my_local_entry(dynamic_params):
+    request_objects = RequestObjects(**dynamic_params)
+    model_instance = InferlessPythonModel()
+
+    return model_instance.infer(request_objects)
 ```
 
 ### Step 2: Run with Remote GPU

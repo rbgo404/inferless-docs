@@ -60,7 +60,7 @@ app = inferless.Cls(gpu="A100")
 class InferlessPythonModel:
     @app.load
     def initialize(self):
-        nfs_volume = os.getenv("NFS_VOLUME")
+        nfs_volume = os.getenv("NFS_VOLUME","./models")
         if os.path.exists(nfs_volume + "/Meta-Llama-3.1-8B-Instruct-Q8_0.gguf") == False :
             cache_file = hf_hub_download(
                                 repo_id="bartowski/Meta-Llama-3.1-8B-Instruct-GGUF",
@@ -171,19 +171,38 @@ You can use the `inferless remote-run`([installation guide here](https://docs.in
 To enable **Remote Run**, simply do the following:
 1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+3. Create the Local Entry Point by decorating a function (for example, `my_local_entry`) with `@inferless.local_entry_point`. 
+Within this function, instantiate your model class, convert any incoming parameters into a `RequestObjects` object, and invoke the model's `infer` method. 
 
 ```python
 from llama_cpp import Llama
 from huggingface_hub import hf_hub_download
 import os
 import inferless
+from pydantic import BaseModel, Field
+from typing import Optional
 
 app = inferless.Cls(gpu="A100")
+
+@inferless.request
+class RequestObjects(BaseModel):
+  prompt: str = Field(default="Explain Deep Learning.")
+  system_prompt: Optional[str] = "You are a friendly bot."
+  temperature: Optional[float] = 0.7
+  top_p: Optional[float] = 0.1
+  repeat_penalty: Optional[float] = 1.18
+  top_k: Optional[int] = 40
+  max_tokens: Optional[int] = 256
+
+@inferless.response
+class ResponseObjects(BaseModel):
+  generated_text: str = Field(default='Test output')
+
 
 class InferlessPythonModel:
     @app.load
     def initialize(self):
-        nfs_volume = os.getenv("NFS_VOLUME")
+        nfs_volume = os.getenv("NFS_VOLUME","./models")
         if os.path.exists(nfs_volume + "/Meta-Llama-3.1-8B-Instruct-Q8_0.gguf") == False :
             cache_file = hf_hub_download(
                                 repo_id="bartowski/Meta-Llama-3.1-8B-Instruct-GGUF",
@@ -193,28 +212,30 @@ class InferlessPythonModel:
             model_path=f"{nfs_volume}/Meta-Llama-3.1-8B-Instruct-Q8_0.gguf",
             main_gpu=0,
             n_gpu_layers=-1)
+    
     @app.infer
-    def infer(self, inputs):
-        prompt = inputs["prompt"]
-        system_prompt = inputs.get("system_prompt","You are a friendly bot.")
-        temperature = inputs.get("temperature",0.7)
-        top_p = inputs.get("top_p",0.1)
-        top_k = inputs.get("top_k",40)
-        repeat_penalty = inputs.get("repeat_penalty",1.18)
-        max_tokens = inputs.get("max_tokens",256)
-
+    def infer(self, request: RequestObjects) -> ResponseObjects:
         output = self.llm.create_chat_completion(
                     messages = [
-                      {"role": "system", "content": f"{system_prompt}"},
-                      {"role": "user","content": f"{prompt}"}],
-                    temperature=temperature, top_p=top_p, top_k=top_k,repeat_penalty=repeat_penalty,max_tokens=max_tokens
+                      {"role": "system", "content": f"{request.system_prompt}"},
+                      {"role": "user","content": f"{request.prompt}"}],
+                    temperature=request.temperature, top_p=request.top_p, top_k=request.top_k,
+                    repeat_penalty=request.repeat_penalty,max_tokens=request.max_tokens
         )
         text_result = output['choices'][0]['message']['content']
 
-        return {'generated_result': text_result}
+        generateObject = ResponseObjects(generated_text = text_result)
+        return generateObject
 
     def finalize(self):
         self.llm = None
+
+@inferless.local_entry_point
+def my_local_entry(dynamic_params):
+    request_objects = RequestObjects(**dynamic_params)
+    model_instance = InferlessPythonModel()
+
+    return model_instance.infer(request_objects)
 ```
 
 ### Step 2: Run with Remote GPU
@@ -222,7 +243,7 @@ class InferlessPythonModel:
 From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
 
 ```bash
-inferless remote-run app.py -c inferless-runtime-config.yaml -prompt "What is deep learning?"
+inferless remote-run app.py -c inferless-runtime-config.yaml --prompt "What is deep learning?"
 ```
 
 You can pass the other input parameters in the same way (e.g., `--system_prompt`, `--temperature`, etc.) as long as your code expects them in the `inputs` dictionary.

@@ -72,7 +72,7 @@ class InferlessPythonModel:
             base64_encoded_data = base64.b64encode(video_bytes_io.read())
             base64_string = base64_encoded_data.decode("utf-8")
 
-        return {"generated_video": base64_string[:100]}
+        return {"generated_video": base64_string}
 
     def finalize(self):
         self.pipe = None
@@ -105,6 +105,8 @@ You can use the `inferless remote-run`([installation guide here](https://docs.in
 To enable **Remote Run**, simply do the following:
 1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+3. Create the Local Entry Point by decorating a function (for example, `my_local_entry`) with `@inferless.local_entry_point`. 
+Within this function, instantiate your model class, convert any incoming parameters into a `RequestObjects` object, and invoke the model's `infer` method. 
 
 ```python
 import os
@@ -116,6 +118,17 @@ import base64
 import torch
 from diffusers import StableVideoDiffusionPipeline
 from diffusers.utils import load_image, export_to_video
+from pydantic import BaseModel, Field
+from typing import Optional
+
+
+@inferless.request
+class RequestObjects(BaseModel):
+    image_url: str = Field(default="https://images.cnbctv18.com/wp-content/uploads/2022/08/ashneer-grover-3-Meme-1-1019x573.jpg")
+  
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_video: str = Field(default='Test output')
 
 app = inferless.Cls(gpu="A100")
 
@@ -129,10 +142,10 @@ class InferlessPythonModel:
         self.pipe.to("cuda")
         self.pipe.unet = torch.compile(self.pipe.unet, mode="reduce-overhead", fullgraph=True)
         self.pipe.vae = torch.compile(self.pipe.vae, mode="reduce-overhead", fullgraph=True)
+    
     @app.infer    
-    def infer(self,inputs):
-        image_url = inputs['image_url']
-        image = load_image(image_url)
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        image = load_image(request.image_url)
         image = image.resize((1024, 576))
         generator = torch.manual_seed(42)
         frames = self.pipe(image, decode_chunk_size=8, generator=generator).frames[0]
@@ -144,10 +157,18 @@ class InferlessPythonModel:
             base64_encoded_data = base64.b64encode(video_bytes_io.read())
             base64_string = base64_encoded_data.decode("utf-8")
 
-        return {"generated_video": base64_string[:100]}
+        generateObject = ResponseObjects(generated_video = base64_string)
+        return generateObject
 
     def finalize(self):
         self.pipe = None
+
+@inferless.local_entry_point
+def my_local_entry(dynamic_params):
+    request_objects = RequestObjects(**dynamic_params)
+    model_instance = InferlessPythonModel()
+
+    return model_instance.infer(request_objects)
 ```
 
 ### Step 2: Run with Remote GPU

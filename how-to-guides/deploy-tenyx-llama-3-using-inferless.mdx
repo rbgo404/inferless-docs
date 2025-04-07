@@ -120,6 +120,8 @@ You can use the `inferless remote-run`([installation guide here](https://docs.in
 To enable **Remote Run**, simply do the following:
 1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+3. Create the Local Entry Point by decorating a function (for example, `my_local_entry`) with `@inferless.local_entry_point`. 
+Within this function, instantiate your model class, convert any incoming parameters into a `RequestObjects` object, and invoke the model's `infer` method. 
 
 ```python
 import os
@@ -127,6 +129,16 @@ os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
 from huggingface_hub import snapshot_download
 from transformers import AutoModelForCausalLM,BitsAndBytesConfig,AutoTokenizer
 import inferless
+from pydantic import BaseModel, Field
+from typing import Optional
+
+@inferless.request
+class RequestObjects(BaseModel):
+    prompt: str = Field(default="Explain Deep Learning.")
+
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_text: str = Field(default='Test output')
 
 app = inferless.Cls(gpu="A100")
 
@@ -140,17 +152,25 @@ class InferlessPythonModel:
         self.model = AutoModelForCausalLM.from_pretrained(model_name, quantization_config=bnb_config, device_map={"": 0})
 
     @app.infer
-    def infer(self, inputs):
-        prompt = inputs["prompt"]
-        chat = [{"role": "user", "content": prompt}]
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        chat = [{"role": "user", "content": request.prompt}]
         chat_template = self.tokenizer.apply_chat_template(chat,tokenize=False)
         inputs = self.tokenizer(chat_template,return_tensors="pt")
         generated_output = self.model.generate(**inputs, max_new_tokens=120)
         output = self.tokenizer.decode(generated_output[0], skip_special_tokens=True)
-        return {"generated_outputs":output}
+
+        generateObject = ResponseObjects(generated_text = output)
+        return generateObject
         
     def finalize(self):
         self.model = None
+
+@inferless.local_entry_point
+def my_local_entry(dynamic_params):
+    request_objects = RequestObjects(**dynamic_params)
+    model_instance = InferlessPythonModel()
+
+    return model_instance.infer(request_objects)
 ```
 
 ### Step 2: Run with Remote GPU
