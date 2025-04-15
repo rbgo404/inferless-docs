@@ -1,0 +1,25 @@
+---
+title: "AWS SNS"
+description: "You can integrate with AWS SNS to recieve notifications for your model."
+---
+
+### Steps to integrate with AWS SNS
+
+* Create a new Standard SNS topic in your AWS account.
+<Frame caption = "Create SNS topic.">![](/images/sns-create-topic.png)</Frame>  
+
+* Create and IAM user in your AWS account and add a SNS policy to write to topic
+<Frame caption = "Create SNS user and write policy.">![](/images/sns-create-policy.png)</Frame>  
+
+* Add the topic ARN, access and secret keys in the Manage Integrations --> Workspace Integrations --> AWS SNS section
+<Frame caption = "Add SNS Integration">![](/images/sns-add-integration.png)</Frame>  
+
+* You can then create a subscription of choice to recieve notifications. 
+<Frame caption = "Create SNS subscription">![](/images/sns-create-subscription.png)</Frame>  
+
+* You will be notified for the following events:
+   * Your model inference is getting a non 200 http response code
+   * Your model inference latency is more than 20 seconds
+
+* You can also enable or disable alerts in Workspace Settings --> Integrations --> AWS SNS section
+<Frame caption = "Enable Alerts">![](/images/sns-enable-alerts.png)</Frame>  
