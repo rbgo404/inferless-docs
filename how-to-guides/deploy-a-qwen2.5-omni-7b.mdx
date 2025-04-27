@@ -1,5 +1,5 @@
 ---
-title: "Deploy Qwen2.5-Coder-32B-Instruct using Inferless"
+title: "Deploy Qwen2.5-Omni-7B using Inferless"
 description: "Qwen2.5-Omni-7B is a 7B multimodal language model developed by Alibaba Cloud's Qwen team, designed for real-time, end-to-end processing of text, images, audio, and video inputs, with streaming text and speech generation capabilities."
 ---
 
@@ -33,7 +33,7 @@ In the [app.py](https://github.com/inferless/qwen2.5-omni-7b/blob/main/app.py) w
 
 1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
 
-2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference. You can also pass custom values for inference and pass it through `inputs(dict)` parameter.
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference.
 
 3.  `def finalize`: This function cleans up all the allocated memory.
 
@@ -259,7 +259,7 @@ From your local terminal, navigate to the folder containing your `app.py` and yo
 inferless remote-run app.py -c inferless-runtime-config.yaml --prompt "Explain everything in the image." --system_prompt "You are Qwen, a virtual human developed by the Qwen Team, Alibaba Group, capable of perceiving auditory and visual inputs, as well as generating text and speech." --image_url "https://github.com/rbgo404/Files/raw/main/dog.jpg"
 ```
 
-You can pass the other input parameters in the same way (e.g., `--system_prompt`, `--temperature`, etc.) as long as your code expects them in the `inputs` dictionary.
+You can pass the other input parameters in the same way (e.g., `--system_prompt`, `--video_url`, etc.) as long as your code expects them in the `inputs` dictionary.
 
 If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
 
