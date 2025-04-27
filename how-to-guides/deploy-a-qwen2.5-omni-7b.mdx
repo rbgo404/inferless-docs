@@ -1,14 +1,15 @@
 ---
 title: "Deploy Qwen2.5-Omni-7B using Inferless"
-description: "Qwen2.5-Omni-7B is a 7B multimodal language model developed by Alibaba Cloud's Qwen team, designed for real-time, end-to-end processing of text, images, audio, and video inputs, with streaming text and speech generation capabilities."
+description: "Qwen2.5-Omni-7B is a 7B multimodal language model developed by Alibaba Cloud's Qwen team, designed for real-time, end-to-end processing of text, images, audio, and video inputs, with text and speech generation capabilities."
 ---
 
 ## Introduction
 
-Qwen2.5-Omni-7B is an advanced multimodal model developed by Alibaba Cloud's Qwen team. This model is part of the Qwen2.5 series and is engineered to handle diverse modalities, including text, images, audio, and video, enabling seamless integration and understanding across different data types.​
-Hugging Face
+Qwen2.5-Omni-7B is an advanced multimodal model developed by Alibaba Cloud's Qwen team.
+This model is part of the Qwen2.5 series and it can handle diverse modalities, including text, images, audio, and video, enabling seamless integration and understanding across different data types.​
 
-The model introduces a novel Thinker-Talker architecture, where the "Thinker" processes and understands multimodal inputs, and the "Talker" generates corresponding text and natural speech outputs in a streaming manner. This design facilitates real-time interactions, making it suitable for applications like voice assistants and interactive agents.​
+The model introduces a novel Thinker-Talker architecture, where the "Thinker" processes and understands multimodal inputs, and the "Talker" generates corresponding text and natural speech outputs.
+This design facilitates real-time interactions, making it suitable for applications like voice assistants and interactive agents.​
 
 ## Defining Dependencies
 
@@ -124,7 +125,7 @@ class InferlessPythonModel:
 
 ## Creating the Custom Runtime
 
-This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/Qwen2.5-Coder-32B-Instruct/blob/main/inferless-runtime-config.yaml).
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/qwen2.5-omni-7b/blob/main/inferless-runtime-config.yaml).
 
 ```python
 build:
