@@ -202,7 +202,8 @@
 				"cookbook/serverless-customer-service-bot",
 				"cookbook/comfyui-api-inferless",
 				"cookbook/serverless-speech-book-summary",
-				"cookbook/product-hunt-thread-summarizer"
+				"cookbook/product-hunt-thread-summarizer",
+				"cookbook/google-map-agent-using-mcp"
 			]
 		},
 		{
