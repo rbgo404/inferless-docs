@@ -126,6 +126,12 @@
 						"integrations/file-import-system/file-import-from-system",
 						"integrations/file-import-system/import-from-system"
 					]
+				},
+				{
+					"group": "AWS SNS",
+					"pages": [
+						"integrations/aws-sns/aws-sns"
+					]
 				}
 			]
 		},
