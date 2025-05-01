@@ -3,10 +3,11 @@ title: "Model Alerts using AWS SNS"
 description: "You can integrate with Inferless for alerts by using SNS to send notifications about critical events related to model health."
 ---
 
+
 ### Types of alerts supported by Inferless
 
-* You will be notified for the following events:
-   1) Your model inference is getting a non 200 http response code
+* You will be notified of the following events:
+   1) Your model inference is getting a non-200 HTTP response code
       * SNS subject and message format
          * subject: "4xx errors increased for {{ id }} by 2"
          * message: "The service {{ model_url }} had 2 4xx errors over the last 30 seconds."
@@ -17,22 +18,4 @@ description: "You can integrate with Inferless for alerts by using SNS to send n
 
 
 
-### Steps to integrate with AWS SNS
-
-* Create a new Standard SNS topic in your AWS account.
-<Frame caption = "Create SNS topic.">![](/images/sns-create-topic.png)</Frame>  
-
-* Create and IAM user in your AWS account and add a SNS policy to write to topic
-<Frame caption = "Create SNS user and write policy.">![](/images/sns-create-policy.png)</Frame>  
-
-* Add the topic ARN, access and secret keys in the Manage Integrations --> Workspace Integrations --> AWS SNS section
-<Frame caption = "Add SNS Integration">![](/images/sns-add-integration.png)</Frame>  
-
-<Frame caption = "Add SNS Integration">![](/images/sns-manage-integration.png)</Frame>  
-
-* You can also enable or disable alerts in Workspace Settings --> Integrations --> AWS SNS section
-<Frame caption = "Enable Alerts">![](/images/sns-enable-alerts.png)</Frame>  
-
-* You can then create a subscription of choice to recieve notifications. 
-<Frame caption = "Create SNS subscription">![](/images/sns-create-subscription.png)</Frame>  
 
