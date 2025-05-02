@@ -127,12 +127,7 @@
 						"integrations/file-import-system/import-from-system"
 					]
 				},
-				{
-					"group": "AWS SNS",
-					"pages": [
-						"integrations/aws-sns/aws-sns"
-					]
-				}
+				"integrations/aws-sns/aws-sns"
 			]
 		},
 		{
@@ -208,7 +203,8 @@
 				"cookbook/serverless-customer-service-bot",
 				"cookbook/comfyui-api-inferless",
 				"cookbook/serverless-speech-book-summary",
-				"cookbook/product-hunt-thread-summarizer"
+				"cookbook/product-hunt-thread-summarizer",
+				"cookbook/google-map-agent-using-mcp"
 			]
 		},
 		{
@@ -295,6 +291,10 @@
 				{
 					"group": "March 2025",
 					"pages": ["changelog/March-2025/31st-March"]
+				},
+				{
+					"group": "April 2025",
+					"pages": ["changelog/April-2025/30th-April"]
 				}
 			]
 		},

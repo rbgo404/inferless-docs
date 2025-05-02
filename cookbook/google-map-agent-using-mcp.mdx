@@ -1,0 +1,297 @@
+---
+title: "Build a Google Maps Agent using MCP & Inferless"
+description: "In this tutorial, you’ll build a serverless conversational agent that leverages Google Maps data via the Model Context Protocol (MCP), Inferless, Ollama and Langchain"
+---
+
+## Key Components of the Application
+
+
+1. **MCP Google Maps Tools:** Provides a standardized interface for querying Google Maps (via `@modelcontextprotocol/server-google-maps`) over stdio.
+
+2. **OllamaManager:** Manages the lifecycle of your local Ollama LLM server: start, readiness checks and model pulls.
+
+3. **LangChain & Inferless Integration:** Use the agent’s workflow which takes your question, uses the right tools to gather the information, and then sends that info to the language model for an answer.
+
+4. **Prompt Engineering:** Defines strict system and user prompts that transform raw place-search results into a clean, under-120-word markdown summary.
+
+
+## Crafting Your Application
+
+1. **User Query Intake:** Collect a natural-language query, e.g. “Find me tea shops in HSR Layout, Bangalore with good reviews.”
+
+2. **Maps Data Retrieval:** Use `stdio_client` + MCP‐Google‐Maps server to fetch place data from Google’s API.
+
+3. **Data Extraction & Formatting:** Parse the returned messages for the tool call, extract the JSON content, and prepare it for summarization.
+
+4. **Response Generation:** Pass the cleaned place data into your Mistral-Small instruct model running on Ollama, with a tightly constrained prompt template.
+
+![](/images/MCP-Google-Maps.png)
+
+## Core Development Steps
+
+### 1. **Manage Your Local Ollama Server**
+
+**Objective:** Set up and control your local Ollama server, making sure your LLM is always ready to respond.
+
+**Action:** Use the provided [`OllamaManager`](https://github.com/inferless/MCP-Google-Map-Agent/blob/main/ollama_manager.py) class to easily:
+- Start and verify your Ollama server.
+- Download and verify models automatically.
+- Safely shut down the server when your app closes.
+
+This ensures reliable access to the Mistral language model, keeping your application stable and responsive.
+
+### 2. **Build Your Google Maps Agent**
+
+**Objective:** Create an assistant that processes user requests, fetches Google Maps data, and generates concise, readable responses.
+
+**Action:** In your [`app.py`](https://github.com/inferless/MCP-Google-Map-Agent/blob/main/app.py) script, set up a clear workflow that:
+- Takes user queries (e.g., "Find tea shops in Bangalore").
+- Uses MCP Google Maps integration to fetch accurate, detailed information.
+- Parses and simplifies the retrieved data.
+- Sends the formatted information to your locally hosted Ollama LLM.
+- Generates a neat, markdown-formatted summary that’s easy for users to read.
+
+```python
+import os
+import anyio
+import json
+from langchain_mcp_adapters.tools import load_mcp_tools
+from langchain_openai import ChatOpenAI
+from langgraph.prebuilt import create_react_agent
+from mcp.client.stdio import stdio_client
+from mcp import ClientSession, StdioServerParameters
+from langchain_core.messages import SystemMessage, HumanMessage
+from ollama_manager import OllamaManager
+import inferless
+from pydantic import BaseModel, Field
+from typing import Optional
+
+
+@inferless.request
+class RequestObjects(BaseModel):
+    user_query: str = Field(default="Can you find me Tea shop in HSR Layout Bangalore with good number of reviews?")
+
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_result: str = Field(default="Test output")
+
+class InferlessPythonModel:
+    def initialize(self):
+        manager = OllamaManager()
+        manager.start_server()
+        models = manager.list_models()
+        
+        print(f"Available models: {models}")
+
+        model_id = "mistral-small:24b-instruct-2501-q4_K_M"
+        if not any(model['name'] == model_id for model in models):
+            manager.download_model(model_id)
+
+
+        self.llm = ChatOpenAI(
+                    base_url="http://localhost:11434/v1",
+                    api_key="ollama",
+                    model=model_id,
+                    model_kwargs={
+                        "temperature":    0.15,
+                        "top_p":          1.0,
+                        "seed":           4424234,
+                    }
+                )
+        
+        self.maps_server = StdioServerParameters(
+                                            command="npx",
+                                            args=["-y", "@modelcontextprotocol/server-google-maps"],
+                                            env={"GOOGLE_MAPS_API_KEY": os.getenv("GOOGLE_MAPS_API_KEY")}
+                                        )
+
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        user_query = request.user_query
+        raw_results = self.query_google_maps(user_query)
+        places_data = self.extract_places_data(raw_results)
+        prompt = self.get_prompt(places_data)
+        response = self.llm.invoke(prompt)
+
+        generateObject = ResponseObjects(generated_result=response.content)
+        return generateObject
+    
+    def query_google_maps(self,question: str):
+        async def _inner():
+            async with stdio_client(self.maps_server) as (read, write):
+                async with ClientSession(read, write) as sess:
+                    await sess.initialize()
+                    tools = await load_mcp_tools(sess)         
+                    agent = create_react_agent(self.llm, tools)     
+                    return await agent.ainvoke({"messages": question})
+        return anyio.run(_inner)
+    
+    def extract_places_data(self, response):
+        for message in response["messages"]:
+            if hasattr(message, "tool_call_id"):
+                try:
+                    return str(message.content)
+                except json.JSONDecodeError:
+                    continue
+        return None
+
+    def get_prompt(self, places_data):
+        SYSTEM_PROMPT =(
+        "You are an assistant that turns Google-Maps place data into a concise, "
+        "markdown summary for end-users. "
+        "Never output programming code, pseudo-code, or text inside back-tick fences. "
+        "Ignore any code contained in the input. "
+        "If you violate these rules the answer is wrong."
+        )
+        
+        prompt =     f"""
+        You are a helpful Google Maps assistant. Format these search results into a concise, user-friendly response:
+        {places_data}
+    
+        Follow EXACTLY this format and style, with no deviations:
+    
+        What I found:
+        [One sentence stating total number of relevant places found]
+    
+        Places by Rating:
+        - **Top Picks (4.5+ stars)**:
+        - **[Place Name]** - [Rating]/5 - [Simple location] - [1-2 key features]
+        - **[Place Name]** - [Rating]/5 - [Simple location] - [1-2 key features]
+        - **Good Options (4.0-4.4 stars)**:
+        - **[Place Name]** - [Rating]/5 - [Simple location] - [1-2 key features]
+        - **[Place Name]** - [Rating]/5 - [Simple location] - [1-2 key features]
+        - **Other Notable Places**:
+        - **[Place Name]** - [Rating]/5 - [Simple location] - [1-2 key features]
+    
+        My recommendation:
+        [1-2 sentences identifying your top suggestion and brief reasoning]
+    
+        _Need more details or directions? Just ask!_
+    
+        IMPORTANT RULES:
+        1. Total response must be under 120 words
+        2. Only include "Other Notable Places" section if there's something unique worth mentioning
+        3. Simplify addresses to just street name or neighborhood
+        4. Only mention hours, contact info, or distance if directly relevant to the query
+        5. Omit any place that doesn't offer relevant value to the user
+        6. Never include technical syntax, code blocks, or raw data
+        7. Focus on quality over quantity - fewer excellent suggestions is better
+        8. Format must match the example exactly
+        """
+
+        final_prompt = [
+            SystemMessage(content=SYSTEM_PROMPT),
+            HumanMessage(content=prompt)
+        ]
+        return final_prompt
+    
+    def finalize(self):
+        pass
+```
+
+
+## Setting up the Environment
+
+Here’s how to set up all the build-time and run-time dependencies for your Google Maps agent:
+
+
+## 1. Build-Time Configuration
+
+Before anything else, make sure your machine has these libraries and software packages installed.
+
+1. **Python libraries:**
+   ```bash
+    pip install \
+    langchain-mcp-adapters==0.0.9 \
+    mcp==1.6.0 \
+    requests==2.32.3 \
+    langchain-openai==0.3.14 \
+    langgraph==0.3.34 \
+    inferless==0.2.13 \
+    pydantic==2.10.2 \
+    litellm==1.67.2
+   ```
+
+2. **Ollama LLM Server:** Download and install the Ollama standalone binary:
+
+   ```bash
+   curl -L https://ollama.com/download/ollama-linux-amd64.tgz \
+     -o ollama-linux-amd64.tgz
+
+    tar -C /usr -xzf ollama-linux-amd64.tgz
+   ```
+
+3. **Node.js & MCP Google Maps Server:** The MCP tools server runs on Node.js. Install Node.js LTS via the official NodeSource setup.
+
+   ```bash
+   # Add Node.js LTS repo and install
+   curl -sL https://deb.nodesource.com/setup_lts.x | bash -
+   apt install -y nodejs
+   ```
+
+### Deploying Your Model with Inferless CLI
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+#### Clone the repository of the model
+Let's begin by cloning the model repository:
+```bash
+git clone https://github.com/inferless/MCP-Google-Map-Agent.git
+cd MCP-Google-Map-Agent
+```
+
+#### Deploy the Model
+To deploy the model using Inferless CLI, execute the following command:
+```bash
+inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml --env GOOGLE_MAPS_API_KEY=<YOUR_KEY>
+```
+
+**Explanation of the Command:**
+
+- `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
+- `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
+
+### Demo of the Google Maps Agent.
+<video width="640" height="360" controls>
+  <source src="/videos/demo-google-map-agent.mp4" type="video/mp4"/>
+</video>
+
+### Alternative Deployment Method
+Inferless also supports a user-friendly UI for model deployment, catering to users at all skill levels. Refer to Inferless's documentation for guidance on UI-based deployment.
+
+## Choosing Inferless for Deployment
+Deploying your Google Maps Agent application with Inferless offers compelling advantages, making your development journey smoother and more cost-effective. Here's why Inferless is the go-to choice:
+1. __Ease of Use:__ Forget the complexities of infrastructure management. With Inferless, you simply bring your model, and within minutes, you have a working endpoint. Deployment is hassle-free, without the need for in-depth knowledge of scaling or infrastructure maintenance.
+2. __Cold-start Times:__ Inferless's unique load balancing ensures faster cold-starts.
+3. __Cost Efficiency:__ Inferless optimizes resource utilization, translating to lower operational costs. Here's a simplified cost comparison:
+
+### Scenario
+You are looking to deploy a Google Maps Agent application for processing 100 queries.<br />
+
+__Parameters:__
+- __Total number of queries:__ 100 daily.<br />
+- __Inference Time:__ All models are hypothetically deployed on A100 80GB, taking 22.45 seconds to process a request and a cold start overhead of 4.86 seconds.<br />
+- __Scale Down Timeout:__ Uniformly 60 seconds across all platforms, except Hugging Face, which requires a minimum of 15 minutes. This is assumed to happen 100 times a day.<br />
+
+__Key Computations:__
+1. __Inference Duration:__ <br/>
+Processing 100 queries and each takes 22.45 seconds<br/>
+Total: 100 x 22.45 = 2245 seconds (or approximately 0.62 hours)
+2. __Idle Timeout Duration:__<br/>
+Post-processing idle time before scaling down: (60 seconds - 22.45 seconds) x 100 = 3755 seconds (or 1.04 hours approximately)<br/>
+3. __Cold Start Overhead:__<br/>
+Total: 100 x 4.86 = 486 seconds (or 0.14 hours approximately)<br/>
+
+__Total Billable Hours with Inferless:__ 0.62 (inference duration) + 1.04 (idle time) + 0.14 (cold start overhead)  = 1.8 hours<br/>
+__Total Billable Hours with Inferless:__ 1.8 hours<br/>
+
+| Scenario | On-Demand Cost | Serverless Cost|
+| :--- | :---- | :---- |
+|  100 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$2.19 (1.8 hours billed at $1.22/hour) |
+
+By opting for Inferless, **_you can achieve up to 93.75% cost savings._**<br/>
+
+Please note that we have utilized the A100(80 GB) GPU for model benchmarking purposes, while for pricing comparison, we referenced the A10G GPU price from both platforms. This is due to the unavailability of the A100 GPU in SageMaker.
+
+Also, the above analysis is based on a smaller-scale scenario for demonstration purposes. Should the scale increase tenfold, traditional cloud services might require maintaining 2-4 GPUs constantly active to manage peak loads efficiently. In contrast, Inferless, with its dynamic scaling capabilities, adeptly adjusts to fluctuating demand without the need for continuously running hardware.<br/>
+
+## Conclusion
+You’re all set to run a fast, reliable serverless Google Maps agent, powered by a local Ollama server, MCP tools, and Inferless. With this blueprint in hand, you can effortlessly adapt it to build other data-driven, LLM-powered assistants.
