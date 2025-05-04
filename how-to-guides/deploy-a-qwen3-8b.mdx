@@ -66,6 +66,7 @@ The `@inferless.response` decorator helps you define structured output schemas.
 @inferless.response
 class ResponseObjects(BaseModel):
     generated_result: str = Field(default="Test output")
+    thinking_hidden: str = Field(default="Test output")
 ```
 
 ### Usage in the `infer` Function
