@@ -345,7 +345,8 @@
 				"how-to-guides/deploy-gemma-27b-it",
 				"how-to-guides/deploy-mistral-3.1-24b-instruct",
 				"how-to-guides/deploy-phi-4-multimodal-instruct",
-				"how-to-guides/deploy-a-qwen3-8b"
+				"how-to-guides/deploy-a-qwen3-8b",
+				"how-to-guides/deploy-yolo11m-detect"
 			]
 		},
 		{

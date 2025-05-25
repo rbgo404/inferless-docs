@@ -5,9 +5,9 @@ description: "YOLO11m is a medium-sized variant of the YOLO11 family, designed t
 
 ## Introduction
 
-YOLO11m is a state-of-the-art object detection model from YOLO11 series, offering a balanced trade-off between accuracy and computational efficiency. It introduces architectural innovations like the C3k2 block for efficient computation, SPPF for multi-scale feature aggregation, and C2PSA for enhanced spatial attention, leading to improved detection performance.
+[YOLO11m](https://docs.ultralytics.com/models/yolo11/) is a state-of-the-art object detection model from YOLO11 series, offering a balanced trade-off between accuracy and computational efficiency. It introduces architectural innovations like the C3k2 block for efficient computation, SPPF for multi-scale feature aggregation, and C2PSA for enhanced spatial attention, leading to improved detection performance.
 
-With approximately 20.09 million parameters, YOLO11m achieves higher mAP@75 0.538 on benchmarks like the COCO dataset while maintaining a compact model size, making it suitable for real-time applications on devices with limited computational resources. Its versatility extends to various computer vision tasks, including object detection, instance segmentation, image classification, pose estimation, and oriented object detection (OBB).
+With approximately `20.09` million parameters, YOLO11m achieves higher `mAP@75 0.538` on benchmarks like the COCO dataset while maintaining a compact model size, making it suitable for real-time applications on devices with limited computational resources. Its versatility extends to various computer vision tasks, including object detection, instance segmentation, image classification, pose estimation, and oriented object detection (OBB).
 
 
 ## Defining Dependencies
@@ -172,7 +172,7 @@ You can use the `inferless remote-run`([installation guide here](https://docs.in
 
 ### Step 1: Add the Decorators and local entry point
 To enable **Remote Run**, simply do the following:
-1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
+1. Import the `inferless` library and initialize `Cls(gpu="A10")`. The available GPU options are `T4`, `A10` and `A100`.
 2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
 3. Create the Local Entry Point by decorating a function (for example, `my_local_entry`) with `@inferless.local_entry_point`. 
 Within this function, instantiate your model class, convert any incoming parameters into a `RequestObjects` object, and invoke the model's `infer` method. 
@@ -309,11 +309,11 @@ git clone https://github.com/inferless/yolo11m-detect.git
 ### Deploy the Model
 To deploy the model using Inferless CLI, execute the following command:
 ```bash
-inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
+inferless deploy --gpu A10 --runtime inferless-runtime-config.yaml
 ```
 
 **Explanation of the Command:**
 
 - `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
 - `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
-![](/images/qwen3-cli-deployment.png)
+![](/images/yolo11-cli.png)
