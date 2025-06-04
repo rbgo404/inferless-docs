@@ -7,14 +7,17 @@ Dynamic batching is a feature of Inferless that allows inference requests to be 
 Dynamic batching is enabled and configured independently for each model using the BATCH\_SIZE property in the model configuration. These settings control the preferred batch size(s) of the dynamically created batches, the maximum time that requests can be delayed in the scheduler to allow other requests to join the dynamic batch, and queue properties such as batch\_window
 
 
-### Using Git Method 
+## Using Git Method 
+
+Define the BATCH\_SIZE and BATCH\_WINDOW in the **input\_schema.py** or in **app.py** if you are using pydantic.
+
+### Input Schema Example
 
 You can use the below repo for example:
 
 [https://github.com/inferless/template\_input\_batch](https://github.com/inferless/template%5Finput%5Fbatch)
 
 
-Define the BATCH\_SIZE and BATCH\_WINDOW in the **input\_schema.py**
 
 ```python
 /
@@ -72,7 +75,30 @@ class InferlessPythonModel:
         self.pipe = None
 ```
 
-### Using File Import Method 
+### Pydantic Example
+
+```python
+/
+├── app.py
+```
+
+in app.py 
+
+```python
+import inferless
+from pydantic import BaseModel, Field
+
+@inferless.config
+class Config():
+    is_batched_input: bool = True
+    batch_size: int = 2
+    batch_window: int = 50000
+
+#...rest of the code 
+
+```
+
+## Using File Import Method 
 
 
 If you are using file import create a file config.pbtxt in the root of the model directory with the following content:

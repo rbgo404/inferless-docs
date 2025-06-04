@@ -14,11 +14,18 @@ You will need to have 'app.py' and "
 
 Options:
 
-- `--type` : you can give the type image Values: 'inferless', 'cog'
-- `--runtime -r` : you can give the filename to build the continer here
-- `--env` : you can give the environment varriables. ex : --env "key:value"
-- `--docker-base-url` or - `-u` : you can give the socket to connect to docker
-
+- `-r, --runtime TEXT`: custom runtime name or file location. if not provided default Inferless runtime will be used.
+- `-t, --runtime-type TEXT`: Type of runtime to deploy [fastapi, triton]. Defaults to triton.  [default: triton]
+- `-n, --name TEXT`: Name of the model to deploy on inferless  [default: inferless-model]
+- `-f, --env-file TEXT`: Path to an env file containing environment variables (one per line in KEY=VALUE format)
+- `-e, --env TEXT`: Environment variables to set for the runtime (e.g. 'KEY=VALUE'). If the env variable contains special chars please escape them.
+- `-u, --docker-base-url TEXT`: Docker base url. Defaults to system default, feteched from env
+- `--volume TEXT`: Volume name.
+- `-f, --framework TEXT`: Framework type. (PYTORCH, ONNX, TENSORFLOW)  [default: PYTORCH]
+- `-i, --input-schema TEXT`: Input schema path. (Default: input_schema.json)  [default: input_schema.py]
+- `-i, --input TEXT`: Input json path
+- `-o, --output TEXT`: Output json path
+- `--runtimeversion TEXT`: Runtime version (default: latest).
 Examples:
 
 ```python
