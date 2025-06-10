@@ -1,0 +1,233 @@
+---
+title: "Build an Open-NotebookLM with Inferless"
+description: "In this tutorial you’ll build a serverless Open-NotebookLM that turns any research paper or article into a lively, two-host audio podcast using Inferless."
+---
+
+## Key Components of the Application
+
+1. **Qwen3-32B LLM** – Alibaba’s Qwen3-32B dense model(32,768-token context) with state-of-the-art reasoning and open weights.
+2. **Kokoro-82M TTS** – 82M parameter multilingual voice model delivering fast, high-fidelity speech from a single GPU.
+4. **PyPDF2 Extraction Layer** – lightweight parser that extract text from the PDF.
+
+## Crafting Your Application
+
+1. **Document Intake** – the user posts a `pdf_url` and then `extract_pdf_content` function pulls the file and feeds raw text (often 10k+ tokens) to the LLM.
+2. **Deep Summary** – `SUMMARIZATION_PROMPT` asks Qwen3 for a five-part analysis: core ideas, background, tricky concepts, “wow” facts and open questions.
+3. **Dialogue Generation** – `PODCAST_CONVERSION_PROMPT` converts the summary into a conversation tagged `Alex:` / `Romen:` for each turn.
+4. **Voice Rendering** – Kokoro generates speech for each line with alternating voices (“am\_adam” and “af\_heart”), stitching half-second silences for natural pacing.
+5. **Response** – the final WAV is base-64-encoded and returned as `generated_podcast_base64` ready for playback.
+
+![](/images/Open-NotebookLM-architecture.png)
+
+## Core Development Steps
+
+### 1. **Build the complete Pipeline**
+
+**Objective:** Create the functions that ingests a PDF, summarizes it with Qwen 3-32B, converts that summary into a two-host script, renders speech using Kokoro-82 M, and returns a Base-64 string.
+
+**Action:**
+
+* **Load the reasoning model.** Pull the open-weight, **Qwen 3-32B** (32768-token context).
+* **Extract document text.** Use PyPDF2’s `extract_text()` to extract every page of the user-supplied PDF.
+* **Generate a deep summary.** Feed that raw text to Qwen3 with the *SUMMARIZATION\_PROMPT* to obtain the analysis (core ideas, background, tricky concepts, “wow” facts, open questions).
+* **Convert to dialogue.** Invoke the *PODCAST\_CONVERSION\_PROMPT* to turn the summary into a conversation between Alex and Romen, each turn tagged for TTS.
+* **Synthesize speech.** Run the script through **Kokoro-82M**, a TTS model with alternating “am\_adam” and “af\_heart” and inserting 0.5s pauses for natural pacing.
+
+
+```python
+from transformers import AutoModelForCausalLM, AutoTokenizer
+from kokoro import KModel, KPipeline
+from utils import create_summarization_messages, create_podcast_conversion_messages,convert_script_format, clean_podcast_script, clean_utterance_for_tts, extract_pdf_content
+import time
+import numpy as np
+import soundfile as sf
+import io
+import base64
+import inferless
+from pydantic import BaseModel, Field
+
+@inferless.request
+class RequestObjects(BaseModel):
+    pdf_url: str = Field(default="https://arxiv.org/pdf/2502.01068")
+
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_podcast_base64: str = Field(default='Test output')
+
+class InferlessPythonModel:
+    def initialize(self):
+        model_name = "Qwen/Qwen3-32B"
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model = AutoModelForCausalLM.from_pretrained(model_name,torch_dtype="auto",device_map="cuda")
+        self.kmodel = KModel(repo_id='hexgrad/Kokoro-82M').to("cuda").eval()
+        self.kpipeline = KPipeline(lang_code="a")
+        self.MALE_VOICE = "am_adam"
+        self.FEMALE_VOICE = "af_heart"
+
+    def infer(self,request: RequestObjects) -> ResponseObjects:
+        messages_content = extract_pdf_content(request.pdf_url)
+        summary_content = self.generate_text(self.tokenizer, self.model,create_summarization_messages(messages_content))
+        tts_content = self.generate_text(self.tokenizer, self.model,create_podcast_conversion_messages(summary_content))
+
+        converted_script = convert_script_format(tts_content)    
+        all_audio = []
+        for sr, audio_segment in self.generate_podcast_audio(converted_script, self.kmodel, self.kpipeline, self.MALE_VOICE, self.FEMALE_VOICE):
+            all_audio.append(audio_segment)
+            pause = np.zeros(int(sr * 0.5))
+            all_audio.append(pause)
+
+        if all_audio:
+            final_audio = np.concatenate(all_audio)
+            buf = io.BytesIO()
+            sf.write(buf, final_audio, sr, format='WAV')
+            buf.seek(0)
+            base64_audio = base64.b64encode(buf.read()).decode('utf-8')
+            
+            generateObject = ResponseObjects(generated_podcast_base64=base64_audio)
+            return generateObject
+            
+
+    def generate_text(self,tokenizer, model,text_content):
+        tokenized_text = tokenizer.apply_chat_template(text_content,
+                                                tokenize=False,
+                                                add_generation_prompt=True,
+                                                enable_thinking=False
+                                                )
+        model_inputs = tokenizer([tokenized_text], return_tensors="pt").to(model.device)
+        generated_ids = model.generate(
+            **model_inputs,
+            max_new_tokens=32768
+        )
+        output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist() 
+        
+        try:
+            index = len(output_ids) - output_ids[::-1].index(151668)
+        except ValueError:
+            index = 0
+        
+        content = tokenizer.decode(output_ids[index:], skip_special_tokens=True).strip("\n")
+        return content
+
+
+    def generate_podcast_audio(self,podcast_script: str, kmodel, kpipeline, male_voice: str, female_voice: str):    
+        pipeline_voice_male = kpipeline.load_voice(male_voice)
+        pipeline_voice_female = kpipeline.load_voice(female_voice)
+        
+        speed = 1.0
+        sr = 24000
+
+        lines = clean_podcast_script(podcast_script)
+
+        for i, line in enumerate(lines):            
+            if line.startswith("[MIKE]"):
+                pipeline_voice = pipeline_voice_male
+                voice = male_voice
+                utterance = line[len("[MIKE]"):].strip()
+            elif line.startswith("[JANE]"):
+                pipeline_voice = pipeline_voice_female
+                voice = female_voice
+                utterance = line[len("[JANE]"):].strip()
+            else:
+                continue
+            
+            if not utterance.strip():
+                continue
+
+            utterance = clean_utterance_for_tts(utterance)
+            
+            try:
+                for _, ps, _ in kpipeline(utterance, voice, speed):
+                    ref_s = pipeline_voice[len(ps) - 1]
+                    audio_numpy = kmodel(ps, ref_s, speed).numpy()
+                    yield (sr, audio_numpy)
+            except Exception as e:
+                continue
+```
+
+## Setting up the Environment
+
+Here’s how to set up all the build-time and run-time dependencies for your application:
+
+Install the following libraries:
+
+```bash
+build:
+  cuda_version: "12.1.1"
+  python_packages:
+    - accelerate==1.7.0
+    - transformers==4.52.4
+    - inferless==0.2.13
+    - pydantic==2.10.2
+    - PyPDF2==3.0.1
+    - soundfile==0.13.1
+    - kokoro==0.9.4
+  run:
+    - "pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cu126"
+```
+
+### Deploying Your Model with Inferless CLI
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+#### Clone the repository of the model
+Let's begin by cloning the model repository:
+```bash
+git clone https://github.com/inferless/Open-NotebookLM.git
+```
+
+#### Deploy the Model
+To deploy the model using Inferless CLI, execute the following command:
+```bash
+inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
+```
+
+**Explanation of the Command:**
+
+- `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
+- `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
+
+### Demo of the Book Audio Summary Generator.
+<video width="640" height="360" controls>
+  <source src="/videos/Open-NotebookLM.mp4" type="video/mp4"/>
+  Your browser does not support the video tag.
+</video>
+
+### Alternative Deployment Method
+Inferless also supports a user-friendly UI for model deployment, catering to users at all skill levels. Refer to Inferless's documentation for guidance on UI-based deployment.
+## Choosing Inferless for Deployment
+Deploying your Open-NotebookLM application with Inferless offers compelling advantages, making your development journey smoother and more cost-effective. Here's why Inferless is the go-to choice:
+1. __Ease of Use:__ Forget the complexities of infrastructure management. With Inferless, you simply bring your model, and within minutes, you have a working endpoint. Deployment is hassle-free, without the need for in-depth knowledge of scaling or infrastructure maintenance.
+2. __Cold-start Times:__ Inferless's unique load balancing ensures faster cold-starts.
+3. __Cost Efficiency:__ Inferless optimizes resource utilization, translating to lower operational costs. Here's a simplified cost comparison:
+
+### Scenario
+You are looking to deploy a Open-NotebookLM application for processing 100 queries.<br />
+
+__Parameters:__
+- __Total number of queries:__ 50 daily.<br />
+- __Inference Time:__ All models are hypothetically deployed on A100 80GB, taking 347.91 seconds to process a request and a cold start overhead of 20.17 seconds.<br />
+- __Scale Down Timeout:__ Uniformly 60 seconds across all platforms, except Hugging Face, which requires a minimum of 15 minutes. This is assumed to happen 50 times a day.<br />
+
+__Key Computations:__
+1. __Inference Duration:__ <br/>
+Processing 50 queries and each takes 347.91 seconds<br/>
+Total: 50 x 347.91 = 17395.5 seconds (or approximately 4.83 hours)
+2. __Idle Timeout Duration:__<br/>
+Post-processing idle time before scaling down: (360 seconds - 347.91 seconds) x 50 = 604 seconds (or 0.16 hours approximately)<br/>
+3. __Cold Start Overhead:__<br/>
+Total: 50 x 20.17 = 1008.5 seconds (or 0.28 hours approximately)<br/>
+
+__Total Billable Hours with Inferless:__ 4.83 (inference duration) + 0.16 (idle time) + 0.28 (cold start overhead)  = 5.27 hours<br/>
+__Total Billable Hours with Inferless:__ 5.27 hours<br/>
+
+| Scenario | On-Demand Cost | Serverless Cost|
+| :--- | :---- | :---- |
+|  50 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$6.43 (5.27 hours billed at $1.22/hour) |
+
+By opting for Inferless, **_you can achieve up to 77.67% cost savings._**<br/>
+
+Please note that we have utilized the A100(80 GB) GPU for model benchmarking purposes, while for pricing comparison, we referenced the A10G GPU price from both platforms. This is due to the unavailability of the A100 GPU in SageMaker.
+
+Also, the above analysis is based on a smaller-scale scenario for demonstration purposes. Should the scale increase tenfold, traditional cloud services might require maintaining 2-4 GPUs constantly active to manage peak loads efficiently. In contrast, Inferless, with its dynamic scaling capabilities, adeptly adjusts to fluctuating demand without the need for continuously running hardware.<br/>
+
+## Conclusion
+With this guide, you’re ready to build and deploy a serverless Open-NotebookLM that turns any PDF into a two-host podcast, using state-of-the-art open source models and Inferless. You’ve seen how easy it is to connect PDF parsing, LLM model and high-fidelity speech in a cost-effective pipeline with no server management required. Adapt this blueprint for your own research, education, or content projects.
