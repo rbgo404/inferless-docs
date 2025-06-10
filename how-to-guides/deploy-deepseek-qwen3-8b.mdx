@@ -5,11 +5,9 @@ description: "DeepSeek-R1-Qwen3-8B is a distilled model that transfers the chain
 
 ## Introduction
 
-DeepSeek-R1-Qwen3-8B is the smallest member of the DeepSeek-R1-0528 family, created by distilling the long-chain-of-thought reasoning patterns of the 671 B-parameter DeepSeek-R1 into Qwen 3-8B Base.
+DeepSeek-R1-0528-Qwen3-8B is an 8-billion-parameter model obtained by distilling the chain-of-thought reasoning abilities of DeepSeek-R1-0528 into the Qwen3 8B architecture while retaining DeepSeek-R1’s tokenizer, giving the small model long-context (64K tokens) support and stronger logical coherence.
 
-Despite its modest size, the model matches the accuracy of much larger “thinking” models on flagship benchmarks (e.g., 86 % pass@1 on AIME 2024, a +10 pp gain over vanilla Qwen 3-8B and on par with Qwen 3-235B-Thinking).
-
-
+Despite its modest size, it achieves state-of-the-art open-source results. It achieves 86%(pass@1) on AIME 2024, a 10-point gain over vanilla Qwen3-8B and on par with much larger Qwen3-235B-thinking, while also lowering hallucination rates and improving function-calling reliability.
 
 ## Defining Dependencies
 
@@ -70,7 +68,7 @@ class InferlessPythonModel:
 
 ## Create the class for inference
 
-In the [app.py](https://github.com/inferless/qwen3-8b/blob/main/app.py) we will define the class and import all the required functions
+In the [app.py](https://github.com/inferless/deepseek-r1-qwen3-8b/blob/main/app.py) we will define the class and import all the required functions
 
 1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
 
@@ -131,7 +129,7 @@ class InferlessPythonModel:
 
 ## Creating the Custom Runtime
 
-This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/qwen3-8b/blob/main/inferless-runtime-config.yaml).
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/deepseek-r1-qwen3-8b/blob/main/inferless-runtime-config.yaml).
 
 ```python
 build:
@@ -215,11 +213,8 @@ class InferlessPythonModel:
 
 @inferless.local_entry_point
 def my_local_entry(dynamic_params):
-
     request_objects = RequestObjects(**dynamic_params)
-
     model_instance = InferlessPythonModel()
-
     return model_instance.infer(request_objects)
 ```
 
@@ -268,7 +263,7 @@ Inferless allows you to deploy your model using Inferless-CLI. Follow the steps 
 ### Clone the repository of the model
 Let's begin by cloning the model repository:
 ```bash
-git clone https://github.com/inferless/qwen3-8b.git
+git clone https://github.com/inferless/deepseek-r1-qwen3-8b.git
 ```
 
 ### Deploy the Model
@@ -281,4 +276,4 @@ inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
 
 - `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
 - `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
-![](/images/qwen3-cli-deployment.png)
+{/* ![](/images/qwen3-cli-deployment.png) */}
