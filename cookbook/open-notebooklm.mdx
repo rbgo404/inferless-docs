@@ -9,13 +9,14 @@ description: "In this tutorial you’ll build a serverless Open-NotebookLM that 
 2. **Kokoro-82M TTS** – 82M parameter multilingual voice model delivering fast, high-fidelity speech from a single GPU.
 4. **PyPDF2 Extraction Layer** – lightweight parser that extract text from the PDF.
 
+
 ## Crafting Your Application
 
-1. **Document Intake** – the user posts a `pdf_url` and then `extract_pdf_content` function pulls the file and feeds raw text (often 10k+ tokens) to the LLM.
-2. **Deep Summary** – `SUMMARIZATION_PROMPT` asks Qwen3 for a five-part analysis: core ideas, background, tricky concepts, “wow” facts and open questions.
-3. **Dialogue Generation** – `PODCAST_CONVERSION_PROMPT` converts the summary into a conversation tagged `Alex:` / `Romen:` for each turn.
-4. **Voice Rendering** – Kokoro generates speech for each line with alternating voices (“am\_adam” and “af\_heart”), stitching half-second silences for natural pacing.
-5. **Response** – the final WAV is base-64-encoded and returned as `generated_podcast_base64` ready for playback.
+1. **Document Intake** – The user submits a `pdf_url`, then `extract_pdf_content` fetches the file and supplies the full raw text (often 10k+ tokens) to the LLM.
+2. **Deep Summary** – `SUMMARIZATION_PROMPT` directs Qwen3 to produce a five‑part breakdown: core ideas, context, challenging concepts, standout facts, and unanswered questions.
+3. **Dialogue Generation** – `PODCAST_CONVERSION_PROMPT` transforms that summary into a conversation, labeled turn‑by‑turn as `Alex:` and `Romen:`.
+4. **Voice Rendering** – Kokoro voices each line alternately using “am\_adam” and “af\_heart,” inserting 0.5‑second pauses for natural flow.
+5. **Response** – The final WAV is base64‑encoded and returned as `generated_podcast_base64`, ready for playback.
 
 ![](/images/Open-NotebookLM-architecture.png)
 
