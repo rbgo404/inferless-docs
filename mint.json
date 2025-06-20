@@ -352,7 +352,8 @@
 				"how-to-guides/deploy-phi-4-multimodal-instruct",
 				"how-to-guides/deploy-a-qwen2.5-omni-7b",
 				"how-to-guides/deploy-a-qwen3-8b",
-				"how-to-guides/deploy-yolo11m-detect"
+				"how-to-guides/deploy-yolo11m-detect",
+				"how-to-guides/deploy-nanonets-ocr-s"
 			]
 		},
 		{
