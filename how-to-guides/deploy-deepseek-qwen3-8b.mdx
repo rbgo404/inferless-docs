@@ -1,0 +1,279 @@
+---
+title: "Deploy the DeepSeek-R1-Qwen3-8B using Inferless"
+description: "DeepSeek-R1-Qwen3-8B is a distilled model that transfers the chain-of-thought reasoning skills of DeepSeek-R1-0528 into the lighter Qwen 3 backbone, delivering state-of-the-art math, code and logic performance while remaining inexpensive to host."
+---
+
+## Introduction
+
+[DeepSeek-R1-0528-Qwen3-8B](https://huggingface.co/deepseek-ai/DeepSeek-R1-0528-Qwen3-8B) is an 8-billion-parameter model obtained by distilling the chain-of-thought reasoning abilities of DeepSeek-R1-0528 into the Qwen3 8B architecture while retaining DeepSeek-R1’s tokenizer, giving the small model long-context (64K tokens) support and stronger logical coherence.
+
+Despite its modest size, it achieves state-of-the-art open-source results. It achieves 86%(pass@1) on AIME 2024, a 10-point gain over vanilla Qwen3-8B and on par with much larger Qwen3-235B-thinking, while also lowering hallucination rates and improving function-calling reliability.
+
+## Defining Dependencies
+
+We are using the [transformers](https://github.com/huggingface/transformers) to serve the model on a single A100 (80GB).
+
+## Constructing the GitHub/GitLab Template
+
+Now quickly construct the GitHub/GitLab template, this process is mandatory and make sure you don't add any file named `model.py`.
+
+```
+deepseek-r1-qwen3-8b/
+├── app.py
+├── inferless-runtime-config.yaml
+└── inferless.yaml
+```
+
+You can also add other files to this directory.
+
+## Create the Input Schema with Pydantic
+
+Using the `inferless` Python client and Pydantic, you can define structured schemas directly in your code for input and output, eliminating the need for external file.
+
+### Input Schema
+When defining an input schema with Pydantic, you need to annotate your class attributes with the appropriate types, such as `str`, `float`, `int`, etc. 
+These type annotations specifys what type of data each field should contain. 
+The `default` value serves as the example input for testing with the `infer` function.
+
+```python
+@inferless.request
+class RequestObjects(BaseModel):
+    prompt: str = Field(default="Give me a short introduction to large language model.")
+    temperature: Optional[float] = 0.7
+    repetition_penalty: Optional[float] = 1.18
+    max_new_tokens: Optional[int] = 2048
+```
+
+### Output Schema
+The `@inferless.response` decorator helps you define structured output schemas.
+
+```python
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_result: str = Field(default="Test output")
+    thinking_hidden: str = Field(default="Test output")
+```
+
+### Usage in the `infer` Function
+Once you have annotated the objects you can expect the infer function to receive `RequestObjects` as input,
+and returns a `ResponseObjects` instance as output, ensuring the results adhere to a defined structure.
+
+```python
+class InferlessPythonModel:
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        
+        generateObject = ResponseObjects(generated_result=content,thinking_hidden=thinking_content)
+        return generateObject
+```
+
+## Create the class for inference
+
+In the [app.py](https://github.com/inferless/deepseek-r1-qwen3-8b/blob/main/app.py) we will define the class and import all the required functions
+
+1.  `def initialize`: In this function, you will initialize your model and define any `variable` that you want to use during inference.
+
+2.  `def infer`: This function gets called for every request that you send. Here you can define all the steps that are required for the inference.
+
+3.  `def finalize`: This function cleans up all the allocated memory.
+
+```python
+import os
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+import inferless
+from pydantic import BaseModel, Field
+from typing import Optional
+
+@inferless.request
+class RequestObjects(BaseModel):
+    prompt: str = Field(default="Give me a short introduction to large language model.")
+    temperature: Optional[float] = 0.7
+    repetition_penalty: Optional[float] = 1.18
+    max_new_tokens: Optional[int] = 2048
+    
+
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_result: str = Field(default="Test output")
+    thinking_hidden: str = Field(default="Test output")
+
+class InferlessPythonModel:
+    def initialize(self, context=None):
+        model_id = "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B"
+        self.tokenizer = AutoTokenizer.from_pretrained(model_id,trust_remote_code=True)
+        self.model = AutoModelForCausalLM.from_pretrained( model_id, torch_dtype=torch.float16, device_map="auto", trust_remote_code=True)
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        messages = [
+            {"role": "user", "content": request.prompt}
+        ]
+        text = self.tokenizer.apply_chat_template(messages,tokenize=False,add_generation_prompt=True,enable_thinking=True)
+        model_inputs = self.tokenizer([text], return_tensors="pt").to(self.model.device)
+
+        generated_ids = self.model.generate(**model_inputs,temperature=request.temperature, max_new_tokens=request.max_new_tokens, repetition_penalty=request.repetition_penalty)
+        output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist() 
+
+        try:
+            index = len(output_ids) - output_ids[::-1].index(151668)
+        except ValueError:
+            index = 0
+
+        thinking_content = self.tokenizer.decode(output_ids[:index], skip_special_tokens=True).strip("\n")
+        content = self.tokenizer.decode(output_ids[index:], skip_special_tokens=True).strip("\n")
+        
+        generateObject = ResponseObjects(generated_result=content,thinking_hidden=thinking_content)
+        return generateObject
+
+    def finalize(self):
+        self.model = None
+```
+
+## Creating the Custom Runtime
+
+This is a mandatory step where we allow the users to upload their custom runtime through [inferless-runtime-config.yaml](https://github.com/inferless/deepseek-r1-qwen3-8b/blob/main/inferless-runtime-config.yaml).
+
+```python
+build:
+  cuda_version: "12.1.1"
+  python_packages:
+    - accelerate==1.7.0
+    - transformers==4.52.4
+    - inferless==0.2.13
+    - pydantic==2.10.2
+```
+
+
+## Test your model with Remote Run
+
+You can use the `inferless remote-run`([installation guide here](https://docs.inferless.com/model-import/cli-import#cli-import)) command to test your model or any custom Python script in a remote GPU environment directly from your local machine. Make sure that you use `Python3.10` for seamless experience.
+
+### Step 1: Add the Decorators and local entry point
+To enable **Remote Run**, simply do the following:
+1. Import the `inferless` library and initialize `Cls(gpu="A100")`. The available GPU options are `T4`, `A10` and `A100`.
+2. Decorated the `initialize` and `infer` functions with `@app.load` and `@app.infer` respectively.
+3. Create the Local Entry Point by decorating a function (for example, `my_local_entry`) with `@inferless.local_entry_point`. 
+Within this function, instantiate your model class, convert any incoming parameters into a `RequestObjects` object, and invoke the model's `infer` method. 
+
+```python
+import os
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+import inferless
+from pydantic import BaseModel, Field
+from typing import Optional
+
+
+
+app = inferless.Cls(gpu="A100")
+
+@inferless.request
+class RequestObjects(BaseModel):
+    prompt: str = Field(default="Give me a short introduction to large language model.")
+    temperature: Optional[float] = 0.7
+    repetition_penalty: Optional[float] = 1.18
+    max_new_tokens: Optional[int] = 2048
+    
+
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_result: str = Field(default="Test output")
+    thinking_hidden: str = Field(default="Test output")
+
+class InferlessPythonModel:
+    @app.load
+    def initialize(self, context=None):
+        model_id = "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B"
+        self.tokenizer = AutoTokenizer.from_pretrained(model_id,trust_remote_code=True)
+        self.model = AutoModelForCausalLM.from_pretrained( model_id, torch_dtype=torch.float16, device_map="auto", trust_remote_code=True)
+    @app.infer
+    def infer(self, request: RequestObjects) -> ResponseObjects:
+        messages = [
+            {"role": "user", "content": request.prompt}
+        ]
+        text = self.tokenizer.apply_chat_template(messages,tokenize=False,add_generation_prompt=True,enable_thinking=True)
+        model_inputs = self.tokenizer([text], return_tensors="pt").to(self.model.device)
+
+        generated_ids = self.model.generate(**model_inputs,temperature=request.temperature, max_new_tokens=request.max_new_tokens, repetition_penalty=request.repetition_penalty)
+        output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist() 
+
+        try:
+            index = len(output_ids) - output_ids[::-1].index(151668)
+        except ValueError:
+            index = 0
+
+        thinking_content = self.tokenizer.decode(output_ids[:index], skip_special_tokens=True).strip("\n")
+        content = self.tokenizer.decode(output_ids[index:], skip_special_tokens=True).strip("\n")
+        
+        generateObject = ResponseObjects(generated_result=content,thinking_hidden=thinking_content)
+        return generateObject
+
+    def finalize(self):
+        self.model = None
+
+
+
+@inferless.local_entry_point
+def my_local_entry(dynamic_params):
+    request_objects = RequestObjects(**dynamic_params)
+    model_instance = InferlessPythonModel()
+    return model_instance.infer(request_objects)
+```
+
+### Step 2: Run with Remote GPU
+
+From your local terminal, navigate to the folder containing your `app.py` and your `inferless-runtime-config.yaml` and run:
+
+```bash
+inferless remote-run app.py -c inferless-runtime-config.yaml --prompt "Give me a short introduction to large language model."
+```
+
+You can pass the other input parameters in the same way (e.g., `--temperature`, `--max_new_tokens`, etc.) as long as your code expects them in the `inputs` dictionary.
+
+If you want to exclude certain files or directories from being uploaded, use the `--exclude` or `-e` flag.
+
+
+## Method A: Deploying the model on Inferless Platform
+Inferless supports multiple ways of [importing your model](https://docs.inferless.com/model-import/file-structure-req/file-structure-requirements). For this tutorial, we will use GitHub.
+
+### Step 1: Login to the inferless dashboard can click on Import model button
+Navigate to your desired workspace in Inferless and Click on `Add a custom model` button that you see on the top right. An import wizard will open up.
+
+### Step 2: Follow the UI to complete the model  Import
+- Select the GitHub/GitLab Integration option to connect your source code repository with the deployment environment.
+- Navigate to the specific GitHub repository that contains your model's code. Here, you will need to identify and enter the name of the model you wish to import.
+- Choose the appropriate type of machine that suits your model's requirements. Additionally, specify the minimum and maximum number of replicas to define the scalability range for deploying your model.
+- Optionally, you have the option to enable automatic build and deployment. This feature triggers a new deployment automatically whenever there is a new code push to your repository.
+- If your model requires additional software packages, configure the Custom Runtime settings by including necessary pip or apt packages. Also, set up environment variables such as  Inference Timeout, Container Concurrency, and Scale Down Timeout to tailor the runtime environment according to your needs.
+- Wait for the validation process to complete, ensuring that all settings are correct and functional. Once validation is successful, click on the "Import" button to finalize the import of your model.
+![](/images/inferless_model_import.png)
+
+
+### Step 3: Wait for the model build to complete usually takes ~5-10 minutes
+
+### Step 4: Use the APIs to call the model
+Once the model is in 'Active' status you can click on the 'API' page to call the model
+
+### Here is the Demo:
+
+![](/gif/qwen-3-demo.gif)
+
+## Method B: Deploying the model on Inferless CLI
+
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+### Clone the repository of the model
+Let's begin by cloning the model repository:
+```bash
+git clone https://github.com/inferless/deepseek-r1-qwen3-8b.git
+```
+
+### Deploy the Model
+To deploy the model using Inferless CLI, execute the following command:
+```bash
+inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
+```
+
+**Explanation of the Command:**
+
+- `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
+- `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
+{/* ![](/images/qwen3-cli-deployment.png) */}
