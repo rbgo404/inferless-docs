@@ -30,7 +30,9 @@ build:
 ```
 
 
-Define  IS_STREAMING_OUTPUT in the **input\_schema.py**
+Define  IS_STREAMING_OUTPUT in the **input\_schema.py** or in **app.py** if you are using pydantic.
+
+### Input Schema Example
 
 ```python
 /
@@ -105,6 +107,27 @@ class InferlessPythonModel:
     # perform any cleanup activity here
     def finalize(self,args):
         self.pipe = None
+```
+
+### Pydantic Example
+
+```python
+/
+├── app.py
+```
+
+in app.py 
+
+```python
+import inferless
+from pydantic import BaseModel, Field
+
+@inferless.config
+class Config():
+    is_streaming_output: bool = True
+
+
+#...rest of the code 
 ```
 
 
