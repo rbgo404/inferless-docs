@@ -1,0 +1,269 @@
+---
+title: "Building a Reasoning Model: Fine-tuning Qwen3-4B with GRPO"
+description: "Welcome to an engaging tutorial designed to walk you through creating a customer support voicebot where users can voice their queries and receive solutions. You'll learn to integrate speech recognition, large language, and text-to-speech models to develop a responsive and efficient voice-based customer support application."
+---
+
+## Introduction
+
+Large language models have shown remarkable capabilities, but teaching them to reason step-by-step in a structured manner remains a challenge.
+
+In this blog post, we'll explore how to transform Qwen3-4B-Base into a powerful reasoning model using Group Relative Policy Optimization (GRPO) and OpenR1's Math dataset.
+
+Our approach follows a two-stage process:
+1. **Pre-fine-tuning**: Adapt the base model to our custom reasoning format
+2. **GRPO Training**: Use reinforcement learning to optimize reasoning quality
+
+## TL;DR
+1. Warm-up the base model with a quick SFT pass so GRPO can ignore formatting struggles.
+2. Craft a custom chat template that separates reasoning from answers.
+3. Run GRPO with a reward cocktail that balances correctness, numeric sanity, and XML hygiene.
+
+## Why This Approach Works
+
+Traditional fine-tuning often struggles with reasoning tasks because models learn to mimic patterns without truly understanding the underlying logic.
+
+GRPO addresses this by:
+- **Rewarding correct reasoning**: Models get feedback based on both format and correctness
+- **Iterative improvement**: The model learns from multiple attempts and rewards
+- **Structured output**: Custom templates ensure consistent reasoning presentation
+
+## Stage 1: Pre-Fine-Tuning Setup
+
+### Model Configuration
+
+We start by loading Qwen3-4B-Base with LoRA (Low-Rank Adaptation) for efficient training:
+
+```python
+from unsloth import FastLanguageModel
+import torch
+
+max_seq_length = 4096
+lora_rank = 32
+
+model, tokenizer = FastLanguageModel.from_pretrained(
+    model_name = "unsloth/Qwen3-4B-Base",
+    max_seq_length = max_seq_length,
+    load_in_4bit = False,
+    fast_inference = True,
+    max_lora_rank = lora_rank,
+    gpu_memory_utilization = 0.7,
+)
+
+model = FastLanguageModel.get_peft_model(
+    model,
+    r = lora_rank,
+    target_modules = [
+        "q_proj", "k_proj", "v_proj", "o_proj",
+        "gate_proj", "up_proj", "down_proj",
+    ],
+    lora_alpha = lora_rank*2,  # Accelerates training
+    use_gradient_checkpointing = "unsloth",
+    random_state = 3407,
+)
+```
+
+### Custom Chat Template
+
+Since we're working with a base model, we need to establish a clear reasoning format. Our template uses custom XML-like tags:
+
+```python
+reasoning_start = "<reasoning>"
+reasoning_end   = "</reasoning>"
+solution_start  = "<answer>"
+solution_end    = "</answer>"
+
+system_prompt = f"""You are given a problem.
+Think about the problem and provide your reasoning.
+Place it between {reasoning_start} and {reasoning_end}.
+Then, provide your solution between:
+{solution_start}
+...
+{solution_end}"""
+```
+
+This structured approach ensures the model learns to separate its thinking process from the final answer, making the reasoning transparent and verifiable.
+
+### Dataset Preparation
+
+We use OpenR1's GSM8K dataset, which contains high-quality reasoning traces:
+
+```python
+from datasets import load_dataset
+import pandas as pd
+
+dataset = load_dataset("yashsavani/gsm8k_r1_compute", split="train")
+dataset = dataset.to_pandas()
+dataset_ = dataset[["question","answer","response"]]
+
+def format_dataset(x):
+    expected_answer = x["answer"]
+    problem = x["question"]
+    
+    # Clean and reformat the reasoning
+    thoughts = x["response"].replace("<think>", "").replace("</think>", "").strip()
+    
+    final_prompt = (
+        reasoning_start + thoughts + reasoning_end + 
+        solution_start + expected_answer + solution_end
+    )
+    
+    return [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": problem},
+        {"role": "assistant", "content": final_prompt},
+    ]
+```
+
+### Pre-Fine-Tuning Execution
+
+The initial SFT stage teaches the model our formatting conventions:
+
+```python
+from trl import SFTTrainer, SFTConfig
+
+trainer = SFTTrainer(
+    model = model,
+    tokenizer = tokenizer,
+    train_dataset = dataset_trim,
+    args = SFTConfig(
+        dataset_text_field = "text",
+        per_device_train_batch_size = 1,
+        gradient_accumulation_steps = 1,
+        warmup_steps = 5,
+        num_train_epochs = 1,
+        learning_rate = 2e-4,
+        logging_steps = 5,
+        optim = "adamw_8bit",
+        weight_decay = 0.01,
+        lr_scheduler_type = "linear",
+        seed = 3407,
+    ),
+)
+
+trainer.train()
+```
+
+## Stage 2: GRPO Training
+
+### The Power of Multiple Reward Functions
+
+GRPO's strength lies in its multi-faceted reward system. We define several reward functions that work together:
+
+#### 1. Correctness Reward
+```python
+def correctness_reward_func(prompts, completions, answer, **kwargs) -> list[float]:
+    responses = [completion[0]['content'] for completion in completions]
+    extracted_responses = [extract_xml_answer(r) for r in responses]
+    return [2.0 if r == a else 0.0 for r, a in zip(extracted_responses, answer)]
+```
+
+#### 2. Format Rewards
+```python
+def soft_format_reward_func(completions, **kwargs) -> list[float]:
+    pattern = r"<reasoning>.*?</reasoning>\s*<answer>.*?</answer>"
+    responses = [completion[0]["content"] for completion in completions]
+    matches = [re.match(pattern, r) for r in responses]
+    return [0.5 if match else 0.0 for match in matches]
+```
+
+#### 3. Incremental XML Rewards
+```python
+def count_xml(text: str) -> float:
+    count = 0.0
+    if text.count("<reasoning>\n") == 1: count += 0.125
+    if text.count("\n</reasoning>\n") == 1: count += 0.125
+    if text.count("\n<answer>\n") == 1: count += 0.125
+    if text.count("\n</answer>") == 1: count += 0.125
+    return count
+```
+
+### GRPO Configuration
+
+```python
+from trl import GRPOConfig, GRPOTrainer
+
+training_args = GRPOConfig(
+    vllm_sampling_params = vllm_sampling_params,
+    temperature = 1.0,
+    learning_rate = 5e-6,
+    weight_decay = 0.01,
+    warmup_ratio = 0.1,
+    per_device_train_batch_size = 1,
+    gradient_accumulation_steps = 1,
+    num_generations = 4,
+    max_prompt_length = max_prompt_length,
+    max_completion_length = max_completion_length,
+    max_steps = 100,
+    output_dir = "outputs_gsm8k",
+)
+
+trainer = GRPOTrainer(
+    model = model,
+    processing_class = tokenizer,
+    reward_funcs = [
+        xmlcount_reward_func,
+        soft_format_reward_func,
+        strict_format_reward_func,
+        int_reward_func,
+        correctness_reward_func
+    ],
+    args = training_args,
+    train_dataset = dataset,
+)
+```
+
+## Key Technical Insights
+
+### Memory Optimization
+- **4-bit quantization**: Reduces memory footprint while maintaining quality
+- **Gradient checkpointing**: Trades computation for memory efficiency
+- **LoRA adaptation**: Trains only a small subset of parameters
+
+### Reward Engineering
+The layered reward system is crucial:
+- **High reward for correctness** (2.0): Prioritizes getting the right answer
+- **Medium rewards for formatting** (0.5): Ensures structured output
+- **Small incremental rewards** (0.125): Guides toward proper XML structure
+
+### Sampling Strategy
+Using vLLM with specific sampling parameters:
+- **min_p = 0.1**: Filters out very low-probability tokens
+- **Temperature = 1.0**: Balances exploration and exploitation
+- **Multiple generations**: Allows the model to explore different reasoning paths
+
+## Results and Applications
+
+This approach creates a model that:
+- **Shows its work**: Every answer includes visible reasoning steps
+- **Maintains consistency**: Follows the structured format reliably
+- **Achieves high accuracy**: Combines reasoning quality with correctness
+- **Scales efficiently**: Can be applied to larger models and datasets
+
+## Practical Considerations
+
+### Hardware Requirements
+- **GPU Memory**: 16GB+ recommended for 4B parameter model
+- **Training Time**: Several hours depending on dataset size
+- **Storage**: Plan for model checkpoints and LoRA adapters
+
+### Hyperparameter Tuning
+Key parameters to experiment with:
+- **LoRA rank**: Higher values = more capacity but slower training
+- **Learning rates**: Start conservative (5e-6 for GRPO)
+- **Reward weights**: Balance between correctness and formatting
+
+## Conclusion
+
+This two-stage approach to creating reasoning models represents a significant advancement in making AI systems more transparent and reliable. By combining supervised fine-tuning with reinforcement learning through GRPO, we can create models that not only solve problems correctly but also show their reasoning process clearly.
+
+The structured format makes it easy to verify the model's logic, while the multi-reward system ensures both accuracy and consistency. This approach can be extended to other reasoning domains beyond mathematics, making it a valuable technique for developing more trustworthy AI systems.
+
+## Next Steps
+
+Consider exploring:
+- **Domain adaptation**: Apply this approach to other reasoning tasks
+- **Scaling up**: Use larger base models for enhanced capabilities
+- **Evaluation metrics**: Develop comprehensive reasoning assessment methods
+- **Human feedback**: Incorporate human preferences into the reward system
+
+The code and methodology presented here provide a solid foundation for building your own reasoning models. Happy fine-tuning!
