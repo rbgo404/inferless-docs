@@ -158,6 +158,25 @@ def count_xml(text: str) -> float:
 
 This function gives partial credit for getting pieces of the format right. It's like scaffolding - helping the model build good structure habits gradually.
 
+
+### The Dataset for GRPO
+
+For the GRPO fine-tuning stage, we switch from the OpenR1-preprocessed version to the **original [`openai/gsm8k`](https://huggingface.co/datasets/openai/gsm8k)** dataset. This dataset contains thousands of grade-school math word problems along with detailed solutions. We extract the final answer using a delimiter (`####`) and wrap each problem in our chat template format.
+
+Why the switch? GRPO doesn't need demonstration traces — it learns by generating *its own reasoning paths* and optimizing them via rewards. The raw GSM8K questions are perfect for this purpose: they're diverse, challenging, and require step-by-step reasoning.
+
+```python
+dataset = dataset.map(lambda x: {
+    "prompt" : [
+        {"role": "system", "content": system_prompt},
+        {"role": "user",   "content": x["question"]},
+    ],
+    "answer": extract_hash_answer(x["answer"]),
+})
+```
+
+
+
 ## Putting It All Together
 
 The GRPO training configuration brings everything together:
