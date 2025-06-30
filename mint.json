@@ -300,6 +300,10 @@
 				{
 					"group": "May 2025",
 					"pages": ["changelog/May-2025/31st-May"]
+				},
+				{
+					"group": "June 2025",
+					"pages": ["changelog/June-2025/30th-June"]
 				}
 			]
 		},
