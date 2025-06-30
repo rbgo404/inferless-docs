@@ -205,7 +205,8 @@
 				"cookbook/serverless-speech-book-summary",
 				"cookbook/product-hunt-thread-summarizer",
 				"cookbook/google-map-agent-using-mcp",
-				"cookbook/open-notebooklm"
+				"cookbook/open-notebooklm",
+				"cookbook/rl-finetuning-qwen3-grpo"
 			]
 		},
 		{
