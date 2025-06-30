@@ -118,23 +118,44 @@ trainer.train()
 
 This stage is crucial because it gives GRPO a solid starting point. Without it, the model would waste time learning basic formatting instead of focusing on reasoning quality.
 
-## Stage 2: The GRPO Magic
+## Stage 2: GRPO Training with Multi-Objective Rewards
 
-Now comes the exciting part - using GRPO to actually make the model good at reasoning. Unlike traditional training where we just show the model correct examples, GRPO generates multiple attempts and learns from comparing them.
+Now comes the exciting part, using GRPO to actually make the model good at reasoning. For this stage, we switch to the standard GSM8K dataset from OpenAI, which provides a clean benchmark for mathematical reasoning problems.
 
-The secret sauce is in the reward functions. We use five different rewards that work together:
+Unlike the initial training phase where we used pre-processed reasoning traces, GRPO training uses the original GSM8K dataset (`openai/gsm8k`) containing math word problems with their expected numerical answers. This dataset is perfect for GRPO because it allows the model to generate its own reasoning paths while being evaluated against known correct answers.
 
-### 1. Correctness Reward (The Big One)
+The dataset preprocessing for GRPO is simpler but more focused:
+
+```python
+from datasets import load_dataset
+
+dataset = load_dataset('openai/gsm8k', "main", split = "train")
+
+dataset = dataset.map(lambda x: {
+    "prompt" : [
+        {"role": "system", "content": system_prompt},
+        {"role": "user",   "content": x["question"]},
+    ],
+    "answer": extract_hash_answer(x["answer"]),  # Extract numerical answer
+})
+```
+
+Unlike traditional training where we just show the model correct examples, GRPO generates multiple attempts and learns from comparing them. The secret sauce is in the reward functions that work together to optimize different aspects of reasoning:
+
+### The Multi-Reward System
+
+The beauty of GRPO lies in its ability to optimize multiple objectives simultaneously. We use five different reward functions that each focus on a specific aspect of good reasoning:
+
+**1. Correctness Reward (Primary Objective)**
 ```python
 def correctness_reward_func(prompts, completions, answer, **kwargs):
     responses = [completion[0]['content'] for completion in completions]
     extracted_responses = [extract_xml_answer(r) for r in responses]
     return [2.0 if r == a else 0.0 for r, a in zip(extracted_responses, answer)]
 ```
-
 This gives the biggest reward (2.0) for getting the right answer. Everything else is secondary to correctness.
 
-### 2. Format Rewards (Structure Matters)
+**2. Format Validation Rewards**
 ```python
 def soft_format_reward_func(completions, **kwargs):
     pattern = r"<reasoning>.*?</reasoning>\s*<answer>.*?</answer>"
@@ -142,10 +163,9 @@ def soft_format_reward_func(completions, **kwargs):
     matches = [re.match(pattern, r) for r in responses]
     return [0.5 if match else 0.0 for match in matches]
 ```
+These ensure the model maintains our XML structure while allowing for some flexibility in formatting.
 
-These reward functions ensure the model maintains our XML structure, even when it gets creative with its reasoning.
-
-### 3. Incremental Structure Rewards (Baby Steps)
+**3. Incremental Structure Building**
 ```python
 def count_xml(text: str) -> float:
     count = 0.0
@@ -155,41 +175,23 @@ def count_xml(text: str) -> float:
     if text.count("\n</answer>") == 1: count += 0.125
     return count
 ```
+This provides partial credit for getting structural elements right, acting as scaffolding for proper format development.
 
-This function gives partial credit for getting pieces of the format right. It's like scaffolding - helping the model build good structure habits gradually.
+## GRPO Configuration and Training Dynamics
 
-
-### The Dataset for GRPO
-
-For the GRPO fine-tuning stage, we switch from the OpenR1-preprocessed version to the **original [`openai/gsm8k`](https://huggingface.co/datasets/openai/gsm8k)** dataset. This dataset contains thousands of grade-school math word problems along with detailed solutions. We extract the final answer using a delimiter (`####`) and wrap each problem in our chat template format.
-
-Why the switch? GRPO doesn't need demonstration traces — it learns by generating *its own reasoning paths* and optimizing them via rewards. The raw GSM8K questions are perfect for this purpose: they're diverse, challenging, and require step-by-step reasoning.
-
-```python
-dataset = dataset.map(lambda x: {
-    "prompt" : [
-        {"role": "system", "content": system_prompt},
-        {"role": "user",   "content": x["question"]},
-    ],
-    "answer": extract_hash_answer(x["answer"]),
-})
-```
-
-
-
-## Putting It All Together
-
-The GRPO training configuration brings everything together:
+The GRPO training setup brings together all these components in a sophisticated optimization framework:
 
 ```python
 from trl import GRPOTrainer, GRPOConfig
 
 training_args = GRPOConfig(
-    temperature = 1.0,
-    learning_rate = 5e-6,  # Much lower than SFT
-    num_generations = 4,  # Generate multiple attempts
+    temperature = 1.0,  # Encourages exploration during generation
+    learning_rate = 5e-6,  # Much lower than SFT to fine-tune policy
+    num_generations = 4,  # Generate multiple attempts per problem
     max_steps = 100,
     optim = "adamw_8bit",
+    gradient_accumulation_steps = 1,  # Can increase for smoother training
+    per_device_train_batch_size = 1,
     output_dir = "outputs_gsm8k",
 )
 
@@ -201,7 +203,7 @@ trainer = GRPOTrainer(
         soft_format_reward_func,  
         strict_format_reward_func,
         int_reward_func,
-        correctness_reward_func  # Most important goes last
+        correctness_reward_func  # Most important signal
     ],
     args = training_args,
     train_dataset = dataset,
@@ -210,44 +212,38 @@ trainer = GRPOTrainer(
 trainer.train()
 ```
 
-The beauty of this setup is that the model generates multiple responses to each problem, then learns from the rewards to understand what makes reasoning better. It's like having a teacher who can give nuanced feedback on different aspects of problem-solving.
+The key insight here is that GRPO generates multiple responses to each problem (`num_generations = 4`) and uses the combined reward signals to understand what constitutes good reasoning. The model learns to associate higher rewards with better reasoning patterns, gradually improving both accuracy and reasoning quality.
 
-## What Makes This Special
+The temperature setting of 1.0 is crucial - it provides enough randomness to explore different reasoning approaches while still being guided by the learned patterns. The low learning rate (5e-6) ensures we don't disrupt the base model's capabilities while fine-tuning the reasoning behavior.
 
-This approach creates models that don't just give you answers - they show you exactly how they arrived at those answers. The structured format makes it easy to:
+## Training Dynamics and Convergence
 
-- **Verify the logic**: You can follow each step of reasoning
-- **Debug mistakes**: When something goes wrong, you can see where
-- **Build trust**: Transparent reasoning builds confidence in AI systems
-- **Learn from the model**: The reasoning traces are educational
+During GRPO training, fascinating dynamics emerge. Initially, the model might generate responses that get high format rewards but wrong answers, or correct answers with poor reasoning structure. Over time, the multi-objective optimization finds the sweet spot where both correctness and format quality are maximized.
 
-The multi-reward system is particularly clever because it balances different objectives. A model might learn to be very precise with formatting but terrible at math, or great at math but sloppy with structure. By optimizing for both simultaneously, we get models that excel across the board.
+The reward functions work synergistically - the correctness reward ensures the model doesn't just focus on pretty formatting, while the format rewards prevent the model from giving correct answers through poor reasoning. The incremental rewards (like `xmlcount_reward_func`) provide learning signals even when the model hasn't quite mastered the full format yet.
 
-## Real-World Impact
+One particularly interesting aspect is how the model learns to self-correct during reasoning. You'll often see the final models generate reasoning traces where they consider multiple approaches, catch their own mistakes, and arrive at the correct answer through clear logical steps.
 
-I've seen this approach work incredibly well in practice. The models produced feel fundamentally different from traditional language models - they're more like having a mathematical tutor who shows their work rather than a black box that spits out answers.
+The `num_generations` parameter is critical for this learning process. By generating multiple attempts, the model can compare different reasoning strategies and learn which ones lead to better outcomes. This is fundamentally different from supervised learning, where the model only sees one "correct" path.
 
-The applications are endless:
-- **Educational tools**: Students can learn by following the model's reasoning
-- **Scientific analysis**: Researchers can verify and build upon AI reasoning
-- **Business applications**: Decision-makers can understand AI recommendations
-- **Code generation**: Models can explain their programming logic
+## Performance Monitoring and Evaluation
 
-## Key Takeaways
+Throughout training, you can monitor the model's progress by observing how the different reward components evolve:
 
-If you're thinking about implementing something similar, here are the crucial insights:
+- **Correctness rewards** should steadily increase as mathematical accuracy improves
+- **Format rewards** typically improve quickly early in training as the model learns structure
+- **The balance between rewards** indicates whether the model is trading off accuracy for formatting or vice versa
 
-1. **Two-stage training works**: Teaching format first, then optimizing quality
-2. **Multiple rewards are powerful**: Different objectives need different signals
-3. **Structure enables learning**: The XML format isn't just cosmetic - it shapes how the model thinks
-4. **Transparency builds trust**: Showing work makes AI more reliable and verifiable
+The GRPO framework provides detailed logging of these reward components, allowing you to understand exactly how your model is learning and whether any adjustments to the reward weighting might be beneficial.
 
-The code I've shared gives you everything you need to replicate this approach. Start with the supervised fine-tuning to get the format right, then use GRPO to make it actually good at reasoning. The reward functions can be adapted for different domains - just change what you're optimizing for.
+## Conclusion
 
-## Looking Ahead
+This GRPO-based approach to building reasoning models represents a significant advance in AI transparency and reliability. By combining supervised format learning with multi-objective reinforcement learning, we create models that don't just provide answers but demonstrate clear, verifiable reasoning processes.
 
-This approach represents a shift toward more transparent, trustworthy AI systems. Instead of black boxes that we hope are correct, we're building models that show their work and can be verified by humans.
+The two-stage approach - first teaching structure through supervised fine-tuning, then optimizing reasoning quality through GRPO - proves to be highly effective. The use of multiple reward functions ensures that we optimize for both correctness and interpretability simultaneously, creating models that are both accurate and trustworthy.
 
-The next frontiers include applying this to other domains (scientific reasoning, legal analysis, code generation), scaling to larger models, and incorporating human feedback into the reward system. But the foundation is solid - we now have a proven path to building AI that thinks out loud.
+What makes this approach particularly powerful is its generalizability. While we've focused on mathematical reasoning using GSM8K, the same framework can be adapted to other domains by adjusting the reward functions and training data. Whether you're working on scientific reasoning, code generation, or logical analysis, the principles of structured reasoning and multi-objective optimization remain applicable.
 
-The future of AI isn't just about getting the right answers - it's about getting them in ways we can understand, verify, and trust. This approach gets us there.
+The resulting models feel fundamentally different from traditional language models - they're more like having an expert assistant who shows their work rather than a black box that produces answers. This transparency is crucial for applications where trust and verification matter, from educational tools to scientific research to business decision-making.
+
+As AI systems become more capable and more widely deployed, approaches like this that prioritize interpretability alongside performance will become increasingly important. The ability to peer into an AI's reasoning process, understand its logic, and verify its conclusions represents a crucial step toward more responsible and trustworthy artificial intelligence.
