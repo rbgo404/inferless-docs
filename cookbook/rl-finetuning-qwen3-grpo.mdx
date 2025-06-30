@@ -216,9 +216,8 @@ The key insight here is that GRPO generates multiple responses to each problem (
 
 The temperature setting of 1.0 is crucial - it provides enough randomness to explore different reasoning approaches while still being guided by the learned patterns. The low learning rate (5e-6) ensures we don't disrupt the base model's capabilities while fine-tuning the reasoning behavior.
 
-## Training Dynamics and Convergence
 
-During GRPO training, fascinating dynamics emerge. Initially, the model might generate responses that get high format rewards but wrong answers, or correct answers with poor reasoning structure. Over time, the multi-objective optimization finds the sweet spot where both correctness and format quality are maximized.
+Initially, the model might generate responses that get high format rewards but wrong answers, or correct answers with poor reasoning structure. Over time, the multi-objective optimization finds the sweet spot where both correctness and format quality are maximized.
 
 The reward functions work synergistically - the correctness reward ensures the model doesn't just focus on pretty formatting, while the format rewards prevent the model from giving correct answers through poor reasoning. The incremental rewards (like `xmlcount_reward_func`) provide learning signals even when the model hasn't quite mastered the full format yet.
 
@@ -226,15 +225,13 @@ One particularly interesting aspect is how the model learns to self-correct duri
 
 The `num_generations` parameter is critical for this learning process. By generating multiple attempts, the model can compare different reasoning strategies and learn which ones lead to better outcomes. This is fundamentally different from supervised learning, where the model only sees one "correct" path.
 
-## Performance Monitoring and Evaluation
-
-Throughout training, you can monitor the model's progress by observing how the different reward components evolve:
-
-- **Correctness rewards** should steadily increase as mathematical accuracy improves
-- **Format rewards** typically improve quickly early in training as the model learns structure
-- **The balance between rewards** indicates whether the model is trading off accuracy for formatting or vice versa
-
 The GRPO framework provides detailed logging of these reward components, allowing you to understand exactly how your model is learning and whether any adjustments to the reward weighting might be beneficial.
+
+## Demo
+<video width="640" height="360" controls>
+  <source src="/videos/Qwen3-GRPO-Demo.mp4" type="video/mp4"/>
+  Your browser does not support the video tag.
+</video>
 
 ## Conclusion
 
