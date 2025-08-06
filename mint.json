@@ -359,7 +359,8 @@
 				"how-to-guides/deploy-yolo11m-detect",
 				"how-to-guides/deploy-deepseek-qwen3-8b",
 				"how-to-guides/deploy-nanonets-ocr-s",
-				"how-to-guides/deploy-voxtral-3b-mini"
+				"how-to-guides/deploy-voxtral-3b-mini",
+				"how-to-guides/deploy-openai-gpt-oss-20b"
 			]
 		},
 		{
