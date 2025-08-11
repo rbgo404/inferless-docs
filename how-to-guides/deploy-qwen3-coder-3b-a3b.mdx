@@ -1,6 +1,6 @@
 ---
 title: "Deploy the Qwen3-Coder-30B-A3B-Instruct model using Inferless"
-description: "A 30.5 B-parameter Mixture-of-Experts coding LLM with only 3.3B active weights per token, 256 K-token native context and agentic tool-calling, delivering fast, long-context code generation."
+description: "A 30.5B-parameter Mixture-of-Experts coding LLM with only 3.3B active weights per token, 256 K-token native context and agentic tool-calling, delivering fast, long-context code generation."
 ---
 
 ## Introduction
@@ -332,5 +332,5 @@ inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml
 
 **Explanation of the Command:**
 
-- `--gpu A10`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
+- `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
 - `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
