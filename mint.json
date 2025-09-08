@@ -206,7 +206,8 @@
 				"cookbook/product-hunt-thread-summarizer",
 				"cookbook/google-map-agent-using-mcp",
 				"cookbook/open-notebooklm",
-				"cookbook/debugger-agent"
+				"cookbook/debugger-agent",
+				"cookbook/menu-analyzer"
 			]
 		},
 		{

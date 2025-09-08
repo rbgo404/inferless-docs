@@ -1,0 +1,478 @@
+---
+title: "Build a Serverless Food Menu Analyzer Agent"
+description: "In this tutorial, we'll build a serverless food menu analyzer agent which will turns image of restaurant menus into structured, actionable insights. An OCR stage(Nanonets-OCRs) extract the text out of the image, then a chain of lightweight Qwen3-8B agents analyzes each item from different angles: Nutrition, Allergens, and Dietary fit. A final Menu Analysis Agent synthesizes all outputs into a concise summary."
+---
+
+## Key Components of the Application
+We'll build this **Serverless Food Menu Analyzer Agent** with the following components:
+
+1. **OCR Model (Image → Structured Text):**
+   [Nanonets-OCR-s](https://huggingface.co/nanonets/Nanonets-OCR-s) runs on vLLM to turn menu photos into clean, sectioned text that's easy for downstream LLMs to reason over. The model ships usage snippets for both Transformers and vLLM.
+
+2. **Text Generation Model (Agents):**
+   [Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B) powers three domain agents—**Nutrition**, **Allergens**, **Dietary**—and a final **Menu Analysis** synthesizer.
+
+3. **Inference Runtime:**
+   [vLLM](https://github.com/vllm-project/vllm) provides high-throughput, memory-efficient inference for both OCR (vision-LLM) and Qwen text generation.
+
+4. **Prompt/Chat Templating:**
+   Hugging Face **Transformers** `apply_chat_template` and processors format multi-turn messages (including multimodal inputs for OCR).
+
+5. **Serverless Orchestration:**
+   **Inferless** handles request/response lifecycles with Pydantic I/O schemas and decorators for `initialize`/`infer`, making GPU deployment serverless.
+
+
+## Crafting Your Application
+Here's a clearer approach to building your application:
+
+1. **Menu Image URL Input**
+   Accept a URL to a menu image and then validate and download it inside the OCR stage.
+
+2. **OCR & Structuring**
+   Use Nanonets-OCR-s (via vLLM + `AutoProcessor`) to extract **all** visible text and reorganize it with consistent line formatting.
+
+3. **Parallel Agent Analysis (Qwen3-8B)**
+   Run three analyses over the OCR text:
+
+   * **Nutrition Agent:** per-item estimates of calories/macros/sugar/sodium
+   * **Allergens Agent:** likely allergens per item
+   * **Dietary Agent:** compatibility tags (vegan/vegetarian, gluten-free, dairy-free, keto, low-sugar, high-protein, low-sodium)
+
+4. **Menu Analysis & Synthesis**
+   Feed the OCR text + all three agent outputs into a final **Menu Analysis Agent** (Qwen3-8B) to render an **Enhanced Menu** (badges + stats per item) and a **Comprehensive Analysis** (overview, nutritional insights, allergen safety, dietary guides, recommendations).
+
+![](/images/cookbook-menu-analyzer.jpg)
+
+## Core Development Steps
+
+### OCR Extraction & Structuring
+
+* **Objective:** Convert raw menu images into a complete, ordered, and readable text structure that preserves items, descriptions, and prices.
+* **Action:**
+
+  1. Initialize `AutoProcessor` and vLLM with `nanonets/Nanonets-OCR-s`.
+  2. Apply the chat template to a multimodal prompt (image + extraction rules).
+  3. Generate and capture the model's markdown-like menu text.
+
+```python
+from typing import Dict
+from PIL import Image
+from io import BytesIO
+import requests
+
+
+class MenuOCRExtractor:
+    def download_image(self,image_url):
+        response = requests.get(image_url)
+        return Image.open(BytesIO(response.content)).convert("RGB")
+    
+    def extract_text_from_image(self,ocr_model,processor,sampling_params,image_url: str) -> tuple:
+        image = self.download_image(image_url)
+        prompt_text = """Extract ALL text from this menu image and format it as a structured menu. Follow these rules:
+
+                        1. PRESERVE all text exactly as shown
+                        2. Organize by categories (drinks, food, etc.)
+                        3. Format each item as: "Item Name [description if any] PRICE"
+                        4. Use consistent formatting
+                        
+                        Example format:
+                        CATEGORY NAME
+                        
+                        Item Name 1
+                        Description line if present
+                        PRICE
+                        
+                        Item Name 2
+                        More description
+                        Different price option / Another price
+                        MAIN_PRICE
+                        
+                        Output the complete menu text in this structured format. Do NOT miss any items or prices."""
+        
+        messages = [
+            {"role": "system", "content": "You are an expert menu text extractor. Extract ALL menu content with perfect accuracy and consistent formatting."},
+            {"role": "user", "content": [
+                {"type": "image", "image": "ignored-by-vllm"},
+                {"type": "text", "text": prompt_text},
+            ]},
+        ]
+        
+        prompt = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        req = [{"prompt": prompt, "multi_modal_data": {"image": [image]}}]
+        
+        out = ocr_model.generate(req, sampling_params)
+        
+        extracted_text = out[0].outputs[0].text
+        
+        return extracted_text
+```
+
+### Chain of lightweight agents for analysis
+
+* **Objective:** Create a unified per-item health profile that combines nutrition estimates, allergen likelihoods and diet compatibility tags.
+* **Action:**
+
+  1. Build a strict, line-oriented prompt.
+  2. Use Qwen3-8B via vLLM; format inputs with `apply_chat_template`.
+
+```python
+from typing import Dict
+from PIL import Image
+from io import BytesIO
+import requests
+
+
+class MenuAnalyzer:      
+    def analyze_nutrition_batch(self,menu_items,tokenizer,llm_model,sampling_params) -> str:
+        nutrition_prompt = f"""You are a professional nutritionist. Analyze ALL the following menu items and provide accurate nutrition estimates for each.
+  
+                              MENU ITEMS TO ANALYZE:{menu_items}
+                              
+                              For each item, consider:
+                              - Standard portion sizes for café beverages/food
+                              - Typical ingredients and preparation methods
+                              - Realistic nutritional content based on similar items
+                              
+                              Provide your response in this EXACT format for each item:
+                              ITEM_0: CALORIES=[number] PROTEIN=[number]g CARBS=[number]g FAT=[number]g FIBER=[number]g SUGAR=[number]g SODIUM=[number]mg
+                              ITEM_1: CALORIES=[number] PROTEIN=[number]g CARBS=[number]g FAT=[number]g FIBER=[number]g SUGAR=[number]g SODIUM=[number]mg
+                              ...and so on for all items.
+                              
+                              Be precise and realistic. Base estimates on actual nutritional data."""
+        messages = [{"role": "user", "content": nutrition_prompt}]
+        text = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True,
+        enable_thinking=True,
+        )
+    
+        # Generate outputs
+        outputs = llm_model.generate([text], sampling_params)
+        
+        # Print the outputs.
+        for output in outputs:
+            prompt = output.prompt
+            generated_text = output.outputs[0].text
+        return generated_text
+
+    def analyze_allergens_batch(self, menu_items, tokenizer, llm_model,sampling_params) -> str:
+        allergen_prompt = f"""You are a food safety expert. Identify potential allergens in ALL the following menu items.
+    
+                                MENU ITEMS TO ANALYZE:{menu_items}
+                                
+                                Common allergens to check for:
+                                - milk/dairy (cream, cheese, milk, butter)
+                                - eggs
+                                - nuts (peanuts, tree_nuts, hazelnuts)
+                                - wheat/gluten (bread, flour, biscuits)
+                                - soy
+                                - fish
+                                - shellfish
+                                - sesame
+                                
+                                For each item, analyze likely ingredients and preparation methods. List ONLY allergens that are likely present.
+                                
+                                Respond in this EXACT format for each item:
+                                ITEM_0: [allergen1, allergen2] OR none
+                                ITEM_1: [allergen1, allergen2] OR none
+                                ...and so on for all items.
+                                
+                                Be accurate and conservative - only list allergens you're confident about."""
+        messages = [{"role": "user", "content": allergen_prompt}]
+        text = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True,
+        enable_thinking=True,
+        )
+    
+        # Generate outputs
+        outputs = llm_model.generate([text], sampling_params)
+        
+        # Print the outputs.
+        for output in outputs:
+            prompt = output.prompt
+            generated_text = output.outputs[0].text
+        return generated_text
+
+
+    def analyze_dietary_batch(self,menu_items, tokenizer, llm_model,sampling_params) -> str:
+        dietary_prompt = f"""You are a dietary specialist. Analyze if ALL the following menu items fit various dietary restrictions.
+    
+                              MENU ITEMS TO ANALYZE:{menu_items}
+                              
+                              Analyze compatibility with these diets:
+                              - vegan: No animal products (no milk, cream, honey, etc.)
+                              - vegetarian: No meat/fish but dairy/eggs OK
+                              - gluten_free: No wheat, bread, flour, oats, barley
+                              - dairy_free: No milk, cream, cheese, butter, yogurt
+                              - keto_friendly: Very low carbs (<10g), high fat
+                              - low_sugar: Less than 10g sugar
+                              - high_protein: More than 15g protein per serving
+                              - low_sodium: Less than 200mg sodium
+                              
+                              Consider typical ingredients and preparation methods for each item type.
+                              
+                              Respond in this EXACT format for each item:
+                              ITEM_0: [vegan, gluten_free] OR none
+                              ITEM_1: [vegetarian, dairy_free, low_sugar] OR none
+                              ...and so on for all items.
+                              
+                              Be conservative - only mark as compatible if you're confident about the ingredients."""
+      
+        messages = [{"role": "user", "content": dietary_prompt}]
+        text = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True,
+        enable_thinking=True,
+        )
+    
+        # Generate outputs
+        outputs = llm_model.generate([text], sampling_params)
+        
+        # Print the outputs.
+        for output in outputs:
+            prompt = output.prompt
+            generated_text = output.outputs[0].text
+        return generated_text
+
+
+    def generate_menu_analysis_prompt(self, menu_text: str, nutrition_data: str, allergens_data: str, dietary_data: str) -> Dict[str, str]:
+        system_prompt = """You are an expert restaurant menu analyzer and nutritionist. Your task is to provide comprehensive, accurate, and well-structured analysis of restaurant menu data.
+    
+                            Your capabilities include:
+                            - Nutritional analysis and calorie estimation
+                            - Allergen identification and safety recommendations
+                            - Dietary preference categorization (vegan, vegetarian, keto, gluten-free, etc.)
+                            - Menu optimization suggestions
+                            - Customer-friendly summaries
+                            
+                            Guidelines for output:
+                            1. FIRST: Present the complete enhanced menu with all nutritional, allergen, and dietary information integrated with each menu item
+                            2. SECOND: Provide comprehensive analysis and insights
+                            3. Be precise and factual in all nutritional information
+                            4. Use clear, structured formatting for easy readability
+                            5. Include relevant health and dietary recommendations
+                            
+                            Output format should be professional, comprehensive, and easy to understand for both restaurant staff and customers."""
+    
+        user_prompt = f"""Analyze the following restaurant menu data and provide a comprehensive output in TWO PARTS.
+    
+                            **MENU DATA:**
+                            {menu_text}
+                            
+                            **NUTRITIONAL INFORMATION:**
+                            {nutrition_data}
+                            
+                            **ALLERGEN INFORMATION:**
+                            {allergens_data}
+                            
+                            **DIETARY CLASSIFICATION:**
+                            {dietary_data}
+                            
+                            **ENHANCED MENU DISPLAY**
+                            Present the complete menu with each item enhanced with its corresponding nutritional information, allergens, and dietary classifications. Format each menu item as follows:
+                            
+                            [ITEM NAME]
+                            [Description]
+                            Price: [Price]
+                            📊 Nutrition: [Calories, Protein, Carbs, Fat, Fiber, Sugar, Sodium]
+                            ⚠️  Allergens: [Allergen information or "None"]
+                            🥗 Dietary: [Dietary classifications as badges/tags]
+                            ---
+                            
+                            **COMPREHENSIVE ANALYSIS**
+                            After displaying the enhanced menu, provide detailed analysis including:
+                            
+                            1. **Menu Overview Summary**
+                               - Total number of items by category (vegetarian vs non-vegetarian)
+                               - Price range analysis
+                               - Cuisine style identification
+                            
+                            2. **Nutritional Analysis**
+                               - Average calories per category
+                               - High/low protein options
+                               - Healthiest options by macronutrient balance
+                               - Items suitable for different caloric needs
+                            
+                            3. **Allergen Safety Report**
+                               - Complete allergen breakdown by frequency
+                               - Items safe for common allergies
+                               - Cross-contamination risk assessment
+                               - Allergen-free recommendations
+                            
+                            4. **Dietary Preference Guide**
+                               - Vegan options (count and names)
+                               - Vegetarian options (count and names)
+                               - Keto-friendly selections
+                               - Gluten-free options
+                               - Low-sodium choices for health-conscious diners
+                            
+                            5. **Customer Recommendations**
+                               - Best options for different dietary needs
+                               - Healthiest choices overall
+                               - Items to avoid for specific health conditions
+                            
+                            6. **Restaurant Insights**
+                               - Menu balance assessment
+                               - Suggestions for expanding dietary options
+                               - Popular cuisine trend alignment
+                               - Pricing strategy observations
+                            
+                            Format the response in clear sections with bullet points and specific item recommendations where appropriate."""
+    
+        return {
+            "system_prompt": system_prompt,
+            "user_prompt": user_prompt
+        }
+```
+
+### Final Menu Synthesis & Reporting
+
+* **Objective:** Merge OCR text + all agent outputs into a clean **Enhanced Menu** and a **Comprehensive Analysis** (overview, nutrition insights, allergen safety, dietary guide, recommendations).
+* **Action:**
+
+  1. Construct a two-part prompt (display + analysis).
+  2. Use Qwen3-8B again; format messages with `apply_chat_template`.
+
+```python
+from vllm import LLM, SamplingParams
+from transformers import AutoProcessor, AutoTokenizer
+import os, inferless
+from typing import Optional
+from pydantic import BaseModel, Field
+from utils import MenuOCRExtractor, MenuAnalyzer
+
+os.environ.setdefault("VLLM_WORKER_MULTIPROC_METHOD", "spawn")
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"]='1'
+
+@inferless.request
+class RequestObjects(BaseModel):
+    image_url: str = Field(default="https://github.com/rbgo404/Files/raw/main/menu-7.png")
+
+@inferless.response
+class ResponseObjects(BaseModel):
+    generated_text: str = Field(default="Test output")
+
+class InferlessPythonModel:
+    def initialize(self):
+        self.ocr_processor = AutoProcessor.from_pretrained("nanonets/Nanonets-OCR-s", trust_remote_code=True)
+        self.ocr_model = LLM(model="nanonets/Nanonets-OCR-s", trust_remote_code=True, dtype="bfloat16", gpu_memory_utilization=0.3,max_model_len=16768)
+        self.ocr_sampling = SamplingParams(temperature=0.0, max_tokens=4048)
+
+        self.llm_tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-8B")
+        self.llm_sampling = SamplingParams(temperature=0.6, top_p=0.95, top_k=20, max_tokens=32768)
+        self.llm = LLM(model="Qwen/Qwen3-8B",gpu_memory_utilization=0.5)
+        self.menu_extractor = MenuOCRExtractor()
+        self.menu_analyzer = MenuAnalyzer()
+
+    def infer(self, inputs: RequestObjects) -> ResponseObjects:
+        menu_text = self.menu_extractor.extract_text_from_image(self.ocr_model,self.ocr_processor,self.ocr_sampling,inputs.image_url)
+        nutrition_data = self.menu_analyzer.analyze_nutrition_batch(menu_text,self.llm_tokenizer,self.llm,self.llm_sampling)
+        allergens_data = self.menu_analyzer.analyze_allergens_batch(menu_text,self.llm_tokenizer,self.llm,self.llm_sampling)
+        dietary_data = self.menu_analyzer.analyze_dietary_batch(menu_text,self.llm_tokenizer,self.llm,self.llm_sampling)
+        
+        prompts = self.menu_analyzer.generate_menu_analysis_prompt(menu_text, nutrition_data, allergens_data, dietary_data)
+        messages = [
+            {"role": "system", "content": prompts["system_prompt"]},
+            {"role": "user", "content": prompts["user_prompt"]}
+        ]
+            
+        # Apply chat template
+        text = self.llm_tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=True,
+        )
+        # Generate outputs
+        outputs = self.llm.generate([text], self.llm_sampling)
+        for output in outputs:
+            generated_text = output.outputs[0].text
+        
+        think_end_idx = self.llm_tokenizer.encode(generated_text).index(151668)
+        response_summary = self.llm_tokenizer.decode(self.llm_tokenizer.encode(generated_text)[think_end_idx+1:])
+        
+        return ResponseObjects(generated_text=response_summary)
+
+    def finalize(self):
+        self.llm = None
+        self.ocr_model = None
+```
+
+### Setting up the Environment
+__Dependencies:__
+- __Objective:__ Ensure all necessary libraries are installed.
+- __Action:__ Run the command below to install dependencies:
+```bash
+pip accelerate==1.8.0 transformers==4.55.4 inferless==0.2.15 pydantic==2.11.7 pillow==11.2.1 torch==2.7.1 - torchvision==0.22.1 vllm==0.10.0 hf-transfer==0.1.9
+```
+This command ensures your environment has all the tools required for the application.
+### Deploying Your Model with Inferless CLI
+Inferless allows you to deploy your model using Inferless-CLI. Follow the steps to deploy using Inferless CLI.
+
+#### Clone the repository of the model
+Let's begin by cloning the model repository:
+```bash
+git clone https://github.com/inferless/product-hunt-thread-summarizer.git
+```
+
+#### Deploy the Model
+To deploy the model using Inferless CLI, execute the following command:
+```bash
+inferless deploy --gpu A100 --runtime inferless-runtime-config.yaml --env HF_TOKEN=<YOUR_HUGGING_FACE_ACCESS_TOKEN>
+```
+
+**Explanation of the Command:**
+
+- `--gpu A100`: Specifies the GPU type for deployment. Available options include `A10`, `A100`, and `T4`.
+- `--runtime inferless-runtime-config.yaml`: Defines the runtime configuration file. If not specified, the default Inferless runtime is used.
+
+### Demo of the Book Audio Summary Generator.
+<video width="640" height="360" controls>
+  <source src="/videos/smart-menu analyzer-demo.mp4" type="video/mp4"/>
+  Your browser does not support the video tag.
+</video>
+
+
+### Alternative Deployment Method
+Inferless also supports a user-friendly UI for model deployment, catering to users at all skill levels. Refer to Inferless's documentation for guidance on UI-based deployment.
+## Choosing Inferless for Deployment
+Deploying your Product Hunt Thread Summarizer application with Inferless offers compelling advantages, making your development journey smoother and more cost-effective. Here's why Inferless is the go-to choice:
+1. __Ease of Use:__ Forget the complexities of infrastructure management. With Inferless, you simply bring your model, and within minutes, you have a working endpoint. Deployment is hassle-free, without the need for in-depth knowledge of scaling or infrastructure maintenance.
+2. __Cold-start Times:__ Inferless's unique load balancing ensures faster cold-starts.
+3. __Cost Efficiency:__ Inferless optimizes resource utilization, translating to lower operational costs. Here's a simplified cost comparison:
+
+### Scenario
+You are looking to deploy a Product Hunt Thread Summarizer application for processing 100 queries.<br />
+
+__Parameters:__
+- __Total number of queries:__ 100 daily.<br />
+- __Inference Time:__ All models are hypothetically deployed on A100 80GB, taking 89.76 seconds to process a request and a cold start overhead of 50.47 seconds.<br />
+- __Scale Down Timeout:__ Uniformly 60 seconds across all platforms, except Hugging Face, which requires a minimum of 15 minutes. This is assumed to happen 100 times a day.<br />
+
+__Key Computations:__
+1. __Inference Duration:__ <br/>
+Processing 100 queries and each takes 15.82 seconds<br/>
+Total: 100 x 15.82 = 1582 seconds (or approximately 0.44 hours)
+2. __Idle Timeout Duration:__<br/>
+Post-processing idle time before scaling down: (60 seconds - 15.82 seconds) x 100 = 4418 seconds (or 1.22 hours approximately)<br/>
+3. __Cold Start Overhead:__<br/>
+Total: 100 x 50.47 = 5047 seconds (or 1.40 hours approximately)<br/>
+
+__Total Billable Hours with Inferless:__ 0.44 (inference duration) + 1.22 (idle time) + 1.40 (cold start overhead)  = 3.06 hours<br/>
+__Total Billable Hours with Inferless:__ 3.06 hours<br/>
+
+| Scenario | On-Demand Cost | Serverless Cost|
+| :--- | :---- | :---- |
+|  100 requests/day | \$28.8 (24 hours billed at $1.22/hour) | \$3.73 (3.06 hours billed at $1.22/hour) |
+
+By opting for Inferless, **_you can achieve up to 87.05% cost savings._**<br/>
+
+Please note that we have utilized the A100(80 GB) GPU for model benchmarking purposes, while for pricing comparison, we referenced the A10G GPU price from both platforms. This is due to the unavailability of the A100 GPU in SageMaker.
+
+Also, the above analysis is based on a smaller-scale scenario for demonstration purposes. Should the scale increase tenfold, traditional cloud services might require maintaining 2-4 GPUs constantly active to manage peak loads efficiently. In contrast, Inferless, with its dynamic scaling capabilities, adeptly adjusts to fluctuating demand without the need for continuously running hardware.<br/>
+## Conclusion
+By following this guide, you're now equipped to build and deploy a sophisticated Product Hunt Thread Summarizer application. This tutorial showcases the seamless integration of advanced technologies, emphasizing the practical application of creating cost-effective solutions.
